@@ -20,12 +20,12 @@
 6. [Arquitectura de Alto Nivel](#6-arquitectura-de-alto-nivel)  
    6.1. [Estilo arquitectónico](#61-estilo-arquitectónico)  
    6.2. [Módulos lógicos](#62-módulos-lógicos)  
-   6.3. [Diagrama de Arquitectura (PlantUML)](#63-diagrama-de-arquitectura-plantuml)  
+   6.3. [Diagrama de Arquitectura](#63-diagrama-de-arquitectura)  
 7. [Diagrama de Despliegue](#7-diagrama-de-despliegue)  
 8. [Diagrama de Actividades – Flujo de Orden](#8-diagrama-de-actividades--flujo-de-orden)  
 9. [Modelo de Datos](#9-modelo-de-datos)  
    9.1. [Entidades principales](#91-entidades-principales)  
-   9.2. [Diagrama Entidad-Relación (PlantUML)](#92-diagrama-entidad-relación-plantuml)  
+   9.2. [Diagrama Entidad-Relación](#92-diagrama-entidad-relación)  
 10. [Base de Datos Funcional (SQL – PostgreSQL)](#10-base-de-datos-funcional-sql--postgresql)  
 11. [Datos de Ejemplo](#11-datos-de-ejemplo)  
 
@@ -307,7 +307,7 @@ Configuración administrativa actualizada.
 * Delivery
 * Administración
 
-### 6.3 Diagrama de Arquitectura (PlantUML)
+### 6.3 Diagrama de Arquitectura
 
 ```plantuml
 @startuml
@@ -353,24 +353,7 @@ node "Servidor BD" {
 
 ## 8. Diagrama de Actividades – Flujo de Orden
 
-```plantuml
-@startuml
-start
-:Usuario selecciona restaurante;
-:Selecciona productos;
-:Confirma orden;
-if (Pago válido?) then (Sí)
-  :Orden CREADA;
-  :Asignar repartidor;
-  :Orden EN_PROCESO;
-  :Entrega EN_CAMINO;
-  :Orden FINALIZADA;
-else (No)
-  :Orden RECHAZADA;
-endif
-stop
-@enduml
-```
+![Diagrama de Actividades](src/8.png)
 
 ---
 
@@ -386,119 +369,90 @@ stop
 * order_items
 * deliveries
 
-### 9.2 Diagrama Entidad-Relación (PlantUML)
+### 9.2 Diagrama Entidad-Relación
 
-```plantuml
-@startuml
-entity users {
-  +id : PK
-  name
-  email
-  password
-  role_id : FK
-}
-
-entity roles {
-  +id : PK
-  name
-}
-
-entity restaurants {
-  +id : PK
-  name
-  address
-}
-
-entity menu_items {
-  +id : PK
-  restaurant_id : FK
-  name
-  price
-}
-
-entity orders {
-  +id : PK
-  user_id : FK
-  restaurant_id : FK
-  status
-  created_at
-}
-
-entity order_items {
-  +id : PK
-  order_id : FK
-  menu_item_id : FK
-  quantity
-}
-
-entity deliveries {
-  +id : PK
-  order_id : FK
-  delivery_status
-  courier_name
-}
-
-roles ||--o{ users
-users ||--o{ orders
-restaurants ||--o{ orders
-restaurants ||--o{ menu_items
-orders ||--o{ order_items
-orders ||--|| deliveries
-@enduml
-```
+![CDU 3.3.1](src/er.png)
 
 ---
 
-## 10. Base de Datos Funcional (SQL – PostgreSQL)
+## 10. Base de Datos Funcional (SQL – MySQL)
 
 ```sql
+-- Tabla de roles
 CREATE TABLE roles (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(50) NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE
 );
 
+-- Tabla de usuarios
 CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100),
-  email VARCHAR(100) UNIQUE,
-  password VARCHAR(255),
-  role_id INT REFERENCES roles(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
+-- Tabla de restaurantes
 CREATE TABLE restaurants (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100),
-  address TEXT
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  address TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE
 );
 
+-- Tabla de ítems del menú
 CREATE TABLE menu_items (
-  id SERIAL PRIMARY KEY,
-  restaurant_id INT REFERENCES restaurants(id),
-  name VARCHAR(100),
-  price DECIMAL(10,2)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id INT NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  is_available BOOLEAN DEFAULT TRUE,
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
 );
 
+-- Tabla de órdenes
 CREATE TABLE orders (
-  id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id),
-  restaurant_id INT REFERENCES restaurants(id),
-  status VARCHAR(30),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  restaurant_id INT NOT NULL,
+  status ENUM('CREADA', 'EN_PROCESO', 'FINALIZADA', 'RECHAZADA') NOT NULL,
+  total DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
 );
 
+-- Tabla de ítems por orden
 CREATE TABLE order_items (
-  id SERIAL PRIMARY KEY,
-  order_id INT REFERENCES orders(id),
-  menu_item_id INT REFERENCES menu_items(id),
-  quantity INT
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  menu_item_id INT NOT NULL,
+  quantity INT NOT NULL CHECK (quantity > 0),
+  subtotal DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (order_id) REFERENCES orders(id),
+  FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
 );
 
+-- Tabla de entregas
 CREATE TABLE deliveries (
-  id SERIAL PRIMARY KEY,
-  order_id INT REFERENCES orders(id),
-  delivery_status VARCHAR(30),
-  courier_name VARCHAR(100)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL UNIQUE,
+  courier_id INT NOT NULL,
+  status ENUM('EN_CAMINO', 'ENTREGADO', 'CANCELADO') NOT NULL,
+  started_at TIMESTAMP NULL,
+  delivered_at TIMESTAMP NULL,
+  FOREIGN KEY (order_id) REFERENCES orders(id),
+  FOREIGN KEY (courier_id) REFERENCES users(id)
 );
+
+-- Índices para mejorar rendimiento
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_restaurant_id ON orders(restaurant_id);
+CREATE INDEX idx_deliveries_courier_id ON deliveries(courier_id);
 ```
 
 ---
@@ -506,14 +460,40 @@ CREATE TABLE deliveries (
 ## 11. Datos de Ejemplo
 
 ```sql
-INSERT INTO roles (name) VALUES ('ADMIN'), ('CLIENTE'), ('RESTAURANTE'), ('REPARTIDOR');
+-- Roles base
+INSERT INTO roles (name) VALUES 
+  ('ADMIN'),
+  ('CLIENTE'),
+  ('RESTAURANTE'),
+  ('REPARTIDOR');
 
-INSERT INTO users (name, email, password, role_id)
-VALUES ('Juan Cliente','juan@mail.com','hash',2);
+-- Usuarios de ejemplo
+INSERT INTO users (name, email, password, role_id) VALUES
+  ('Ana Admin', 'ana@delivereats.com', 'hash_admin', 1),
+  ('Carlos Cliente', 'carlos@mail.com', 'hash_cliente', 2),
+  ('Pizza GT', 'pizzagt@mail.com', 'hash_rest', 3),
+  ('Luis Repartidor', 'luis@mail.com', 'hash_rep', 4);
 
-INSERT INTO restaurants (name, address)
-VALUES ('Pizza GT','Zona 10');
+-- Restaurante
+INSERT INTO restaurants (name, address) VALUES
+  ('Pizza GT', 'Zona 10, Ciudad');
 
-INSERT INTO menu_items (restaurant_id, name, price)
-VALUES (1,'Pizza Pepperoni',75.00);
+-- Ítems del menú
+INSERT INTO menu_items (restaurant_id, name, price) VALUES
+  (1, 'Pizza Pepperoni', 75.00),
+  (1, 'Pizza Hawaiana', 80.00),
+  (1, 'Refresco 500ml', 12.00);
+
+-- Orden de ejemplo
+INSERT INTO orders (user_id, restaurant_id, status, total) VALUES
+  (2, 1, 'FINALIZADA', 155.00);
+
+-- Ítems de la orden
+INSERT INTO order_items (order_id, menu_item_id, quantity, subtotal) VALUES
+  (1, 1, 2, 150.00),
+  (1, 3, 1, 12.00);
+
+-- Entrega de ejemplo
+INSERT INTO deliveries (order_id, courier_id, status, started_at, delivered_at) VALUES
+  (1, 4, 'ENTREGADO', '2026-01-28 14:30:00', '2026-01-28 15:15:00');
 ```
