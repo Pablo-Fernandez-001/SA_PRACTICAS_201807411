@@ -21,6 +21,7 @@
    6.1. [Estilo arquitectónico](#61-estilo-arquitectónico)  
    6.2. [Módulos lógicos](#62-módulos-lógicos)  
    6.3. [Diagrama de Arquitectura](#63-diagrama-de-arquitectura)  
+   6.4. [Diagrama de Componentes](#63-diagrama-de-componentes)  
 7. [Diagrama de Despliegue](#7-diagrama-de-despliegue)  
 8. [Diagrama de Actividades – Flujo de Orden](#8-diagrama-de-actividades--flujo-de-orden)  
 9. [Modelo de Datos](#9-modelo-de-datos)  
@@ -312,7 +313,7 @@ Configuración administrativa actualizada.
 ![Diagrama de Arquitectura](src/DiagramaDeBloques.png)
 
 
-### 6.3 Diagrama de Componentes
+### 6.4 Diagrama de Componentes
 
 ![Diagrama de Componentes](src/ComponentDiagram.png)
 
