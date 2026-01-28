@@ -309,45 +309,18 @@ Configuración administrativa actualizada.
 
 ### 6.3 Diagrama de Arquitectura
 
-```plantuml
-@startuml
-package "Delivereats" {
-  [Auth]
-  [Catálogo]
-  [Órdenes]
-  [Delivery]
-  [Administración]
+![Diagrama de Arquitectura](src/DiagramaDeBloques.png)
 
-  [Auth] --> [Órdenes]
-  [Auth] --> [Catálogo]
-  [Órdenes] --> [Delivery]
-  [Administración] --> [Catálogo]
-}
-@enduml
-```
+
+### 6.3 Diagrama de Componentes
+
+![Diagrama de Componentes](src/ComponentDiagram.png)
 
 ---
 
 ## 7. Diagrama de Despliegue
 
-```plantuml
-@startuml
-node "Cliente Web/Móvil" {
-  component "Frontend"
-}
-
-node "Servidor de Aplicación" {
-  component "Backend Delivereats"
-}
-
-node "Servidor BD" {
-  database "PostgreSQL"
-}
-
-"Frontend" --> "Backend Delivereats"
-"Backend Delivereats" --> "PostgreSQL"
-@enduml
-```
+![Diagrama de Despliegue](src/DiagramaDespliegue.png)
 
 ---
 
