@@ -30,12 +30,11 @@
       9.2.1[Entidad-Relación Base 1](#921-entidad-relación-base-1)
       9.2.1[Entidad-Relación Base 2](#922-entidad-relación-base-2)
 10. [Base de Datos Funcional (SQL – PostgreSQL)](#10-base-de-datos-funcional-sql--postgresql)  
-   10.1[Base de Datos 1](101-Base-de-datos-1)
-   10.2[Base de Datos 1](102-Base-de-datos-2)
+   10.1[Base de Datos 1](101-Base-de-datos-1)  
+   10.2[Base de Datos 1](102-Base-de-datos-2)  
 11. [Datos de Ejemplo](#11-datos-de-ejemplo)  
-   11.1[Seed 1](111-Seed-1)
-   11.1[Seed 2](111-Seed-2)
-
+   11.1[Seed 1](111-Seed-1)  
+   11.1[Seed 2](111-Seed-2)  
 ---
 
 ## 1. Contexto
