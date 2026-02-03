@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL
+  mysql-auth:
+    image: mysql:8.0
+    container_name: mysql-auth
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql-auth-data:/var/lib/mysql
+    networks:
+      - delivereats-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Servicio de Autenticación (gRPC)
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    restart: always
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql-auth
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: auth_db
+      JWT_SECRET: delivereats-super-secret-key-2026
+      PORT: 50051
+    ports:
+      - "50051:50051"
+    networks:
+      - delivereats-network
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: always
+    depends_on:
+      - auth-service
+    environment:
+      PORT: 3000
+      AUTH_SERVICE_URL: auth-service:50051
+      JWT_SECRET: delivereats-super-secret-key-2026
+    ports:
+      - "3000:3000"
+    networks:
+      - delivereats-network
+    volumes:
+      - ./auth-service/proto:/app/proto:ro
+
+  # Frontend React
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    restart: always
+    depends_on:
+      - api-gateway
+    ports:
+      - "8080:80"
+    networks:
+      - delivereats-network
+
+volumes:
+  mysql-auth-data:
+
+networks:
+  delivereats-network:
+    driver: bridge
