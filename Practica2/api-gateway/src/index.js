@@ -1,31 +1,66 @@
-require("dotenv").config();
-const express = require("express");
-const grpc = require("@grpc/grpc-js");
-const protoLoader = require("@grpc/proto-loader");
+require('dotenv').config()
+const express = require('express')
+const cors = require('cors')
+const helmet = require('helmet')
+const rateLimit = require('express-rate-limit')
+const morgan = require('morgan')
+const logger = require('./utils/logger')
+const authRoutes = require('./routes/auth')
+const catalogRoutes = require('./routes/catalog')
+const orderRoutes = require('./routes/orders')
+const deliveryRoutes = require('./routes/delivery')
+const errorHandler = require('./middleware/errorHandler')
 
-const app = express();
-app.use(express.json());
+const app = express()
+const PORT = process.env.PORT || 8080
 
-const packageDef = protoLoader.loadSync("../proto/auth.proto");
-const proto = grpc.loadPackageDefinition(packageDef).auth;
+// Middleware
+app.use(helmet())
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}))
 
-const client = new proto.AuthService(
-  "auth-service:50051",
-  grpc.credentials.createInsecure()
-);
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP'
+})
+app.use(limiter)
 
-app.post("/register", (req, res) => {
-  client.Register(req.body, (err, response) => {
-    if (err) return res.status(500).send(err);
-    res.json(response);
-  });
-});
+app.use(morgan('combined', { stream: { write: message => logger.info(message) } }))
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true }))
 
-app.post("/login", (req, res) => {
-  client.Login(req.body, (err, response) => {
-    if (err) return res.status(500).send(err);
-    res.json(response);
-  });
-});
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    service: 'api-gateway' 
+  })
+})
 
-app.listen(3000, () => console.log("Gateway en puerto 3000"));
+// Routes
+app.use('/api/auth', authRoutes)
+app.use('/api/catalog', catalogRoutes)
+app.use('/api/orders', orderRoutes)
+app.use('/api/delivery', deliveryRoutes)
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Route not found' 
+  })
+})
+
+// Error handler
+app.use(errorHandler)
+
+app.listen(PORT, '0.0.0.0', () => {
+  logger.info(`API Gateway running on port ${PORT}`)
+})
+
+module.exports = app

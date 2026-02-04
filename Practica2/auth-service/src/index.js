@@ -1,63 +1,66 @@
-require("dotenv").config();
-const grpc = require("@grpc/grpc-js");
-const protoLoader = require("@grpc/proto-loader");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const mysql = require("mysql2/promise");
+require('dotenv').config()
+const grpc = require('@grpc/grpc-js')
+const protoLoader = require('@grpc/proto-loader')
+const path = require('path')
+const logger = require('./utils/logger')
+const authController = require('./controllers/authController')
+const { initDatabase } = require('./config/database')
 
-const packageDef = protoLoader.loadSync("../proto/auth.proto");
-const proto = grpc.loadPackageDefinition(packageDef).auth;
+const PROTO_PATH = path.join(__dirname, '../../protos/auth.proto')
 
-const db = mysql.createPool({
-  host: "db",
-  user: "root",
-  password: "root",
-  database: "auth_db"
-});
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true
+})
 
-const server = new grpc.Server();
+const authProto = grpc.loadPackageDefinition(packageDefinition).auth
 
-server.addService(proto.AuthService.service, {
-  Register: async (call, callback) => {
-    const { email, password, role } = call.request;
-    const hash = await bcrypt.hash(password, 10);
+const server = new grpc.Server()
 
-    await db.query(
-      "INSERT INTO users (email, password, role) VALUES (?, ?, ?)",
-      [email, hash, role]
-    );
+server.addService(authProto.AuthService.service, {
+  Register: authController.register,
+  Login: authController.login,
+  ValidateToken: authController.validateToken,
+  GetUserById: authController.getUserById,
+  UpdateUser: authController.updateUser,
+  DeleteUser: authController.deleteUser
+})
 
-    callback(null, { success: true, message: "Usuario registrado" });
-  },
+const PORT = process.env.PORT || 50051
 
-  Login: async (call, callback) => {
-    const { email, password } = call.request;
-    const [rows] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
-
-    if (!rows.length) {
-      return callback(null, { success: false, message: "Usuario no existe" });
-    }
-
-    const valid = await bcrypt.compare(password, rows[0].password);
-    if (!valid) {
-      return callback(null, { success: false, message: "Credenciales inválidas" });
-    }
-
-    const token = jwt.sign(
-      { id: rows[0].id, role: rows[0].role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    callback(null, { success: true, token });
+async function startServer() {
+  try {
+    // Initialize database
+    await initDatabase()
+    
+    // Start gRPC server
+    server.bindAsync(
+      `0.0.0.0:${PORT}`,
+      grpc.ServerCredentials.createInsecure(),
+      (err, port) => {
+        if (err) {
+          logger.error('Failed to start server:', err)
+          return
+        }
+        
+        server.start()
+        logger.info(`Auth Service running on port ${port}`)
+      }
+    )
+  } catch (error) {
+    logger.error('Failed to start auth service:', error)
+    process.exit(1)
   }
-});
+}
 
-server.bindAsync(
-  "0.0.0.0:50051",
-  grpc.ServerCredentials.createInsecure(),
-  () => server.start()
-);
+// Graceful shutdown
+process.on('SIGINT', () => {
+  logger.info('Shutting down auth service...')
+  server.forceShutdown()
+  process.exit(0)
+})
+
+startServer()

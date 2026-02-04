@@ -1,9 +1,14 @@
-FROM node:18
+FROM node:18-alpine
 
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm install
+RUN npm install --only=production
+
 COPY . .
 
+RUN mkdir -p logs
+
 EXPOSE 50051
-CMD ["node", "src/index.js"]
+
+CMD ["npm", "start"]
