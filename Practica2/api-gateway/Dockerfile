@@ -1,19 +1,9 @@
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
-
-# Copiar package.json e instalar dependencias
 COPY package*.json ./
-RUN npm install --only=production
-
-# Copiar código fuente
+RUN npm install
 COPY . .
 
-# Copiar archivo proto del auth-service
-COPY ../auth-service/proto/auth.proto ./proto/
-
-# Exponer puerto HTTP
 EXPOSE 3000
-
-# Comando para iniciar
-CMD ["node", "app.js"]
+CMD ["node", "src/index.js"]

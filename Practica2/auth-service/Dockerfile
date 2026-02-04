@@ -1,16 +1,9 @@
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
-
-# Copiar package.json e instalar dependencias
 COPY package*.json ./
-RUN npm install --only=production
-
-# Copiar código fuente
+RUN npm install
 COPY . .
 
-# Exponer puerto gRPC
 EXPOSE 50051
-
-# Comando para iniciar el servicio
-CMD ["node", "server.js"]
+CMD ["node", "src/index.js"]
