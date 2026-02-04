@@ -1,10 +1,10 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { ShoppingCartIcon, UserIcon, BuildingStorefrontIcon, TruckIcon } from '@heroicons/react/24/outline'
+import { ShoppingCartIcon, UserIcon, BuildingStorefrontIcon, TruckIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
 import useAuthStore from '../stores/authStore'
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuthStore()
+  const { user, logout, isAuthenticated, getDashboardRoute } = useAuthStore()
 
   const handleLogout = () => {
     logout()
@@ -24,6 +24,15 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
+                {/* Dashboard Link */}
+                <Link 
+                  to={getDashboardRoute()} 
+                  className="text-gray-700 hover:text-primary-500 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1"
+                >
+                  <Cog6ToothIcon className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </Link>
+
                 {user?.role === 'CLIENTE' && (
                   <>
                     <Link to="/restaurants" className="text-gray-700 hover:text-primary-500 px-3 py-2 rounded-md text-sm font-medium">

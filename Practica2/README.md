@@ -2,14 +2,14 @@
 
 Sistema completo de delivery de comida desarrollado con arquitectura de microservicios usando Docker, Node.js, React con Vite, gRPC y MySQL.
 
-## 🏗️ Arquitectura
+## Arquitectura
 
-- **Frontend**: React + Vite + TailwindCSS
-- **API Gateway**: Express.js + gRPC client
-- **Auth Service**: Node.js + gRPC server + JWT
-- **Base de Datos**: MySQL 8.0
+- **Frontend**: React + Vite + TailwindCSS + TypeScript
+- **API Gateway**: Express.js + gRPC client + JWT middleware
+- **Auth Service**: Node.js + gRPC server + JWT + bcrypt
+- **Base de Datos**: MySQL 8.0 con schemas estructurados
 
-## 🚀 Inicio Rápido
+## Inicio Rapido
 
 ### Prerrequisitos
 
@@ -40,13 +40,29 @@ docker-compose logs -f auth-service
 docker-compose logs -f auth-db
 ```
 
-### 3. Verificar que todo esté funcionando
+### 3. Si hay errores de Docker (ContainerConfig)
+
+Ejecuta la limpieza automática:
+
+**Windows:**
+```batch
+.\docker-cleanup.bat
+docker-compose up --build -d
+```
+
+**Linux/Mac:**
+```bash
+./docker-cleanup.sh
+docker-compose up --build -d
+```
+
+### 4. Verificar que todo esté funcionando
 
 - **Frontend**: http://localhost:3000
-- **API Gateway**: http://localhost:8080/health
+- **API Gateway Health**: http://localhost:8080/health
 - **Base de datos**: localhost:3306
 
-### 4. Usuarios por defecto
+### 5. Usuarios por defecto
 
 - **Admin**: admin@delivereats.com / admin123
 

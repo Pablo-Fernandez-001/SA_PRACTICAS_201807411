@@ -1,6 +1,28 @@
-# DeliverEats - Scripts de Inicio
+# START GUIDE - Guia de Inicio Rapido para DeliverEats
 
-## 🚀 Comandos para levantar el sistema completo
+## ERROR RESUELTO: ContainerConfig
+
+El error `KeyError: 'ContainerConfig'` ha sido SOLUCIONADO con los siguientes cambios:
+
+### Soluciones Implementadas
+
+1. **Scripts de Limpieza Automática**:
+   - `docker-cleanup.bat` (Windows)
+   - `docker-cleanup.sh` (Linux/Mac) 
+   - `docker-cleanup.ps1` (PowerShell)
+
+2. **Docker Compose Mejorado**:
+   - Health checks para todos los servicios
+   - Dependencias corregidas entre servicios
+   - Timeouts y reintentos configurados
+
+3. **Dockerfiles Actualizados**:
+   - API Gateway: Añadido `curl` para health checks
+   - Auth Service: Añadido `netcat-openbsd` para health checks
+
+4. **Scripts de Inicio Completo**:
+   - `start.bat` (Windows)
+   - `start.sh` (Linux/Mac)
 
 ### Opción 1: Inicio completo con Docker (RECOMENDADO)
 
@@ -8,13 +30,16 @@
 # 1. Navegar al directorio del proyecto
 cd "c:\Users\pabda\Desktop\lab SA\Practica2"
 
-# 2. Construir e iniciar todos los servicios
-docker-compose up --build -d
+# 2. Limpiar contenedores previos
+docker compose down --remove-orphans
 
-# 3. Ver logs en tiempo real (opcional)
-docker-compose logs -f
+# 3. Construir e iniciar todos los servicios
+docker compose up --build -d
 
-# 4. Verificar que todo esté funcionando
+# 4. Ver logs en tiempo real (opcional)
+docker compose logs -f
+
+# 5. Verificar que todo esté funcionando
 # Frontend: http://localhost:3000
 # API Gateway: http://localhost:8080/health
 # Base de datos: localhost:3306
@@ -24,7 +49,7 @@ docker-compose logs -f
 
 **Terminal 1 - Base de Datos:**
 ```bash
-docker-compose up auth-db -d
+docker compose up auth-db -d
 ```
 
 **Terminal 2 - Auth Service:**
@@ -52,13 +77,13 @@ npm run dev
 
 ```bash
 # Parar todos los servicios
-docker-compose down
+docker compose down
 
 # Parar y eliminar volúmenes (limpia la BD)
-docker-compose down -v
+docker compose down -v
 
 # Parar y limpiar todo (imágenes, contenedores, volúmenes)
-docker-compose down -v --rmi all
+docker compose down -v --rmi all
 ```
 
 ## 🔄 Comandos útiles durante desarrollo
@@ -106,16 +131,19 @@ Después de ejecutar `docker-compose up --build -d`, verifica:
 4. **Iniciar sesión** con el usuario creado
 5. **Explorar la interfaz**
 
-## 🔐 Usuario administrador predeterminado
+## 🔐 Usuarios predeterminados
 
-- **Email**: admin@delivereats.com
-- **Contraseña**: admin123
-- **Rol**: ADMIN
+- **Admin**: admin@delivereats.com / admin123
+- **Cliente**: cliente@test.com / admin123  
+- **Restaurant**: restaurant@test.com / admin123
+- **Delivery**: delivery@test.com / admin123
+
+*(Todos los usuarios usan la misma contraseña para pruebas)*
 
 ## ⚡ Inicio rápido - Un solo comando
 
 ```bash
-cd "c:\Users\pabda\Desktop\lab SA\Practica2" && docker-compose up --build -d && echo "✅ Sistema iniciado en http://localhost:3000"
+cd "c:\Users\pabda\Desktop\lab SA\Practica2" && docker compose down --remove-orphans && docker compose up --build -d && echo "✅ Sistema iniciado en http://localhost:3000"
 ```
 
 ---

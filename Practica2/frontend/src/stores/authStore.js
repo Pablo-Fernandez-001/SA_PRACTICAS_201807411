@@ -14,7 +14,7 @@ const useAuthStore = create(
         set({ isLoading: true })
         try {
           const response = await api.post('/auth/login', { email, password })
-          const { user, token } = response.data
+          const { user, token } = response.data.data
           
           set({ 
             user, 
@@ -36,11 +36,30 @@ const useAuthStore = create(
         }
       },
 
+      // Get dashboard route based on user role
+      getDashboardRoute: () => {
+        const user = get().user
+        if (!user) return '/login'
+        
+        switch (user.role) {
+          case 'ADMIN':
+            return '/admin/dashboard'
+          case 'CLIENTE':
+            return '/client/dashboard'
+          case 'RESTAURANTE':
+            return '/restaurant/dashboard'
+          case 'REPARTIDOR':
+            return '/delivery/dashboard'
+          default:
+            return '/client/dashboard'
+        }
+      },
+
       register: async (userData) => {
         set({ isLoading: true })
         try {
           const response = await api.post('/auth/register', userData)
-          const { user, token } = response.data
+          const { user, token } = response.data.data
           
           set({ 
             user, 

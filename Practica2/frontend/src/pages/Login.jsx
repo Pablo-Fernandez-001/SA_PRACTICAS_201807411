@@ -6,7 +6,7 @@ import useAuthStore from '../stores/authStore'
 
 const Login = () => {
   const navigate = useNavigate()
-  const { login, isLoading } = useAuthStore()
+  const { login, isLoading, getDashboardRoute } = useAuthStore()
   const { register, handleSubmit, formState: { errors } } = useForm()
 
   const onSubmit = async (data) => {
@@ -14,7 +14,9 @@ const Login = () => {
     
     if (result.success) {
       toast.success('Inicio de sesión exitoso')
-      navigate('/')
+      // Redirect to appropriate dashboard based on user role
+      const dashboardRoute = getDashboardRoute()
+      navigate(dashboardRoute)
     } else {
       toast.error(result.error)
     }

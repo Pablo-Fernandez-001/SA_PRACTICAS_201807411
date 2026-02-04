@@ -1,6 +1,7 @@
 const express = require('express')
 const { body, validationResult } = require('express-validator')
 const authService = require('../services/authService')
+const { authMiddleware } = require('../middleware/auth')
 const logger = require('../utils/logger')
 
 const router = express.Router()
@@ -41,6 +42,45 @@ router.post('/register',
       })
     } catch (error) {
       logger.error('Registration error:', error)
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Registration failed'
+      })
+    }
+  }
+)
+
+// Admin register - protected route for admins to register other users
+router.post('/admin/register', 
+  authMiddleware, // Require authentication
+  [
+    body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+    body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('role').isIn(['CLIENTE', 'ADMIN', 'RESTAURANTE', 'REPARTIDOR']).withMessage('Invalid role')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      // Check if requester is admin
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only administrators can register new users'
+        })
+      }
+
+      const result = await authService.register(req.body)
+      
+      res.status(201).json({
+        success: true,
+        message: `User registered successfully as ${req.body.role}`,
+        data: {
+          user: result.user
+        }
+      })
+    } catch (error) {
+      logger.error('Admin registration error:', error)
       res.status(400).json({
         success: false,
         message: error.message || 'Registration failed'

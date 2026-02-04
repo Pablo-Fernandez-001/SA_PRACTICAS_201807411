@@ -20,8 +20,11 @@ const loginSchema = Joi.object({
 class AuthController {
   async register(call, callback) {
     try {
+      logger.info('Register request received:', { email: call.request.email })
+      
       const { error, value } = registerSchema.validate(call.request)
       if (error) {
+        logger.error('Validation error:', error.details[0].message)
         return callback({
           code: 3, // INVALID_ARGUMENT
           message: error.details[0].message
@@ -38,6 +41,7 @@ class AuthController {
       )
 
       if (existingUser.length > 0) {
+        logger.error('User already exists:', email)
         return callback({
           code: 6, // ALREADY_EXISTS
           message: 'User with this email already exists'
@@ -51,6 +55,7 @@ class AuthController {
       )
 
       if (roleResult.length === 0) {
+        logger.error('Invalid role:', role)
         return callback({
           code: 3, // INVALID_ARGUMENT
           message: 'Invalid role'
@@ -79,7 +84,7 @@ class AuthController {
           role,
           name 
         },
-        process.env.JWT_SECRET || 'your-secret-key',
+        process.env.JWT_SECRET || 'delivereats_super_secret_jwt_key_2024',
         { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
       )
 
@@ -87,7 +92,9 @@ class AuthController {
         id: userId,
         name,
         email,
-        role
+        role,
+        is_active: true,
+        created_at: new Date().toISOString()
       }
 
       logger.info(`User registered successfully: ${email}`)
@@ -161,7 +168,7 @@ class AuthController {
           role: user.role,
           name: user.name 
         },
-        process.env.JWT_SECRET || 'your-secret-key',
+        process.env.JWT_SECRET || 'delivereats_super_secret_jwt_key_2024',
         { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
       )
 
@@ -201,7 +208,7 @@ class AuthController {
       }
 
       // Verify JWT token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'delivereats_super_secret_jwt_key_2024')
       
       const connection = getConnection()
 
@@ -228,7 +235,9 @@ class AuthController {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role
+          role: user.role,
+          is_active: user.is_active,
+          created_at: new Date().toISOString()
         }
       })
 

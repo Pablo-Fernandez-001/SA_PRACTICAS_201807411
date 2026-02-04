@@ -11,17 +11,20 @@ services:
       MYSQL_DATABASE: auth_db
       MYSQL_USER: delivereats
       MYSQL_PASSWORD: delivereats123
+      MYSQL_ROOT_HOST: '%'
     ports:
       - "3306:3306"
     volumes:
       - auth_db_data:/var/lib/mysql
-      - ./db/auth_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db/auth_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - delivereats-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
       timeout: 20s
       retries: 10
+      interval: 30s
+      start_period: 30s
 
   # Auth Service
   auth-service:
@@ -39,8 +42,12 @@ services:
         condition: service_healthy
     networks:
       - delivereats-network
-    volumes:
-      - ./auth-service/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 60s
 
   # API Gateway
   api-gateway:
@@ -54,11 +61,16 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - auth-service
+      auth-service:
+        condition: service_healthy
     networks:
       - delivereats-network
-    volumes:
-      - ./api-gateway/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      timeout: 10s
+      retries: 5
+      interval: 30s
+      start_period: 60s
 
   # Frontend
   frontend:
@@ -72,12 +84,10 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
     networks:
       - delivereats-network
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
 
 volumes:
   auth_db_data:

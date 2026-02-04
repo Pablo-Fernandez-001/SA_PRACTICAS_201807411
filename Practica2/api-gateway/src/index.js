@@ -5,6 +5,7 @@ const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const morgan = require('morgan')
 const logger = require('./utils/logger')
+const healthRoutes = require('./routes/health')
 const authRoutes = require('./routes/auth')
 const catalogRoutes = require('./routes/catalog')
 const orderRoutes = require('./routes/orders')
@@ -33,8 +34,16 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message) } 
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
-// Health check
+// Health check - both routes for compatibility
 app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    service: 'api-gateway' 
+  })
+})
+
+app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),

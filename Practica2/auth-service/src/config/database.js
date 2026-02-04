@@ -4,21 +4,55 @@ const logger = require('../utils/logger')
 let connection = null
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'auth-db',
+  host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'auth_db',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  acquireTimeout: 60000,
+  timeout: 60000
+}
+
+async function waitForDatabase() {
+  const maxRetries = 30
+  let retries = 0
+  
+  while (retries < maxRetries) {
+    try {
+      const tempConnection = mysql.createPool({
+        ...dbConfig,
+        database: undefined // Connect without specific database first
+      })
+      
+      await tempConnection.execute('SELECT 1')
+      await tempConnection.end()
+      logger.info('Database server is available')
+      return
+    } catch (error) {
+      retries++
+      logger.info(`Database not ready (attempt ${retries}/${maxRetries}). Waiting...`)
+      await new Promise(resolve => setTimeout(resolve, 2000))
+    }
+  }
+  
+  throw new Error('Database is not available after maximum retries')
 }
 
 async function initDatabase() {
   try {
+    // Wait for database server to be available
+    await waitForDatabase()
+    
+    // First, create the database if it doesn't exist
+    await createDatabaseIfNotExists()
+    
+    // Now connect to the specific database
     connection = mysql.createPool(dbConfig)
     
-    // Test connection
+    // Test connection with the specific database
     await connection.execute('SELECT 1')
     logger.info('Database connected successfully')
     
@@ -28,6 +62,25 @@ async function initDatabase() {
     
   } catch (error) {
     logger.error('Database connection failed:', error)
+    throw error
+  }
+}
+
+async function createDatabaseIfNotExists() {
+  try {
+    // Connect without specifying database
+    const tempConnection = mysql.createPool({
+      ...dbConfig,
+      database: undefined
+    })
+    
+    // Create database if it doesn't exist
+    await tempConnection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``)
+    logger.info(`Database '${dbConfig.database}' created or verified`)
+    
+    await tempConnection.end()
+  } catch (error) {
+    logger.error('Error creating database:', error)
     throw error
   }
 }

@@ -1,14 +1,19 @@
 -- Auth Database Schema
-CREATE DATABASE IF NOT EXISTS auth_db;
-USE auth_db;
+-- Note: In Docker, the database is already created by the MYSQL_DATABASE env variable
 
-CREATE TABLE IF NOT EXISTS roles (
+-- Drop tables if they exist to ensure clean setup
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+
+-- Create roles table
+CREATE TABLE roles (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(50) NOT NULL UNIQUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS users (
+-- Create users table
+CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
@@ -17,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (role_id) REFERENCES roles(id),
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT,
   INDEX idx_email (email),
   INDEX idx_role_id (role_id)
 );
@@ -27,10 +32,12 @@ INSERT INTO roles (name) VALUES
   ('ADMIN'), 
   ('CLIENTE'), 
   ('RESTAURANTE'), 
-  ('REPARTIDOR')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+  ('REPARTIDOR');
 
--- Insert default admin user (password: admin123)
+-- Insert default users (password: admin123 for all)
+-- Hash generated with bcrypt rounds=12: admin123
 INSERT INTO users (name, email, password, role_id) VALUES 
-  ('Administrator', 'admin@delivereats.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 1)
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+  ('Administrator', 'admin@delivereats.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 1),
+  ('Test Cliente', 'cliente@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 2),
+  ('Test Restaurant', 'restaurant@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 3),
+  ('Test Delivery', 'delivery@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 4);
