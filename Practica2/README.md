@@ -77,9 +77,6 @@ Implementar un sistema funcional de autenticación y gestión de usuarios utiliz
 **Diagrama de Actividades - Flujo de Orden:**
 
 ![Diagrama de Actividades](../Practica1/src/8.png)
-
-> **Nota:** Estos diagramas representan la visión completa del sistema DeliverEats diseñada en la Práctica 1. La Práctica 2 implementa específicamente el módulo de Autenticación y Gestión de Usuarios (CDU-01).
-
 ---
 
 ### 3.1 Arquitectura de Microservicios
