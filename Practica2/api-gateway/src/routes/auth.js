@@ -142,4 +142,131 @@ router.post('/validate',
   }
 )
 
+// Get all users (Admin only)
+router.get('/users',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      // Check if requester is admin
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only administrators can view all users'
+        })
+      }
+
+      const result = await authService.getAllUsers()
+      
+      res.json({
+        success: true,
+        data: result.users
+      })
+    } catch (error) {
+      logger.error('Get all users error:', error)
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get users'
+      })
+    }
+  }
+)
+
+// Update user (Admin only)
+router.put('/users/:id',
+  authMiddleware,
+  [
+    body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+    body('email').optional().isEmail().normalizeEmail().withMessage('Please provide a valid email')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      // Check if requester is admin
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only administrators can update users'
+        })
+      }
+
+      const result = await authService.updateUser(parseInt(req.params.id), req.body)
+      
+      res.json({
+        success: true,
+        message: 'User updated successfully',
+        data: result.user
+      })
+    } catch (error) {
+      logger.error('Update user error:', error)
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to update user'
+      })
+    }
+  }
+)
+
+// Update user role (Admin only)
+router.put('/users/:id/role',
+  authMiddleware,
+  [
+    body('role').isIn(['CLIENTE', 'ADMIN', 'RESTAURANTE', 'REPARTIDOR']).withMessage('Invalid role')
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      // Check if requester is admin
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only administrators can update user roles'
+        })
+      }
+
+      const result = await authService.updateUserRole(parseInt(req.params.id), req.body.role)
+      
+      res.json({
+        success: true,
+        message: 'User role updated successfully',
+        data: result.user
+      })
+    } catch (error) {
+      logger.error('Update user role error:', error)
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to update user role'
+      })
+    }
+  }
+)
+
+// Delete/deactivate user (Admin only)
+router.delete('/users/:id',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      // Check if requester is admin
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only administrators can delete users'
+        })
+      }
+
+      const result = await authService.deleteUser(parseInt(req.params.id))
+      
+      res.json({
+        success: true,
+        message: result.message || 'User deactivated successfully'
+      })
+    } catch (error) {
+      logger.error('Delete user error:', error)
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to delete user'
+      })
+    }
+  }
+)
+
 module.exports = router

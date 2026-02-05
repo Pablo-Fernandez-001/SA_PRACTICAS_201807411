@@ -432,6 +432,117 @@ class AuthController {
       })
     }
   }
+
+  async getAllUsers(call, callback) {
+    try {
+      const connection = getConnection()
+
+      // Get all users with their roles
+      const [users] = await connection.execute(`
+        SELECT u.id, u.name, u.email, u.is_active, u.created_at, u.updated_at, r.name as role
+        FROM users u 
+        JOIN roles r ON u.role_id = r.id 
+        ORDER BY u.created_at DESC
+      `)
+
+      const userList = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        is_active: user.is_active,
+        created_at: user.created_at ? user.created_at.toISOString() : '',
+        updated_at: user.updated_at ? user.updated_at.toISOString() : ''
+      }))
+
+      logger.info(`Retrieved ${userList.length} users`)
+
+      callback(null, {
+        users: userList
+      })
+
+    } catch (error) {
+      logger.error('Get all users error:', error)
+      callback({
+        code: 13, // INTERNAL
+        message: 'Internal server error'
+      })
+    }
+  }
+
+  async updateUserRole(call, callback) {
+    try {
+      const { id, role } = call.request
+
+      if (!id || !role) {
+        return callback({
+          code: 3, // INVALID_ARGUMENT
+          message: 'User ID and role are required'
+        })
+      }
+
+      const connection = getConnection()
+
+      // Get role ID
+      const [roleResult] = await connection.execute(
+        'SELECT id FROM roles WHERE name = ?',
+        [role]
+      )
+
+      if (roleResult.length === 0) {
+        return callback({
+          code: 3, // INVALID_ARGUMENT
+          message: 'Invalid role'
+        })
+      }
+
+      const roleId = roleResult[0].id
+
+      // Update user role
+      const [result] = await connection.execute(
+        'UPDATE users SET role_id = ? WHERE id = ?',
+        [roleId, id]
+      )
+
+      if (result.affectedRows === 0) {
+        return callback({
+          code: 5, // NOT_FOUND
+          message: 'User not found'
+        })
+      }
+
+      // Get updated user
+      const [users] = await connection.execute(`
+        SELECT u.id, u.name, u.email, u.is_active, u.created_at, r.name as role
+        FROM users u 
+        JOIN roles r ON u.role_id = r.id 
+        WHERE u.id = ?
+      `, [id])
+
+      const user = users[0]
+
+      logger.info(`User role updated successfully: ${user.email} -> ${role}`)
+
+      callback(null, {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          is_active: user.is_active,
+          created_at: user.created_at ? user.created_at.toISOString() : ''
+        },
+        message: 'User role updated successfully'
+      })
+
+    } catch (error) {
+      logger.error('Update user role error:', error)
+      callback({
+        code: 13, // INTERNAL
+        message: 'Internal server error'
+      })
+    }
+  }
 }
 
 module.exports = new AuthController()

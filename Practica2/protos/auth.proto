@@ -9,6 +9,8 @@ service AuthService {
   rpc GetUserById(GetUserByIdRequest) returns (GetUserResponse);
   rpc UpdateUser(UpdateUserRequest) returns (GetUserResponse);
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc GetAllUsers(GetAllUsersRequest) returns (GetAllUsersResponse);
+  rpc UpdateUserRole(UpdateUserRoleRequest) returns (GetUserResponse);
 }
 
 message RegisterRequest {
@@ -41,6 +43,15 @@ message DeleteUserRequest {
   int32 id = 1;
 }
 
+message GetAllUsersRequest {
+  // Empty request - gets all users
+}
+
+message UpdateUserRoleRequest {
+  int32 id = 1;
+  string role = 2;
+}
+
 message User {
   int32 id = 1;
   string name = 2;
@@ -48,6 +59,7 @@ message User {
   string role = 4;
   bool is_active = 5;
   string created_at = 6;
+  string updated_at = 7;
 }
 
 message AuthResponse {
@@ -64,6 +76,10 @@ message ValidateTokenResponse {
 message GetUserResponse {
   User user = 1;
   string message = 2;
+}
+
+message GetAllUsersResponse {
+  repeated User users = 1;
 }
 
 message DeleteUserResponse {

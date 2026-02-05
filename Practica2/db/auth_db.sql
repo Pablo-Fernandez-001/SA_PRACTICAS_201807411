@@ -1,8 +1,8 @@
 -- Auth Database Schema
-CREATE DATABASE IF NOT EXISTS auth_db;
-DROP DATABASE auth_db;
+-- CREATE DATABASE IF NOT EXISTS auth_db;
+-- DROP DATABASE auth_db;
 -- Note: In Docker, the database is already created by the MYSQL_DATABASE env variable
-USE auth_db;
+USE sys;
 
 -- Drop tables if they exist to ensure clean setup
 DROP TABLE IF EXISTS users;
@@ -39,8 +39,11 @@ INSERT INTO roles (name) VALUES
 
 -- Insert default users (password: admin123 for all)
 -- Hash generated with bcrypt rounds=12: admin123
+-- Note: Hash will be updated on first container start using bcryptjs
 INSERT INTO users (name, email, password, role_id) VALUES 
-  ('Administrator', 'admin@delivereats.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 1),
-  ('Test Cliente', 'cliente@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 2),
-  ('Test Restaurant', 'restaurant@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 3),
-  ('Test Delivery', 'delivery@test.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 4);
+  ('Administrator', 'admin@delivereats.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 1),
+  ('Test Cliente', 'cliente@test.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 2),
+  ('Test Restaurant', 'restaurant@test.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 3),
+  ('Test Delivery', 'delivery@test.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewqMLvlWUGH1D3X.', 4);
+  
+SELECT * FROM users;

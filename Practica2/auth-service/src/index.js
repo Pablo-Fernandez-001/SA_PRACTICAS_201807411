@@ -6,7 +6,7 @@ const logger = require('./utils/logger')
 const authController = require('./controllers/authController')
 const { initDatabase } = require('./config/database')
 
-const PROTO_PATH = path.join(__dirname, '../../protos/auth.proto');
+const PROTO_PATH = path.join(__dirname, '../protos/auth.proto');
 
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,
@@ -26,7 +26,9 @@ server.addService(authProto.AuthService.service, {
   ValidateToken: authController.validateToken,
   GetUserById: authController.getUserById,
   UpdateUser: authController.updateUser,
-  DeleteUser: authController.deleteUser
+  DeleteUser: authController.deleteUser,
+  GetAllUsers: authController.getAllUsers,
+  UpdateUserRole: authController.updateUserRole
 })
 
 const PORT = process.env.PORT || 50051

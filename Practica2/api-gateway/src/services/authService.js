@@ -69,6 +69,54 @@ class AuthServiceClient {
       })
     })
   }
+
+  async getAllUsers() {
+    return new Promise((resolve, reject) => {
+      this.client.GetAllUsers({}, (error, response) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(response)
+        }
+      })
+    })
+  }
+
+  async updateUser(userId, userData) {
+    return new Promise((resolve, reject) => {
+      this.client.UpdateUser({ id: userId, ...userData }, (error, response) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(response)
+        }
+      })
+    })
+  }
+
+  async updateUserRole(userId, role) {
+    return new Promise((resolve, reject) => {
+      this.client.UpdateUserRole({ id: userId, role }, (error, response) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(response)
+        }
+      })
+    })
+  }
+
+  async deleteUser(userId) {
+    return new Promise((resolve, reject) => {
+      this.client.DeleteUser({ id: userId }, (error, response) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve(response)
+        }
+      })
+    })
+  }
 }
 
 module.exports = new AuthServiceClient()

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { XMarkIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import useAuthStore from '../stores/authStore'
 
-const RegisterUserForm = ({ onClose }) => {
+const RegisterUserForm = ({ onClose, onSuccess }) => {
   const { token } = useAuthStore()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -33,7 +33,7 @@ const RegisterUserForm = ({ onClose }) => {
     setSuccess('')
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/admin/register', {
+      const response = await fetch('http://localhost:8080/api/auth/admin/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ const RegisterUserForm = ({ onClose }) => {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al registrar usuario')
+        throw new Error(data.message || 'Error al registrar usuario')
       }
 
       setSuccess(`Usuario ${formData.name} registrado exitosamente como ${formData.role}`)
@@ -58,10 +58,15 @@ const RegisterUserForm = ({ onClose }) => {
         role: 'CLIENTE'
       })
 
-      // Close modal after 2 seconds
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess()
+      }
+
+      // Close modal after 1.5 seconds
       setTimeout(() => {
         onClose()
-      }, 2000)
+      }, 1500)
 
     } catch (error) {
       setError(error.message)
