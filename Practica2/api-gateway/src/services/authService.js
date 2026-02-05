@@ -5,7 +5,7 @@ const path = require('path')
 class AuthServiceClient {
   constructor() {
     this.packageDefinition = protoLoader.loadSync(
-      path.join(__dirname, '../../../protos/auth.proto'),
+      path.join(__dirname, '../../protos/auth.proto'),
       {
         keepCase: true,
         longs: String,

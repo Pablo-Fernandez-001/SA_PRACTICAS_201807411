@@ -2,11 +2,17 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy package.json and install dependencies
+COPY ./frontend/package*.json ./
 RUN npm install
 
-COPY . .
+# Copy application source code
+COPY ./frontend/src ./src
+COPY ./frontend/index.html ./
+COPY ./frontend/vite.config.js ./
+COPY ./frontend/postcss.config.js ./
+COPY ./frontend/tailwind.config.js ./
 
-EXPOSE 3000
+EXPOSE 5173
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

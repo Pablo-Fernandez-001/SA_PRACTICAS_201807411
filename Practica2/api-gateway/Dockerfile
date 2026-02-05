@@ -5,13 +5,18 @@ RUN apk add --no-cache curl
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy package.json and install dependencies
+COPY ./api-gateway/package*.json ./
 RUN npm install --only=production
 
-COPY . .
+# Copy protobuf files
+COPY ./protos ./protos
+
+# Copy application source code  
+COPY ./api-gateway/src ./src
 
 RUN mkdir -p logs
 
 EXPOSE 8080
 
-CMD ["npm", "start"]
+CMD ["node", "src/index.js"]

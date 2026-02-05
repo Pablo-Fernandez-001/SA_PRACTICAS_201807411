@@ -29,8 +29,8 @@ services:
   # Auth Service
   auth-service:
     build: 
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./auth-service/Dockerfile
     container_name: delivereats-auth-service
     restart: unless-stopped
     env_file:
@@ -45,15 +45,15 @@ services:
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50051"]
       timeout: 10s
-      retries: 5
+      retries: 10
       interval: 30s
-      start_period: 60s
+      start_period: 120s
 
   # API Gateway
   api-gateway:
     build: 
-      context: ./api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
     container_name: delivereats-api-gateway
     restart: unless-stopped
     env_file:
@@ -68,15 +68,15 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       timeout: 10s
-      retries: 5
+      retries: 10
       interval: 30s
-      start_period: 60s
+      start_period: 120s
 
   # Frontend
   frontend:
     build: 
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./frontend/Dockerfile
     container_name: delivereats-frontend
     restart: unless-stopped
     environment:

@@ -6,7 +6,7 @@ const logger = require('./utils/logger')
 const authController = require('./controllers/authController')
 const { initDatabase } = require('./config/database')
 
-const PROTO_PATH = path.join(__dirname, '../../protos/auth.proto')
+const PROTO_PATH = path.join(__dirname, '../../protos/auth.proto');
 
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,
