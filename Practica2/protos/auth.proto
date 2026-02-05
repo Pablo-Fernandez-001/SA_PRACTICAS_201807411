@@ -37,6 +37,7 @@ message UpdateUserRequest {
   int32 id = 1;
   string name = 2;
   string email = 3;
+  bool is_active = 4;
 }
 
 message DeleteUserRequest {

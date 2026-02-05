@@ -92,7 +92,7 @@ const AdminDashboard = () => {
   }
 
   const handleDeleteUser = async (userId) => {
-    if (!confirm('¿Estás seguro de desactivar este usuario?')) return
+    if (!confirm('¿Estás seguro de ELIMINAR PERMANENTEMENTE este usuario? Esta acción no se puede deshacer.')) return
 
     try {
       await api.delete(`/auth/users/${userId}`, {
@@ -103,7 +103,27 @@ const AdminDashboard = () => {
       fetchUsers()
     } catch (err) {
       console.error('Error deleting user:', err)
-      alert(err.response?.data?.message || 'Error al desactivar usuario')
+      alert(err.response?.data?.message || 'Error al eliminar usuario')
+    }
+  }
+
+  const handleToggleUserStatus = async (userId, currentStatus) => {
+    const action = currentStatus ? 'desactivar' : 'activar'
+    if (!confirm(`¿Estás seguro de ${action} este usuario?`)) return
+
+    try {
+      await api.put(`/auth/users/${userId}`, 
+        { is_active: !currentStatus },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+      fetchUsers()
+    } catch (err) {
+      console.error('Error toggling user status:', err)
+      alert(err.response?.data?.message || `Error al ${action} usuario`)
     }
   }
 
@@ -319,14 +339,24 @@ const AdminDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button 
                           onClick={() => handleEditUser(userItem)}
-                          className="text-primary-600 hover:text-primary-900 mr-4"
+                          className="text-primary-600 hover:text-primary-900 mr-3"
+                          title="Editar usuario"
                         >
                           <PencilIcon className="h-5 w-5 inline" />
                         </button>
                         <button 
+                          onClick={() => handleToggleUserStatus(userItem.id, userItem.is_active)}
+                          className={userItem.is_active ? "text-yellow-600 hover:text-yellow-900 mr-3" : "text-green-600 hover:text-green-900 mr-3"}
+                          title={userItem.is_active ? "Desactivar usuario" : "Activar usuario"}
+                        >
+                          <span className="inline-flex items-center text-base">
+                            {userItem.is_active ? '🔒' : '✓'}
+                          </span>
+                        </button>
+                        <button 
                           onClick={() => handleDeleteUser(userItem.id)}
                           className="text-red-600 hover:text-red-900"
-                          disabled={!userItem.is_active}
+                          title="Eliminar permanentemente"
                         >
                           <TrashIcon className="h-5 w-5 inline" />
                         </button>

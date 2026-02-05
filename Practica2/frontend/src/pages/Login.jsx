@@ -18,7 +18,23 @@ const Login = () => {
       const dashboardRoute = getDashboardRoute()
       navigate(dashboardRoute)
     } else {
-      toast.error(result.error)
+      // Check if it's an inactive user error
+      if (result.error && result.error.includes('inactivado')) {
+        toast.error(result.error, {
+          duration: 6000,
+          style: {
+            background: '#FEE2E2',
+            color: '#991B1B',
+            border: '2px solid #DC2626',
+            padding: '16px',
+            fontSize: '14px',
+            fontWeight: '500'
+          },
+          icon: '🚫'
+        })
+      } else {
+        toast.error(result.error || 'Error al iniciar sesión')
+      }
     }
   }
 

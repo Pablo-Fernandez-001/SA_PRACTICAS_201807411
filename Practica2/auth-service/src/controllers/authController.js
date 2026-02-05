@@ -147,7 +147,7 @@ class AuthController {
       if (!user.is_active) {
         return callback({
           code: 7, // PERMISSION_DENIED
-          message: 'Account is deactivated'
+          message: 'Este usuario está inactivado, consulte al administrador admin@delivereats.com'
         })
       }
 
@@ -308,7 +308,7 @@ class AuthController {
 
   async updateUser(call, callback) {
     try {
-      const { id, name, email } = call.request
+      const { id, name, email, is_active } = call.request
 
       if (!id) {
         return callback({
@@ -336,14 +336,21 @@ class AuthController {
       const updateFields = []
       const updateValues = []
 
-      if (name) {
+      // Only update if value is provided and not empty string
+      if (name && name.trim() !== '') {
         updateFields.push('name = ?')
         updateValues.push(name)
       }
 
-      if (email) {
+      if (email && email.trim() !== '') {
         updateFields.push('email = ?')
         updateValues.push(email)
+      }
+
+      // For boolean, check if it's explicitly set (not undefined)
+      if (typeof is_active === 'boolean') {
+        updateFields.push('is_active = ?')
+        updateValues.push(is_active)
       }
 
       if (updateFields.length === 0) {
@@ -404,9 +411,9 @@ class AuthController {
 
       const connection = getConnection()
 
-      // Soft delete - deactivate user
+      // Hard delete - permanently remove user
       const [result] = await connection.execute(
-        'UPDATE users SET is_active = FALSE WHERE id = ?',
+        'DELETE FROM users WHERE id = ?',
         [id]
       )
 
@@ -417,11 +424,11 @@ class AuthController {
         })
       }
 
-      logger.info(`User deactivated successfully: ID ${id}`)
+      logger.info(`User deleted permanently: ID ${id}`)
 
       callback(null, {
         success: true,
-        message: 'User deactivated successfully'
+        message: 'User deleted permanently'
       })
 
     } catch (error) {
