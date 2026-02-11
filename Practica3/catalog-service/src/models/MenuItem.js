@@ -88,6 +88,7 @@ class MenuItem {
       description: this.description,
       price: this.price,
       isAvailable: this.isAvailable,
+      is_available: this.isAvailable,  // Include snake_case for compatibility
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };

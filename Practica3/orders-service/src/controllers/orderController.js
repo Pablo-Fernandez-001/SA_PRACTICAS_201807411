@@ -35,7 +35,21 @@ exports.getOrdersByUser = async (req, res) => {
       [userId]
     );
 
-    const orders = rows.map(row => Order.fromDatabase(row).toSummary());
+    // Load items for each order
+    const orders = await Promise.all(rows.map(async (row) => {
+      const order = Order.fromDatabase(row);
+      
+      // Get order items
+      const [itemRows] = await db().query(
+        'SELECT * FROM order_items WHERE order_id = ?',
+        [order.id]
+      );
+      
+      order.items = itemRows.map(itemRow => OrderItem.fromDatabase(itemRow).toJSON());
+      
+      return order.toSummary();
+    }));
+
     res.json(orders);
   } catch (error) {
     logger.error('Error fetching user orders:', error);
@@ -220,11 +234,17 @@ exports.createOrder = async (req, res) => {
       return oi;
     });
 
+    // Use restaurant name and address from gRPC response (trusted source)
+    const finalRestaurantName = validationResponse.restaurant_name || restaurantName || '';
+    const finalRestaurantAddress = validationResponse.restaurant_address || '';
+
     // Use the server-calculated total from gRPC (trusted source)
     const order = new Order({
       userId,
       restaurantId,
-      restaurantName: restaurantName || '',
+      restaurantName: finalRestaurantName,
+      deliveryAddress,
+      notes,
       items: orderItems
     });
 
@@ -234,7 +254,7 @@ exports.createOrder = async (req, res) => {
     const orderData = order.toDatabase();
     const [orderResult] = await connection.query(
       'INSERT INTO orders (order_number, user_id, restaurant_id, restaurant_name, status, total, delivery_address, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [orderData.order_number, orderData.user_id, orderData.restaurant_id, restaurantName || '', orderData.status, order.total, deliveryAddress || '', notes || '']
+      [orderData.order_number, orderData.user_id, orderData.restaurant_id, finalRestaurantName, orderData.status, order.total, deliveryAddress || '', notes || '']
     );
 
     order.id = orderResult.insertId;

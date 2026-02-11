@@ -13,6 +13,8 @@ class Order {
     this.restaurantId = data.restaurant_id || data.restaurantId || null;
     this.status = data.status || Order.STATUS.CREADA;
     this.total = data.total || 0;
+    this.deliveryAddress = data.delivery_address || data.deliveryAddress || '';
+    this.notes = data.notes || '';
     this.createdAt = data.created_at || data.createdAt || new Date();
     this.updatedAt = data.updated_at || data.updatedAt || new Date();
     
@@ -109,8 +111,11 @@ class Order {
       order_number: this.orderNumber,
       user_id: this.userId,
       restaurant_id: this.restaurantId,
+      restaurant_name: this.restaurantName,
       status: this.status,
-      total: this.total
+      total: this.total,
+      delivery_address: this.deliveryAddress,
+      notes: this.notes
     };
 
     if (this.id) {
@@ -134,6 +139,9 @@ class Order {
       restaurantName: this.restaurantName,
       status: this.status,
       total: this.total,
+      deliveryAddress: this.deliveryAddress,
+      delivery_address: this.deliveryAddress,
+      notes: this.notes,
       items: this.items,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
@@ -148,10 +156,16 @@ class Order {
     return {
       id: this.id,
       orderNumber: this.orderNumber,
+      restaurantId: this.restaurantId,
+      restaurantName: this.restaurantName,
       status: this.status,
       total: this.total,
-      restaurantName: this.restaurantName,
-      createdAt: this.createdAt
+      deliveryAddress: this.deliveryAddress,
+      delivery_address: this.deliveryAddress,
+      notes: this.notes,
+      items: this.items,
+      createdAt: this.createdAt,
+      created_at: this.createdAt
     };
   }
 
@@ -171,6 +185,8 @@ class Order {
       restaurant_name: row.restaurant_name,
       status: row.status,
       total: parseFloat(row.total),
+      delivery_address: row.delivery_address,
+      notes: row.notes,
       created_at: row.created_at,
       updated_at: row.updated_at
     });

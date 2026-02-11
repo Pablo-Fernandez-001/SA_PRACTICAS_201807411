@@ -48,8 +48,10 @@ message ItemValidationResult {
 
 // Full validation response
 message ValidationResponse {
-  bool                          valid            = 1;  // Overall validation result
-  string                        message          = 2;  // Summary message
-  repeated ItemValidationResult item_results     = 3;  // Per-item detail
-  double                        total_calculated = 4;  // Server-calculated total
+  bool                          valid              = 1;  // Overall validation result
+  string                        message            = 2;  // Summary message
+  repeated ItemValidationResult item_results       = 3;  // Per-item detail
+  double                        total_calculated   = 4;  // Server-calculated total
+  string                        restaurant_name    = 5;  // Name of the restaurant
+  string                        restaurant_address = 6;  // Address of the restaurant
 }

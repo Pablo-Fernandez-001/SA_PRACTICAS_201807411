@@ -19,7 +19,7 @@ export default function Register() {
   return (
     <div className="flex items-center justify-center min-h-[70vh]">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center text-orange-600 mb-6">🍔 DeliverEats</h1>
+        <h1 className="text-3xl font-bold text-center text-orange-600 mb-6">DeliverEats</h1>
         <h2 className="text-xl font-semibold text-center mb-6">Crear Cuenta</h2>
 
         {error && (

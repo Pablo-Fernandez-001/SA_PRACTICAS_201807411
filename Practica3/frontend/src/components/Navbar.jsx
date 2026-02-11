@@ -23,7 +23,7 @@ export default function Navbar() {
     <nav className="bg-orange-600 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link to="/" className="text-2xl font-bold tracking-tight">
-          🍔 DeliverEats
+          DeliverEats
         </Link>
 
         {user ? (
@@ -59,7 +59,7 @@ export default function Navbar() {
                       onClick={() => setMenuOpen(false)}
                       className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
                     >
-                      📊 Mi Dashboard
+                      Mi Dashboard
                     </Link>
                   )}
                   {user.role === 'ADMIN' && (
@@ -69,14 +69,14 @@ export default function Navbar() {
                         onClick={() => setMenuOpen(false)}
                         className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
                       >
-                        ⚙️ Panel Admin
+                        Panel Admin
                       </Link>
                       <Link
                         to="/admin/users"
                         onClick={() => setMenuOpen(false)}
                         className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
                       >
-                        👥 Gestión Usuarios
+                        Gestión Usuarios
                       </Link>
                     </>
                   )}

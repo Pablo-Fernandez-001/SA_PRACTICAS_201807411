@@ -37,7 +37,7 @@ export default function Home() {
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">
-          ¡Bienvenido{user?.name ? `, ${user.name}` : ''}! 🍔
+          ¡Bienvenido{user?.name ? `, ${user.name}` : ''}!
         </h1>
         <p className="text-gray-500 mt-2">Elige tu restaurante favorito y haz tu pedido</p>
       </div>
@@ -62,7 +62,7 @@ export default function Home() {
               className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden"
             >
               <div className="h-40 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-                <span className="text-6xl">🍽️</span>
+                <span className="text-6xl text-white font-bold">{r.name.charAt(0)}</span>
               </div>
               <div className="p-5">
                 <h3 className="text-lg font-bold text-gray-800">{r.name}</h3>
@@ -72,7 +72,7 @@ export default function Home() {
                     {r.category || 'General'}
                   </span>
                   <span className={`text-xs font-medium ${r.is_active ? 'text-green-600' : 'text-red-500'}`}>
-                    {r.is_active ? '🟢 Abierto' : '🔴 Cerrado'}
+                    {r.is_active ? 'Abierto' : 'Cerrado'}
                   </span>
                 </div>
               </div>

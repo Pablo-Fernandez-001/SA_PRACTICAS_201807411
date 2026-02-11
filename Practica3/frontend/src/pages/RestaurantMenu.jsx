@@ -75,7 +75,7 @@ export default function RestaurantMenu() {
         delivery_address: 'Dirección de prueba, Ciudad de Guatemala'
       }
       const res = await ordersAPI.createOrder(orderData)
-      setMessage('✅ ¡Pedido creado exitosamente! ID: ' + (res.data.data?.id || res.data.orderId || 'OK'))
+      setMessage('¡Pedido creado exitosamente! ID: ' + (res.data.data?.id || res.data.orderId || 'OK'))
       setCart([])
     } catch (err) {
       const errData = err.response?.data
@@ -128,7 +128,7 @@ export default function RestaurantMenu() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Menu */}
         <div className="lg:col-span-2">
-          <h2 className="text-xl font-bold mb-4">📋 Menú</h2>
+          <h2 className="text-xl font-bold mb-4">Menú</h2>
           {menuItems.length === 0 ? (
             <p className="text-gray-400">No hay items disponibles.</p>
           ) : (
@@ -161,7 +161,7 @@ export default function RestaurantMenu() {
         {/* Cart */}
         <div>
           <div className="bg-white rounded-2xl shadow-md p-5 sticky top-24">
-            <h2 className="text-xl font-bold mb-4">🛒 Carrito</h2>
+            <h2 className="text-xl font-bold mb-4">Carrito</h2>
             {cart.length === 0 ? (
               <p className="text-gray-400 text-sm">Tu carrito está vacío</p>
             ) : (
@@ -177,7 +177,7 @@ export default function RestaurantMenu() {
                         <button onClick={() => updateQty(c.menu_item_id, -1)} className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200">-</button>
                         <span className="w-6 text-center text-sm">{c.quantity}</span>
                         <button onClick={() => updateQty(c.menu_item_id, 1)} className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200">+</button>
-                        <button onClick={() => removeFromCart(c.menu_item_id)} className="ml-1 text-red-400 hover:text-red-600">✕</button>
+                        <button onClick={() => removeFromCart(c.menu_item_id)} className="ml-1 text-red-400 hover:text-red-600">×</button>
                       </div>
                     </div>
                   ))}
@@ -193,7 +193,7 @@ export default function RestaurantMenu() {
                   disabled={orderLoading}
                   className="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50"
                 >
-                  {orderLoading ? 'Procesando...' : '🚀 Realizar Pedido'}
+                  {orderLoading ? 'Procesando...' : 'Realizar Pedido'}
                 </button>
                 <p className="text-xs text-gray-400 mt-2 text-center">
                   Los items se validan vía gRPC antes de confirmar

@@ -10,12 +10,17 @@ export default function MyOrders() {
 
   useEffect(() => {
     fetchOrders()
-  }, [])
+  }, [user])
 
   const fetchOrders = async () => {
+    if (!user || !user.id) {
+      setError('Usuario no autenticado')
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
-      const res = await ordersAPI.getOrders()
+      const res = await ordersAPI.getByUser(user.id)
       setOrders(res.data.data || res.data || [])
     } catch (err) {
       setError('Error al cargar pedidos: ' + (err.response?.data?.message || err.message))
@@ -43,7 +48,7 @@ export default function MyOrders() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">📦 Mis Pedidos</h1>
+      <h1 className="text-3xl font-bold mb-6">Mis Pedidos</h1>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -54,7 +59,6 @@ export default function MyOrders() {
 
       {orders.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-6xl mb-4">🛒</p>
           <p className="text-gray-400 text-lg">No tienes pedidos aún.</p>
         </div>
       ) : (
@@ -72,11 +76,32 @@ export default function MyOrders() {
                   {order.status}
                 </span>
               </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p><span className="font-medium">Restaurante ID:</span> {order.restaurant_id}</p>
-                <p><span className="font-medium">Dirección:</span> {order.delivery_address}</p>
+              <div className="text-sm text-gray-600 space-y-1 mb-3">
+                <p><span className="font-medium">Restaurante:</span> {order.restaurantName || `ID ${order.restaurantId}`}</p>
+                <p><span className="font-medium">Dirección de entrega:</span> {order.delivery_address || order.deliveryAddress || 'No especificada'}</p>
+                {order.notes && <p><span className="font-medium">Notas:</span> {order.notes}</p>}
               </div>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t">
+              
+              {/* Order Items */}
+              {order.items && order.items.length > 0 && (
+                <div className="border-t pt-3 mb-3">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Items:</p>
+                  <div className="space-y-1">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-gray-700">
+                          {item.quantity}x {item.name}
+                        </span>
+                        <span className="text-gray-600">
+                          Q{parseFloat(item.subtotal || (item.price * item.quantity)).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between pt-3 border-t">
                 <span className="text-sm text-gray-500">
                   {order.items?.length || 0} item(s)
                 </span>
@@ -93,7 +118,7 @@ export default function MyOrders() {
         onClick={fetchOrders}
         className="mt-6 bg-orange-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-700 transition"
       >
-        🔄 Actualizar
+        Actualizar
       </button>
     </div>
   )

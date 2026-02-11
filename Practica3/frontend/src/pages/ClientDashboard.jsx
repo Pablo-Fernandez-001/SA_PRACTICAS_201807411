@@ -141,7 +141,7 @@ const ClientDashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            ¡Hola {user?.name}! 👋
+            ¡Hola {user?.name}!
           </h1>
           <p className="text-gray-600 mt-2">
             Bienvenido a tu dashboard. Aquí puedes ver tus pedidos y estadísticas.

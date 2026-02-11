@@ -82,6 +82,7 @@ class Restaurant {
       name: this.name,
       address: this.address,
       isActive: this.isActive,
+      is_active: this.isActive,  // Include snake_case for compatibility
       menuItems: this.menuItems,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
@@ -97,7 +98,8 @@ class Restaurant {
       id: this.id,
       name: this.name,
       address: this.address,
-      isActive: this.isActive
+      isActive: this.isActive,
+      is_active: this.isActive  // Include snake_case for compatibility
     };
   }
 

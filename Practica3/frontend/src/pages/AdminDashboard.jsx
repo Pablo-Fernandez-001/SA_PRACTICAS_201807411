@@ -348,7 +348,7 @@ const AdminDashboard = () => {
                           title={userItem.is_active ? "Desactivar usuario" : "Activar usuario"}
                         >
                           <span className="inline-flex items-center text-base">
-                            {userItem.is_active ? '🔒' : '✓'}
+                            {userItem.is_active ? 'Desactivar' : 'Activar'}
                           </span>
                         </button>
                         <button 

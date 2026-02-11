@@ -38,7 +38,7 @@ async function ValidateOrderItems(call, callback) {
   try {
     // 1. Verify restaurant exists and is active
     const [restaurants] = await db.execute(
-      'SELECT id, name, is_active FROM restaurants WHERE id = ?',
+      'SELECT id, name, address, is_active FROM restaurants WHERE id = ?',
       [restaurant_id]
     );
 
@@ -49,7 +49,9 @@ async function ValidateOrderItems(call, callback) {
         valid: false,
         message: msg,
         item_results: [],
-        total_calculated: 0
+        total_calculated: 0,
+        restaurant_name: '',
+        restaurant_address: ''
       });
     }
 
@@ -60,7 +62,9 @@ async function ValidateOrderItems(call, callback) {
         valid: false,
         message: msg,
         item_results: [],
-        total_calculated: 0
+        total_calculated: 0,
+        restaurant_name: restaurants[0].name || '',
+        restaurant_address: restaurants[0].address || ''
       });
     }
 
@@ -151,7 +155,9 @@ async function ValidateOrderItems(call, callback) {
         ? `Validación exitosa. ${items.length} producto(s) verificados para el restaurante "${restaurants[0].name}". Total: Q${totalCalculated.toFixed(2)}`
         : `Validación fallida: ${errors.join(' | ')}`,
       item_results: itemResults,
-      total_calculated: totalCalculated
+      total_calculated: totalCalculated,
+      restaurant_name: restaurants[0].name || '',
+      restaurant_address: restaurants[0].address || ''
     };
 
     if (allValid) {
