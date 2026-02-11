@@ -9,7 +9,8 @@ class MenuItem {
     this.restaurantId = data.restaurant_id || data.restaurantId || null;
     this.name = data.name || '';
     this.description = data.description || '';
-    this.price = data.price || 0;
+    // Ensure price is always a number
+    this.price = typeof data.price === 'string' ? parseFloat(data.price) : (data.price || 0);
     this.isAvailable = data.is_available !== undefined ? data.is_available : (data.isAvailable !== undefined ? data.isAvailable : true);
     this.createdAt = data.created_at || data.createdAt || new Date();
     this.updatedAt = data.updated_at || data.updatedAt || new Date();

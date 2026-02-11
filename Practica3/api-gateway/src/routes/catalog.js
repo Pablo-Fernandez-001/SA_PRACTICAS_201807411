@@ -78,6 +78,39 @@ router.post('/menu-items', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), 
   }
 })
 
+// Update restaurant
+router.put('/restaurants/:id', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.put(`${CATALOG_URL}/api/restaurants/${req.params.id}`, req.body)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (update restaurant):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al actualizar restaurante' })
+  }
+})
+
+// Delete restaurant
+router.delete('/restaurants/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.delete(`${CATALOG_URL}/api/restaurants/${req.params.id}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (delete restaurant):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al eliminar restaurante' })
+  }
+})
+
+// Toggle restaurant status
+router.patch('/restaurants/:id/toggle', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.patch(`${CATALOG_URL}/api/restaurants/${req.params.id}/toggle`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (toggle restaurant):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al cambiar estado' })
+  }
+})
+
 // Update menu item
 router.put('/menu-items/:id', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
   try {
@@ -86,6 +119,28 @@ router.put('/menu-items/:id', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']
   } catch (error) {
     logger.error('Catalog proxy error (update menu item):', error.message)
     res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al actualizar item' })
+  }
+})
+
+// Delete menu item
+router.delete('/menu-items/:id', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.delete(`${CATALOG_URL}/api/menu-items/${req.params.id}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (delete menu item):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al eliminar item' })
+  }
+})
+
+// Toggle menu item availability
+router.patch('/menu-items/:id/toggle', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.patch(`${CATALOG_URL}/api/menu-items/${req.params.id}/toggle`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (toggle menu item):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al cambiar disponibilidad' })
   }
 })
 

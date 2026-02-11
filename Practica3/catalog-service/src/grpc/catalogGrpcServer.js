@@ -155,9 +155,9 @@ async function ValidateOrderItems(call, callback) {
     };
 
     if (allValid) {
-      logger.info(`[gRPC] ✅ VALIDATION SUCCESS — restaurant="${restaurants[0].name}", items=${items.length}, total=Q${totalCalculated.toFixed(2)}`);
+      logger.info(`[gRPC] VALIDATION SUCCESS - restaurant="${restaurants[0].name}", items=${items.length}, total=Q${totalCalculated.toFixed(2)}`);
     } else {
-      logger.warn(`[gRPC] ❌ VALIDATION FAILED — restaurant="${restaurants[0].name}", errors=${errors.length}: ${errors.join(' | ')}`);
+      logger.warn(`[gRPC] VALIDATION FAILED - restaurant="${restaurants[0].name}", errors=${errors.length}: ${errors.join(' | ')}`);
     }
 
     callback(null, response);

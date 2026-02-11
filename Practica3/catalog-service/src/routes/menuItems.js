@@ -20,4 +20,7 @@ router.put('/:id', menuItemController.updateMenuItem);
 // DELETE menu item (soft delete)
 router.delete('/:id', menuItemController.deleteMenuItem);
 
+// PATCH toggle menu item availability
+router.patch('/:id/toggle', menuItemController.toggleMenuItem);
+
 module.exports = router;

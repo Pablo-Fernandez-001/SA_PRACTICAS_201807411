@@ -40,10 +40,9 @@ class Restaurant {
       }
     }
 
-    if (!isUpdate) {
-      if (!this.ownerId) {
-        errors.push('Owner ID is required');
-      }
+    // Owner ID is optional - default to 1 if not provided
+    if (!isUpdate && !this.ownerId) {
+      this.ownerId = 1;
     }
 
     return {

@@ -50,8 +50,13 @@ export const catalogAPI = {
   getMenu: (restaurantId) => api.get(`/catalog/restaurants/${restaurantId}/menu`),
   getAllMenuItems: () => api.get('/catalog/menu-items'),
   createRestaurant: (data) => api.post('/catalog/restaurants', data),
+  updateRestaurant: (id, data) => api.put(`/catalog/restaurants/${id}`, data),
+  deleteRestaurant: (id) => api.delete(`/catalog/restaurants/${id}`),
+  toggleRestaurant: (id) => api.patch(`/catalog/restaurants/${id}/toggle`),
   createMenuItem: (data) => api.post('/catalog/menu-items', data),
   updateMenuItem: (id, data) => api.put(`/catalog/menu-items/${id}`, data),
+  deleteMenuItem: (id) => api.delete(`/catalog/menu-items/${id}`),
+  toggleMenuItem: (id) => api.patch(`/catalog/menu-items/${id}/toggle`),
 }
 
 // ─── Orders ──────────────────────────────────────────────────────────────────

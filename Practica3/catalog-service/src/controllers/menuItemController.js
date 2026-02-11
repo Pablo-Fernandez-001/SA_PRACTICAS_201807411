@@ -6,7 +6,7 @@ const logger = require('../utils/logger');
 const db = () => getPool();
 
 /**
- * Get all menu items
+ * Get all menu items (including unavailable ones for admin)
  */
 exports.getAllMenuItems = async (req, res) => {
   try {
@@ -14,8 +14,7 @@ exports.getAllMenuItems = async (req, res) => {
       SELECT mi.*, r.name as restaurant_name 
       FROM menu_items mi
       JOIN restaurants r ON mi.restaurant_id = r.id
-      WHERE mi.is_available = true
-      ORDER BY r.name, mi.name
+      ORDER BY mi.is_available DESC, r.name, mi.name
     `);
     
     const menuItems = rows.map(row => MenuItem.fromDatabase(row).toJSON());
@@ -117,8 +116,11 @@ exports.updateMenuItem = async (req, res) => {
   try {
     const { id } = req.params;
     
+    logger.info(`[updateMenuItem] Request for ID ${id}, body:`, JSON.stringify(req.body));
+    
     const [existing] = await db().query('SELECT * FROM menu_items WHERE id = ?', [id]);
     if (existing.length === 0) {
+      logger.warn(`[updateMenuItem] Menu item ${id} not found`);
       return res.status(404).json({ error: 'Menu item not found' });
     }
 
@@ -126,7 +128,8 @@ exports.updateMenuItem = async (req, res) => {
     
     const validation = menuItem.validate(true);
     if (!validation.isValid) {
-      return res.status(400).json({ errors: validation.errors });
+      logger.warn(`[updateMenuItem] Validation failed for item ${id}:`, validation.errors);
+      return res.status(400).json({ error: validation.errors.join(', '), errors: validation.errors });
     }
 
     const dbData = menuItem.toDatabase();
@@ -162,5 +165,31 @@ exports.deleteMenuItem = async (req, res) => {
   } catch (error) {
     logger.error('Error deleting menu item:', error);
     res.status(500).json({ error: 'Error deleting menu item' });
+  }
+};
+
+/**
+ * Toggle menu item availability
+ */
+exports.toggleMenuItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [existing] = await db().query('SELECT * FROM menu_items WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Menu item not found' });
+    }
+
+    const newStatus = !existing[0].is_available;
+    await db().query('UPDATE menu_items SET is_available = ? WHERE id = ?', [newStatus, id]);
+    
+    logger.info(`Menu item toggled: ID ${id}, new status: ${newStatus}`);
+    res.json({ 
+      message: `Menu item ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      is_available: newStatus
+    });
+  } catch (error) {
+    logger.error('Error toggling menu item:', error);
+    res.status(500).json({ error: 'Error toggling menu item availability' });
   }
 };

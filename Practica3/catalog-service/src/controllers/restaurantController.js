@@ -6,12 +6,12 @@ const logger = require('../utils/logger');
 const db = () => getPool();
 
 /**
- * Get all restaurants
+ * Get all restaurants (including inactive ones for admin)
  */
 exports.getAllRestaurants = async (req, res) => {
   try {
     const [rows] = await db().query(`
-      SELECT * FROM restaurants WHERE is_active = true ORDER BY name
+      SELECT * FROM restaurants ORDER BY is_active DESC, name
     `);
     
     const restaurants = rows.map(row => Restaurant.fromDatabase(row).toJSON());
@@ -80,14 +80,32 @@ exports.getRestaurantsByOwner = async (req, res) => {
  */
 exports.createRestaurant = async (req, res) => {
   try {
+    logger.info('Creating restaurant with data:', req.body);
     const restaurant = new Restaurant(req.body);
     
+    logger.info('Restaurant object before validation:', {
+      ownerId: restaurant.ownerId,
+      name: restaurant.name,
+      address: restaurant.address
+    });
+    
     const validation = restaurant.validate();
+    
+    logger.info('Restaurant object after validation:', {
+      ownerId: restaurant.ownerId,
+      name: restaurant.name,
+      address: restaurant.address,
+      validation: validation
+    });
+    
     if (!validation.isValid) {
+      logger.warn('Restaurant validation failed:', validation.errors);
       return res.status(400).json({ errors: validation.errors });
     }
 
     const dbData = restaurant.toDatabase();
+    logger.info('Inserting restaurant to database:', dbData);
+    
     const [result] = await db().query(
       'INSERT INTO restaurants (owner_id, name, address, is_active) VALUES (?, ?, ?, ?)',
       [dbData.owner_id, dbData.name, dbData.address, dbData.is_active]

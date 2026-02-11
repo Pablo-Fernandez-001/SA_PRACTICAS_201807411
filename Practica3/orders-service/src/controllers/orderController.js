@@ -196,8 +196,8 @@ exports.createOrder = async (req, res) => {
           errorMessage: r.error_message
         }));
 
-      logger.warn(`[createOrder] ❌ ORDER REJECTED — restaurant=${restaurantId}, reason: ${validationResponse.message}`);
-      logger.warn(`[createOrder] ❌ Failed items detail: ${JSON.stringify(failedItems)}`);
+      logger.warn(`[createOrder] ORDER REJECTED - restaurant=${restaurantId}, reason: ${validationResponse.message}`);
+      logger.warn(`[createOrder] Failed items detail: ${JSON.stringify(failedItems)}`);
 
       return res.status(400).json({
         success: false,
@@ -207,8 +207,8 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // ── Validation passed — persist the order ────────────────────────────────
-    logger.info(`[createOrder] ✅ gRPC validation passed — total=Q${validationResponse.total_calculated}`);
+    // Validation passed - persist the order
+    logger.info(`[createOrder] gRPC validation passed - total=Q${validationResponse.total_calculated}`);
 
     connection = await db().getConnection();
     await connection.beginTransaction();
@@ -253,7 +253,7 @@ exports.createOrder = async (req, res) => {
 
     order.items = orderItems.map(item => item.toJSON());
 
-    logger.info(`[createOrder] ✅ ORDER CREATED — number=${order.orderNumber}, id=${order.id}, total=Q${order.total}, items=${orderItems.length}`);
+    logger.info(`[createOrder] ORDER CREATED - number=${order.orderNumber}, id=${order.id}, total=Q${order.total}, items=${orderItems.length}`);
     
     res.status(201).json({
       success: true,
