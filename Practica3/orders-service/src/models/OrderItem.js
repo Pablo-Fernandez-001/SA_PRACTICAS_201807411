@@ -114,9 +114,9 @@ class OrderItem {
    */
   static fromCartItem(cartItem) {
     return new OrderItem({
-      menuItemExternalId: cartItem.id || cartItem.menuItemId,
-      name: cartItem.name,
-      price: cartItem.price,
+      menuItemExternalId: cartItem.menu_item_id || cartItem.id || cartItem.menuItemId || cartItem.menuItemExternalId,
+      name: cartItem.name || `Item ${cartItem.menu_item_id || cartItem.id}`,
+      price: cartItem.unit_price || cartItem.price,
       quantity: cartItem.quantity
     });
   }

@@ -94,9 +94,3 @@ router.post('/:id/cancel', authMiddleware, async (req, res) => {
 })
 
 module.exports = router
-    message: 'Orders service not implemented yet',
-    data: {}
-  })
-})
-
-module.exports = router

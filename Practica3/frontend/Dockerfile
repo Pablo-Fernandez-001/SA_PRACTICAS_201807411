@@ -13,6 +13,6 @@ COPY ./frontend/vite.config.js ./
 COPY ./frontend/postcss.config.js ./
 COPY ./frontend/tailwind.config.js ./
 
-EXPOSE 5173
+EXPOSE 3000
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]

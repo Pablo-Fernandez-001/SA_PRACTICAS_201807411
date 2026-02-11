@@ -140,21 +140,28 @@ exports.createOrder = async (req, res) => {
   let connection;
   
   try {
-    const { userId, restaurantId, restaurantName, items, deliveryAddress, notes } = req.body;
+    // Accept both camelCase and snake_case field names
+    const userId = req.body.userId || req.body.user_id;
+    const restaurantId = req.body.restaurantId || req.body.restaurant_id;
+    const restaurantName = req.body.restaurantName || req.body.restaurant_name || '';
+    const deliveryAddress = req.body.deliveryAddress || req.body.delivery_address || '';
+    const notes = req.body.notes || '';
+    const items = req.body.items;
 
     // ── Basic input validation ───────────────────────────────────────────────
     if (!userId || !restaurantId || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'Datos incompletos. Se requiere userId, restaurantId y al menos un item.',
+        received: { userId, restaurantId, itemsCount: items?.length },
         details: []
       });
     }
 
     // ── Build gRPC request items ─────────────────────────────────────────────
     const grpcItems = items.map(item => ({
-      menu_item_id: item.id || item.menuItemId || item.menuItemExternalId,
-      requested_price: item.price,
+      menu_item_id: item.menu_item_id || item.id || item.menuItemId || item.menuItemExternalId,
+      requested_price: item.unit_price || item.price || item.requested_price,
       quantity: item.quantity || 1
     }));
 

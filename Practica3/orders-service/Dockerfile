@@ -19,6 +19,4 @@ RUN mkdir -p logs
 
 EXPOSE 3003
 
-CMD ["node", "src/index.js"]EXPOSE 3003
-
-CMD ["npm", "start"]
+CMD ["node", "src/index.js"]

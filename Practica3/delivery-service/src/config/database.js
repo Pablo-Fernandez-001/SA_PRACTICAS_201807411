@@ -52,17 +52,15 @@ async function createTables() {
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS deliveries (
       id                 INT AUTO_INCREMENT PRIMARY KEY,
-      order_id           INT          NOT NULL,
+      order_external_id  INT          NOT NULL,
       courier_id         INT,
-      status             ENUM('PENDING','ASSIGNED','PICKED_UP','IN_TRANSIT','DELIVERED','CANCELLED') DEFAULT 'PENDING',
-      pickup_address     VARCHAR(500),
+      status             ENUM('ASIGNADO','EN_CAMINO','ENTREGADO','CANCELADO') DEFAULT 'ASIGNADO',
       delivery_address   VARCHAR(500),
-      estimated_delivery TIMESTAMP NULL,
-      actual_delivery    TIMESTAMP NULL,
-      notes              TEXT,
+      started_at         TIMESTAMP NULL,
+      delivered_at       TIMESTAMP NULL,
       created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_order   (order_id),
+      INDEX idx_order   (order_external_id),
       INDEX idx_courier (courier_id),
       INDEX idx_status  (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
