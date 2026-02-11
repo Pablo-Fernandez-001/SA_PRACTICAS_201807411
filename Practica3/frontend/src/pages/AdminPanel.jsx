@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { catalogAPI, ordersAPI, deliveryAPI } from '../services/api'
 
 export default function AdminPanel() {
+  const navigate = useNavigate()
   const [tab, setTab] = useState('restaurants')
   const [restaurants, setRestaurants] = useState([])
   const [orders, setOrders] = useState([])
@@ -77,6 +79,7 @@ export default function AdminPanel() {
   }
 
   const tabs = [
+    { key: 'users', label: '👥 Usuarios', action: () => navigate('/admin/users') },
     { key: 'restaurants', label: '🍽️ Restaurantes' },
     { key: 'orders', label: '📦 Pedidos' },
     { key: 'deliveries', label: '🚚 Entregas' },
@@ -98,9 +101,9 @@ export default function AdminPanel() {
         {tabs.map(t => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key)}
+            onClick={() => t.action ? t.action() : setTab(t.key)}
             className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition ${
-              tab === t.key
+              tab === t.key && !t.action
                 ? 'bg-orange-600 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
             }`}

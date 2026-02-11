@@ -8,6 +8,8 @@ import Home from './pages/Home'
 import RestaurantMenu from './pages/RestaurantMenu'
 import MyOrders from './pages/MyOrders'
 import AdminPanel from './pages/AdminPanel'
+import AdminDashboard from './pages/AdminDashboard'
+import ClientDashboard from './pages/ClientDashboard'
 
 // Protected Route wrapper
 function ProtectedRoute({ children, roles }) {
@@ -36,6 +38,8 @@ export default function App() {
             <Route path="/restaurant/:id" element={<ProtectedRoute><RestaurantMenu /></ProtectedRoute>} />
             <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute roles={['CLIENTE']}><ClientDashboard /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>

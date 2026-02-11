@@ -31,7 +31,13 @@ export default function Navbar() {
             <Link to="/" className="hover:text-orange-200 transition">Restaurantes</Link>
             <Link to="/my-orders" className="hover:text-orange-200 transition">Mis Órdenes</Link>
             {user.role === 'ADMIN' && (
-              <Link to="/admin" className="hover:text-orange-200 transition">Admin</Link>
+              <>
+                <Link to="/admin" className="hover:text-orange-200 transition">Panel Admin</Link>
+                <Link to="/admin/users" className="hover:text-orange-200 transition">Usuarios</Link>
+              </>
+            )}
+            {user.role === 'CLIENTE' && (
+              <Link to="/dashboard" className="hover:text-orange-200 transition">Mi Dashboard</Link>
             )}
             <div className="relative">
               <button
@@ -47,6 +53,33 @@ export default function Navbar() {
                     <p className="text-sm font-medium">{user.email}</p>
                     <p className="text-xs text-gray-500">ID: {user.id}</p>
                   </div>
+                  {user.role === 'CLIENTE' && (
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      📊 Mi Dashboard
+                    </Link>
+                  )}
+                  {user.role === 'ADMIN' && (
+                    <>
+                      <Link
+                        to="/admin"
+                        onClick={() => setMenuOpen(false)}
+                        className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        ⚙️ Panel Admin
+                      </Link>
+                      <Link
+                        to="/admin/users"
+                        onClick={() => setMenuOpen(false)}
+                        className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
+                      >
+                        👥 Gestión Usuarios
+                      </Link>
+                    </>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-b-lg transition"

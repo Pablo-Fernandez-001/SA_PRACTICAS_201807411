@@ -157,3 +157,29 @@ exports.deleteRestaurant = async (req, res) => {
     res.status(500).json({ error: 'Error deleting restaurant' });
   }
 };
+
+/**
+ * Toggle restaurant active status
+ */
+exports.toggleRestaurant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [existing] = await db().query('SELECT * FROM restaurants WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Restaurant not found' });
+    }
+
+    const newStatus = !existing[0].is_active;
+    await db().query('UPDATE restaurants SET is_active = ? WHERE id = ?', [newStatus, id]);
+    
+    logger.info(`Restaurant toggled: ID ${id}, new status: ${newStatus}`);
+    res.json({ 
+      message: `Restaurant ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      is_active: newStatus
+    });
+  } catch (error) {
+    logger.error('Error toggling restaurant:', error);
+    res.status(500).json({ error: 'Error toggling restaurant status' });
+  }
+};
