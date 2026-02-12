@@ -1302,8 +1302,6 @@ Practica2/
 
 ---
 
-## Inicio Rápido
-
 ## Inicio Rápido (TL;DR)
 
 ```bash
@@ -1322,3 +1320,658 @@ docker compose up -d
 
 **Versión:** 0.2.0 | **Fecha:** Febrero 2026 | **Curso:** Software Avanzado  
 **Autor:** Pablo Fernández | **Práctica:** Autenticación JWT + gRPC + Microservicios
+
+---
+---
+---
+---
+---
+---
+---
+---
+---
+
+# Software Avanzado – Práctica 3
+
+## DeliverEats — Plataforma de Delivery con Arquitectura SOA
+
+Sistema completo de gestión de delivery de alimentos mediante una arquitectura orientada a servicios (SOA) con 4 microservicios, 4 bases de datos aisladas, comunicación REST + gRPC, autenticación JWT y frontend React.
+
+---
+
+## Índice
+
+1. [Contexto](#1-contexto)
+2. [Objetivos](#2-objetivos)
+3. [Arquitectura General](#3-arquitectura-general)
+4. [Microservicios](#4-microservicios)
+5. [Comunicación entre Servicios](#5-comunicación-entre-servicios)
+6. [Modelo de Datos](#6-modelo-de-datos)
+7. [Autenticación y Seguridad](#7-autenticación-y-seguridad)
+8. [Frontend](#8-frontend)
+9. [API Endpoints](#9-api-endpoints)
+10. [Despliegue con Docker](#10-despliegue-con-docker)
+11. [Inicio Rápido](#11-inicio-rápido)
+12. [Casos de Uso](#12-casos-de-uso)
+13. [Troubleshooting](#13-troubleshooting)
+
+---
+
+## 1. Contexto
+
+DeliverEats es una plataforma de delivery que coordina el ciclo completo de pedidos de alimentos. La **Práctica 3** implementa la arquitectura SOA completa con los 4 servicios del dominio del negocio:
+
+| Servicio | Responsabilidad |
+|----------|----------------|
+| **Auth Service** | Registro, login, JWT, gestión de usuarios y roles |
+| **Catalog Service** | Restaurantes, menús, inventario de items |
+| **Orders Service** | Creación, validación y ciclo de vida de órdenes |
+| **Delivery Service** | Asignación y seguimiento de entregas |
+
+---
+
+## 2. Objetivos
+
+### 2.1 Objetivo General
+Implementar un sistema funcional de delivery de alimentos con arquitectura SOA, aplicando aislamiento de persistencia, comunicación inter-servicios (REST + gRPC), y control de acceso por roles.
+
+### 2.2 Objetivos Específicos
+- Implementar 4 microservicios con bases de datos independientes
+- Comunicación REST (Frontend ↔ Gateway) y gRPC (inter-servicios)
+- Autenticación JWT con RBAC (4 roles)
+- Validación de órdenes con gRPC entre orders-service y catalog-service
+- Dashboards diferenciados por rol (Admin, Cliente, Restaurante)
+- Gestión de menú, inventario y órdenes recibidas para restaurantes
+- Despliegue containerizado completo con Docker Compose
+
+---
+
+## 3. Arquitectura General
+
+### 3.1 Diagrama de Arquitectura de Alto Nivel
+
+![CDU Alto Nivel](./src/3.1.png)
+
+### 3.2 Diagrama de Componentes
+
+![CDU Alto Nivel](./src/3.2.png)
+
+### 3.3 Diagrama de Despliegue (Docker)
+
+![CDU Alto Nivel](./src/3.3.png)
+
+---
+
+## 4. Microservicios
+
+### 4.1 Auth Service (gRPC :50051)
+
+**Tecnología:** Node.js + gRPC  
+**Base de datos:** `auth_db` (MySQL :3306)  
+**Contrato:** `protos/auth.proto`
+
+**Operaciones gRPC:**
+
+| RPC | Descripción |
+|-----|-------------|
+| `Register` | Registrar nuevo usuario con rol |
+| `Login` | Autenticación, devuelve JWT |
+| `ValidateToken` | Verificar y decodificar JWT |
+| `GetAllUsers` | Obtener listado de usuarios |
+| `GetUserById` | Obtener usuario por ID |
+| `UpdateUser` | Actualizar nombre/email |
+| `UpdateUserRole` | Cambiar rol de usuario |
+| `DeleteUser` | Eliminar usuario |
+
+**Seguridad:** bcrypt 12 rounds, JWT HS256 con expiración 24h.
+
+### 4.2 Catalog Service (REST :3002 + gRPC :50052)
+
+**Tecnología:** Node.js + Express + gRPC  
+**Base de datos:** `catalog_db` (MySQL :3307)  
+**Contrato gRPC:** `protos/catalog.proto`
+
+**REST — Restaurantes:**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/restaurants` | Listar restaurantes |
+| GET | `/api/restaurants/:id` | Obtener restaurante con menú |
+| GET | `/api/restaurants/owner/:ownerId` | Restaurantes por dueño |
+| POST | `/api/restaurants` | Crear restaurante |
+| PUT | `/api/restaurants/:id` | Actualizar restaurante |
+| DELETE | `/api/restaurants/:id` | Desactivar restaurante |
+| PATCH | `/api/restaurants/:id/toggle` | Activar/desactivar |
+
+**REST — Menu Items:**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/menu-items` | Todos los items |
+| GET | `/api/menu-items/restaurant/:id` | Items por restaurante (`?all=true` incluye no disponibles) |
+| GET | `/api/menu-items/:id` | Item por ID |
+| POST | `/api/menu-items` | Crear item |
+| PUT | `/api/menu-items/:id` | Actualizar item |
+| DELETE | `/api/menu-items/:id` | Eliminar item |
+| PATCH | `/api/menu-items/:id/toggle` | Activar/desactivar |
+
+**gRPC — Validación de órdenes:**
+
+```protobuf
+service CatalogService {
+  rpc ValidateOrderItems(ValidationRequest) returns (ValidationResponse);
+}
+```
+
+Valida existencia, pertenencia al restaurante, precio y disponibilidad de items antes de crear una orden.
+
+### 4.3 Orders Service (REST :3003)
+
+**Tecnología:** Node.js + Express  
+**Base de datos:** `orders_db` (MySQL :3308)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/orders` | Todas las órdenes |
+| GET | `/api/orders/:id` | Orden por ID |
+| GET | `/api/orders/user/:userId` | Órdenes por cliente |
+| GET | `/api/orders/restaurant/:id` | Órdenes por restaurante |
+| POST | `/api/orders` | Crear orden (valida por gRPC con Catalog) |
+| PATCH | `/api/orders/:id/status` | Cambiar estado de orden |
+| POST | `/api/orders/:id/cancel` | Cancelar orden |
+
+**Estados de orden:** `CREADA` → `EN_PROCESO` → `FINALIZADA` | `RECHAZADA`
+
+### 4.4 Delivery Service (REST :3004)
+
+**Tecnología:** Node.js + Express  
+**Base de datos:** `delivery_db` (MySQL :3309)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/deliveries` | Todas las entregas |
+| GET | `/api/deliveries/:id` | Entrega por ID |
+| GET | `/api/deliveries/courier/:id` | Entregas por repartidor |
+| GET | `/api/deliveries/order/:id` | Entrega por orden |
+| POST | `/api/deliveries` | Crear entrega |
+| POST | `/api/deliveries/:id/start` | Iniciar entrega |
+| POST | `/api/deliveries/:id/complete` | Completar entrega |
+| POST | `/api/deliveries/:id/cancel` | Cancelar entrega |
+
+**Estados de entrega:** `ASIGNADO` → `EN_CAMINO` → `ENTREGADO` | `CANCELADO`
+
+---
+
+## 5. Comunicación entre Servicios
+
+### 5.1 Diagrama de Secuencia — Crear Orden
+
+![CDU Alto Nivel](./src/5.1.png)
+
+### 5.2 Diagrama de Secuencia — Login
+
+![CDU Alto Nivel](./src/5.2.png)
+
+### 5.3 Diagrama de Secuencia — Registro de Restaurante
+
+![CDU Alto Nivel](./src/5.3.png)
+
+### 5.4 Diagrama de Actividades — Ciclo de Vida de una Orden
+
+![CDU Alto Nivel](./src/5.png)
+
+
+### 5.5 Protocolos de Comunicación
+
+| Origen | Destino | Protocolo | Formato | Puerto |
+|--------|---------|-----------|---------|--------|
+| Frontend | API Gateway | REST/HTTP | JSON | 8080 |
+| API Gateway | Auth Service | gRPC/HTTP2 | Protobuf | 50051 |
+| API Gateway | Catalog Service | REST/HTTP | JSON | 3002 |
+| API Gateway | Orders Service | REST/HTTP | JSON | 3003 |
+| API Gateway | Delivery Service | REST/HTTP | JSON | 3004 |
+| Orders Service | Catalog Service | gRPC/HTTP2 | Protobuf | 50052 |
+
+---
+
+## 6. Modelo de Datos
+
+### 6.1 Diagrama Entidad-Relación
+
+![CDU Alto Nivel](./src/6.1.png)
+
+### 6.2 Aislamiento de Persistencia
+
+Cada microservicio posee su propia base de datos MySQL. **No existen foreign keys entre bases de datos**, sino referencias lógicas por ID externo. Esto garantiza:
+
+- Despliegue y escalado independiente por servicio
+- Cada servicio puede evolucionar o migrar su esquema sin afectar los demás
+- Los datos de un servicio solo son accesibles a través de su API
+
+### 6.3 Diagrama de Estados
+
+**Orden:**
+
+![CDU Alto Nivel](./src/6.3.png)
+
+## 7. Autenticación y Seguridad
+
+### 7.1 Flujo JWT
+
+![CDU Alto Nivel](./src/7.1.png)
+
+
+### 7.2 Configuraciones de Seguridad
+
+| Aspecto | Implementación |
+|---------|---------------|
+| Hash de contraseñas | bcrypt, 12 rounds, formato `$2a$` |
+| JWT | HS256, expiración 24h |
+| Rate Limiting | 100 req / 15 min por IP |
+| Headers HTTP | Helmet.js |
+| CORS | Configurado para `localhost:3000` |
+| SQL Injection | Prepared statements en todas las queries |
+| Roles (RBAC) | ADMIN, CLIENTE, RESTAURANTE, REPARTIDOR |
+
+### 7.3 Payload JWT
+
+```json
+{
+  "id": 1,
+  "email": "admin@delivereats.com",
+  "role": "ADMIN",
+  "name": "Administrator",
+  "iat": 1738656000,
+  "exp": 1738742400
+}
+```
+
+### 7.4 Contrato gRPC Auth (`auth.proto`)
+
+```protobuf
+service AuthService {
+  rpc Register(RegisterRequest) returns (AuthResponse);
+  rpc Login(LoginRequest) returns (AuthResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (GetUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc GetAllUsers(GetAllUsersRequest) returns (GetAllUsersResponse);
+  rpc UpdateUserRole(UpdateUserRoleRequest) returns (GetUserResponse);
+}
+```
+
+### 7.5 Contrato gRPC Catalog (`catalog.proto`)
+
+```protobuf
+service CatalogService {
+  rpc ValidateOrderItems(ValidationRequest) returns (ValidationResponse);
+}
+
+message ValidationRequest {
+  int32                     restaurant_id = 1;
+  repeated OrderItemRequest items         = 2;
+}
+
+message ValidationResponse {
+  bool                          valid            = 1;
+  string                        message          = 2;
+  repeated ItemValidationResult item_results     = 3;
+  double                        total_calculated = 4;
+  string                        restaurant_name  = 5;
+  string                        restaurant_address = 6;
+}
+```
+
+---
+
+## 8. Frontend
+
+### 8.1 Stack Tecnológico
+
+| Tecnología | Justificación |
+|-----------|---------------|
+| React 18 | Component-based, Virtual DOM |
+| Vite | HMR ≈50ms, build 10-100x más rápido que CRA |
+| Tailwind CSS | Utility-first, PurgeCSS ≈10KB producción |
+| Zustand | Store 1KB vs Redux 8KB, sin boilerplate |
+| React Router v6 | Routing declarativo, rutas protegidas |
+| Axios | Interceptores JWT automáticos |
+| Heroicons | Iconografía SVG consistente |
+
+### 8.2 Estructura de Páginas
+
+```
+frontend/src/
+├── App.jsx                     # Routing + ProtectedRoute
+├── main.jsx                    # Entry point
+├── components/
+│   ├── Navbar.jsx              # Navegación diferenciada por rol
+│   └── RegisterUserForm.jsx    # Modal de registro (admin)
+├── pages/
+│   ├── Home.jsx                # Lista restaurantes (clientes) / redirige restaurantes
+│   ├── Login.jsx               # Autenticación
+│   ├── Register.jsx            # Registro público
+│   ├── RestaurantMenu.jsx      # Menú de un restaurante + carrito
+│   ├── MyOrders.jsx            # Historial de órdenes (cliente)
+│   ├── ClientDashboard.jsx     # Dashboard del cliente
+│   ├── RestaurantDashboard.jsx # Dashboard del restaurante
+│   ├── AdminPanel.jsx          # Panel admin general
+│   └── AdminDashboard.jsx      # Gestión usuarios (admin)
+├── services/
+│   └── api.js                  # Axios configurado con interceptores
+└── stores/
+    └── authStore.js            # Zustand + persist middleware
+```
+
+### 8.3 Dashboards por Rol
+
+| Rol | Dashboard | Funcionalidades |
+|-----|-----------|----------------|
+| **ADMIN** | `/admin`, `/admin/users` | CRUD usuarios, estadísticas por rol, registrar cualquier rol |
+| **CLIENTE** | `/dashboard`, `/my-orders` | Ver restaurantes, hacer pedidos, historial, estadísticas de gasto |
+| **RESTAURANTE** | `/restaurant-dashboard` | Gestión de menú (CRUD items), control de inventario/stock, ver órdenes recibidas, estadísticas |
+| **REPARTIDOR** | *(en desarrollo)* | Entregas asignadas, iniciar/completar entregas |
+
+### 8.4 Navegación por Rol
+
+![CDU Alto Nivel](./src/8.4.png)
+
+---
+
+## 9. API Endpoints
+
+### 9.1 Rutas Públicas
+
+#### POST `/api/auth/register`
+```json
+// Request
+{ "name": "Juan", "email": "juan@test.com", "password": "pass123", "role": "CLIENTE" }
+// Response 201
+{ "success": true, "data": { "user": {...}, "token": "eyJ..." } }
+```
+
+#### POST `/api/auth/login`
+```json
+// Request
+{ "email": "admin@delivereats.com", "password": "admin123" }
+// Response 200
+{ "success": true, "data": { "user": { "id": 1, "name": "Administrator", "role": "ADMIN" }, "token": "eyJ..." } }
+```
+
+#### GET `/api/catalog/restaurants`
+```json
+// Response 200
+{ "success": true, "data": [{ "id": 1, "name": "Burger Palace", "address": "...", "isActive": true }] }
+```
+
+### 9.2 Rutas Protegidas (requieren `Authorization: Bearer <token>`)
+
+| Grupo | Método | Ruta | Roles |
+|-------|--------|------|-------|
+| **Auth** | GET | `/api/auth/users` | ADMIN |
+| | POST | `/api/auth/admin/register` | ADMIN |
+| | PUT | `/api/auth/users/:id` | ADMIN |
+| | PUT | `/api/auth/users/:id/role` | ADMIN |
+| | DELETE | `/api/auth/users/:id` | ADMIN |
+| **Catalog** | POST | `/api/catalog/restaurants` | RESTAURANTE, ADMIN |
+| | PUT | `/api/catalog/restaurants/:id` | RESTAURANTE, ADMIN |
+| | POST | `/api/catalog/menu-items` | RESTAURANTE, ADMIN |
+| | PUT | `/api/catalog/menu-items/:id` | RESTAURANTE, ADMIN |
+| | DELETE | `/api/catalog/menu-items/:id` | RESTAURANTE, ADMIN |
+| | PATCH | `/api/catalog/menu-items/:id/toggle` | RESTAURANTE, ADMIN |
+| **Orders** | POST | `/api/orders` | CLIENTE, ADMIN |
+| | PATCH | `/api/orders/:id/status` | Autenticado |
+| | POST | `/api/orders/:id/cancel` | Autenticado |
+| **Delivery** | GET | `/api/delivery` | REPARTIDOR, ADMIN |
+| | POST | `/api/delivery/:id/start` | REPARTIDOR, ADMIN |
+| | POST | `/api/delivery/:id/complete` | REPARTIDOR, ADMIN |
+
+---
+
+## 10. Despliegue con Docker
+
+### 10.1 Servicios (11 contenedores)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    delivereats-network (bridge)                  │
+│                                                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │ auth-db  │  │catalog-db│  │orders-db │  │delivery- │       │
+│  │  :3306   │  │  :3307   │  │  :3308   │  │ db :3309 │       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘       │
+│       │              │              │              │             │
+│  ┌────┴─────┐  ┌────┴─────┐  ┌────┴─────┐  ┌────┴─────┐       │
+│  │  auth-   │  │ catalog- │  │ orders-  │  │delivery- │       │
+│  │ service  │  │ service  │  │ service  │  │ service  │       │
+│  │  :50051  │  │:3002/:52 │  │  :3003   │  │  :3004   │       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘       │
+│       │              │              │              │             │
+│       └──────┬───────┴──────┬───────┘              │             │
+│              │              │                      │             │
+│         ┌────┴──────────────┴──────────────────────┴─────┐      │
+│         │              api-gateway :8080                  │      │
+│         └────────────────────┬────────────────────────────┘      │
+│                              │                                   │
+│         ┌────────────────────┴────────────────────────────┐      │
+│         │              frontend :3000                     │      │
+│         └─────────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 10.2 Volúmenes Persistentes
+
+| Volumen | Base de datos | Contenido |
+|---------|------------|-----------|
+| `delivereats_auth_db_data` | auth_db | Usuarios y roles |
+| `delivereats_catalog_db_data` | catalog_db | Restaurantes y menús |
+| `delivereats_orders_db_data` | orders_db | Órdenes e items |
+| `delivereats_delivery_db_data` | delivery_db | Entregas |
+
+### 10.3 Comandos de Gestión
+
+```bash
+# Levantar todo
+docker compose up -d
+
+# Ver estado de todos los servicios
+docker compose ps
+
+# Logs en tiempo real
+docker compose logs -f
+
+# Logs de un servicio específico
+docker logs delivereats-api-gateway -f
+docker logs delivereats-catalog-service -f
+
+# Reiniciar un servicio
+docker compose restart catalog-service
+
+# Reset completo (elimina datos)
+docker compose down -v
+docker compose up --build -d
+
+# Consultar BD directamente
+docker exec delivereats-catalog-db mysql -uroot -ppassword \
+  -e "SELECT * FROM catalog_db.restaurants;"
+
+docker exec delivereats-auth-db mysql -uroot -ppassword \
+  -e "SELECT id, name, email FROM auth_db.users;"
+```
+
+---
+
+## 11. Inicio Rápido
+
+### 11.1 Requisitos Previos
+- Docker y Docker Compose
+- Puertos disponibles: 3000, 3002-3004, 3306-3309, 8080, 50051-50052
+
+### 11.2 Despliegue
+
+```bash
+cd Practica3
+docker compose up -d
+```
+
+Esperar ~60 segundos a que todos los health checks pasen:
+
+```bash
+docker compose ps
+# Todos deben mostrar "healthy"
+```
+
+### 11.3 Acceso
+
+| Recurso | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API Gateway | http://localhost:8080/api |
+| Health Check | http://localhost:8080/api/health |
+
+### 11.4 Usuarios de Prueba
+
+| Email | Password | Rol |
+|-------|----------|-----|
+| `admin@delivereats.com` | `admin123` | ADMIN |
+| `cliente@test.com` | `admin123` | CLIENTE |
+| `restaurant@test.com` | `admin123` | RESTAURANTE |
+| `delivery@test.com` | `admin123` | REPARTIDOR |
+
+---
+
+## 12. Casos de Uso
+
+### 12.1 CDU de Alto Nivel
+
+![CDU Alto Nivel](./src/12.1.png)
+
+### 12.2 CDU-01: Gestionar Usuarios
+
+**Actor(es):** Todos  
+**Servicio:** Auth Service + API Gateway
+
+![CDU Alto Nivel](./src/12.2.png)
+
+**Curso normal:**
+1. El usuario se registra proporcionando nombre, email, password y rol
+2. El sistema valida datos y hashea la contraseña (bcrypt 12 rounds)
+3. El sistema genera JWT con `{id, email, role, name}` y expiración 24h
+4. El frontend almacena token en Zustand + localStorage
+5. Cada petición incluye `Authorization: Bearer <token>`
+6. El API Gateway verifica el token antes de reenviar la petición
+
+**Cursos alternos:**
+- Datos inválidos → 400 con errores de validación
+- Email duplicado → 400 "User already exists"
+- Credenciales incorrectas → 401 "Invalid credentials"
+- Usuario inactivo → 403 con mensaje de contactar administrador
+- Token expirado → 401, frontend redirige a login
+
+### 12.3 CDU-02: Gestionar Catálogo
+
+**Actor(es):** Restaurante, Admin  
+**Servicio:** Catalog Service
+
+![CDU Alto Nivel](./src/12.3.png)
+
+### 12.4 CDU-03: Gestionar Órdenes
+
+**Actor(es):** Cliente, Restaurante  
+**Servicio:** Orders Service (+ gRPC a Catalog)
+
+![CDU Alto Nivel](./src/12.4.png)
+
+### 12.5 CDU-04: Gestionar Entregas
+
+**Actor(es):** Repartidor, Admin  
+**Servicio:** Delivery Service
+
+![CDU Alto Nivel](./src/12.5.png)
+
+---
+
+## 13. Troubleshooting
+
+### "No tienes un restaurante asignado"
+Al registrar un usuario RESTAURANTE desde el panel admin, el sistema crea automáticamente un restaurante asociado. Si falló, el propio dashboard ofrece un botón "Crear Restaurante".
+
+### Login falla con "Invalid credentials"
+```bash
+docker exec delivereats-auth-db mysql -uroot -ppassword \
+  -e "SELECT id, email FROM auth_db.users;"
+```
+Si la tabla está vacía: `docker compose down -v && docker compose up -d`
+
+### Orden falla al crear
+La validación gRPC verifica: existencia del item, pertenencia al restaurante, precio correcto, y disponibilidad. Revisar:
+```bash
+docker logs delivereats-orders-service -f
+docker logs delivereats-catalog-service -f
+```
+
+### Frontend no conecta
+```bash
+curl http://localhost:8080/api/health
+```
+Si falla, verificar que todos los contenedores estén healthy: `docker compose ps`
+
+---
+
+## Estructura del Proyecto
+
+```
+Practica3/
+├── docker-compose.yml           # Orquestación: 11 contenedores
+├── protos/
+│   ├── auth.proto               # Contrato gRPC Auth
+│   └── catalog.proto            # Contrato gRPC Catalog (validación de órdenes)
+├── db/
+│   ├── auth_db.sql              # Schema + seeds auth
+│   ├── catalog_db.sql           # Schema + seeds catálogo
+│   ├── orders_db.sql            # Schema órdenes
+│   └── delivery_db.sql          # Schema entregas
+├── api-gateway/                 # Express proxy :8080
+│   └── src/
+│       ├── middleware/ (auth.js, errorHandler.js)
+│       ├── routes/ (auth, catalog, orders, delivery, health)
+│       ├── services/ (authService.js — gRPC client)
+│       └── utils/ (logger.js)
+├── auth-service/                # gRPC server :50051
+│   └── src/
+│       ├── controllers/ (authController.js)
+│       ├── models/ (User.js, Role.js)
+│       └── config/ (database.js)
+├── catalog-service/             # REST :3002 + gRPC :50052
+│   └── src/
+│       ├── controllers/ (restaurantController, menuItemController)
+│       ├── models/ (Restaurant.js, MenuItem.js)
+│       ├── routes/ (restaurants.js, menuItems.js)
+│       └── grpc/ (catalogGrpcServer.js)
+├── orders-service/              # REST :3003
+│   └── src/
+│       ├── controllers/
+│       ├── models/
+│       ├── routes/
+│       └── grpc/ (catalogClient — gRPC client to catalog)
+├── delivery-service/            # REST :3004
+│   └── src/
+│       ├── controllers/ (deliveryController)
+│       ├── models/ (Delivery.js)
+│       └── routes/ (deliveries.js)
+└── frontend/                    # React + Vite :3000
+    └── src/
+        ├── App.jsx
+        ├── components/ (Navbar, RegisterUserForm)
+        ├── pages/ (Home, Login, Register, RestaurantMenu,
+        │           MyOrders, ClientDashboard, RestaurantDashboard,
+        │           AdminPanel, AdminDashboard)
+        ├── services/ (api.js)
+        └── stores/ (authStore.js)
+```
+
+---
+
+**Versión:** 0.3.0 | **Fecha:** Febrero 2026 | **Curso:** Software Avanzado  
+**Práctica:** 3 — Arquitectura SOA Completa con Microservicios
