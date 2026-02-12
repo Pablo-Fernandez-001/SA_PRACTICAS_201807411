@@ -28,8 +28,12 @@ export default function Navbar() {
 
         {user ? (
           <div className="flex items-center gap-4">
-            <Link to="/" className="hover:text-orange-200 transition">Restaurantes</Link>
-            <Link to="/my-orders" className="hover:text-orange-200 transition">Mis Órdenes</Link>
+            {user.role !== 'RESTAURANTE' && (
+              <>
+                <Link to="/" className="hover:text-orange-200 transition">Restaurantes</Link>
+                <Link to="/my-orders" className="hover:text-orange-200 transition">Mis Órdenes</Link>
+              </>
+            )}
             {user.role === 'ADMIN' && (
               <>
                 <Link to="/admin" className="hover:text-orange-200 transition">Panel Admin</Link>
@@ -38,6 +42,9 @@ export default function Navbar() {
             )}
             {user.role === 'CLIENTE' && (
               <Link to="/dashboard" className="hover:text-orange-200 transition">Mi Dashboard</Link>
+            )}
+            {user.role === 'RESTAURANTE' && (
+              <Link to="/restaurant-dashboard" className="hover:text-orange-200 transition">Mi Restaurante</Link>
             )}
             <div className="relative">
               <button
@@ -60,6 +67,15 @@ export default function Navbar() {
                       className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
                     >
                       Mi Dashboard
+                    </Link>
+                  )}
+                  {user.role === 'RESTAURANTE' && (
+                    <Link
+                      to="/restaurant-dashboard"
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Mi Restaurante
                     </Link>
                   )}
                   {user.role === 'ADMIN' && (

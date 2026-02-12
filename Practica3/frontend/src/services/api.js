@@ -47,7 +47,7 @@ export const authAPI = {
 export const catalogAPI = {
   getRestaurants: () => api.get('/catalog/restaurants'),
   getRestaurant: (id) => api.get(`/catalog/restaurants/${id}`),
-  getMenu: (restaurantId) => api.get(`/catalog/restaurants/${restaurantId}/menu`),
+  getMenu: (restaurantId, all = false) => api.get(`/catalog/restaurants/${restaurantId}/menu${all ? '?all=true' : ''}`),
   getAllMenuItems: () => api.get('/catalog/menu-items'),
   createRestaurant: (data) => api.post('/catalog/restaurants', data),
   updateRestaurant: (id, data) => api.put(`/catalog/restaurants/${id}`, data),

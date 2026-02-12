@@ -35,7 +35,8 @@ router.get('/restaurants/:id', async (req, res) => {
 // Get menu items by restaurant
 router.get('/restaurants/:id/menu', async (req, res) => {
   try {
-    const { data } = await axios.get(`${CATALOG_URL}/api/menu-items/restaurant/${req.params.id}`)
+    const allParam = req.query.all === 'true' ? '?all=true' : ''
+    const { data } = await axios.get(`${CATALOG_URL}/api/menu-items/restaurant/${req.params.id}${allParam}`)
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Catalog proxy error (menu):', error.message)

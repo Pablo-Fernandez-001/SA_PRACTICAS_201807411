@@ -72,6 +72,25 @@ router.post('/admin/register',
 
       const result = await authService.register(req.body)
       
+      // If the user is a RESTAURANTE, create a restaurant automatically
+      if (req.body.role === 'RESTAURANTE') {
+        try {
+          const axios = require('axios')
+          const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002'
+          
+          await axios.post(`${catalogUrl}/api/restaurants`, {
+            name: `Restaurante ${req.body.name}`,
+            address: 'Dirección por definir',
+            ownerId: result.user.id
+          })
+          
+          logger.info(`Restaurant created automatically for user ${result.user.id}`)
+        } catch (catalogError) {
+          logger.error('Error creating restaurant:', catalogError)
+          // Don't fail the registration if restaurant creation fails
+        }
+      }
+      
       res.status(201).json({
         success: true,
         message: `User registered successfully as ${req.body.role}`,

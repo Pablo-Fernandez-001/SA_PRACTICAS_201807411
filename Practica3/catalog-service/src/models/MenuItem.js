@@ -11,6 +11,7 @@ class MenuItem {
     this.description = data.description || '';
     // Ensure price is always a number
     this.price = typeof data.price === 'string' ? parseFloat(data.price) : (data.price || 0);
+    this.stock = data.stock !== undefined ? parseInt(data.stock) : 100;
     this.isAvailable = data.is_available !== undefined ? data.is_available : (data.isAvailable !== undefined ? data.isAvailable : true);
     this.createdAt = data.created_at || data.createdAt || new Date();
     this.updatedAt = data.updated_at || data.updatedAt || new Date();
@@ -65,6 +66,7 @@ class MenuItem {
       name: this.name,
       description: this.description,
       price: this.price,
+      stock: this.stock,
       is_available: this.isAvailable
     };
 
@@ -86,6 +88,7 @@ class MenuItem {
       restaurantName: this.restaurantName,
       name: this.name,
       description: this.description,
+      stock: this.stock,
       price: this.price,
       isAvailable: this.isAvailable,
       is_available: this.isAvailable,  // Include snake_case for compatibility
@@ -122,6 +125,7 @@ class MenuItem {
       restaurant_name: row.restaurant_name,
       name: row.name,
       description: row.description,
+      stock: row.stock,
       price: parseFloat(row.price),
       is_available: row.is_available,
       created_at: row.created_at,

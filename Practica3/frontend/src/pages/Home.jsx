@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { catalogAPI } from '../services/api'
 import useAuthStore from '../stores/authStore'
 
@@ -8,10 +8,17 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { user } = useAuthStore()
+  const navigate = useNavigate()
 
   useEffect(() => {
+    // Redirect restaurant users to their dashboard
+    if (user?.role === 'RESTAURANTE') {
+      navigate('/restaurant-dashboard')
+      return
+    }
+    
     fetchRestaurants()
-  }, [])
+  }, [user, navigate])
 
   const fetchRestaurants = async () => {
     try {
@@ -23,6 +30,11 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Don't render anything if redirecting
+  if (user?.role === 'RESTAURANTE') {
+    return null
   }
 
   if (loading) {
