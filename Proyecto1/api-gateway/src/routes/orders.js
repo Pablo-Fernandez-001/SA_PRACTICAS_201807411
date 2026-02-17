@@ -82,14 +82,31 @@ router.patch('/:id/status', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']),
   }
 })
 
-// Cancel order
-router.post('/:id/cancel', authMiddleware, async (req, res) => {
+// Cancel order (CLIENT can cancel their own orders)
+router.post('/:id/cancel', authMiddleware, authorize(['CLIENTE', 'ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.post(`${ORDERS_URL}/api/orders/${req.params.id}/cancel`)
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Orders proxy error (cancel):', error.message)
+    if (error.response?.data) {
+      return res.status(error.response.status).json(error.response.data)
+    }
     res.status(error.response?.status || 502).json({ success: false, message: 'Error al cancelar la orden' })
+  }
+})
+
+// Reject order (RESTAURANT rejects order)
+router.post('/:id/reject', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.post(`${ORDERS_URL}/api/orders/${req.params.id}/reject`, req.body)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Orders proxy error (reject):', error.message)
+    if (error.response?.data) {
+      return res.status(error.response.status).json(error.response.data)
+    }
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al rechazar la orden' })
   }
 })
 

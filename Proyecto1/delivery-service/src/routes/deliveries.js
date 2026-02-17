@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const deliveryController = require('../controllers/deliveryController');
 
+// GET available orders for repartidores
+router.get('/available-orders', deliveryController.getAvailableOrders);
+
 // GET all deliveries
 router.get('/', deliveryController.getAllDeliveries);
 
@@ -31,5 +34,8 @@ router.post('/:id/cancel', deliveryController.cancelDelivery);
 
 // PUT reassign delivery
 router.put('/:id/reassign', deliveryController.reassignDelivery);
+
+// POST accept order (repartidor accepts available order)
+router.post('/accept', deliveryController.acceptOrder);
 
 module.exports = router;

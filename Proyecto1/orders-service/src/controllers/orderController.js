@@ -2,9 +2,66 @@ const { getPool } = require('../config/database');
 const { Order, OrderItem } = require('../models');
 const { validateOrderItems } = require('../grpc/catalogClient');
 const logger = require('../utils/logger');
+const axios = require('axios');
 
 // Helper — lazy pool access
 const db = () => getPool();
+
+// Notification service URL
+const NOTIFICATION_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3005';
+// Auth service gRPC URL for user info
+const AUTH_SERVICE_URL = process.env.AUTH_GRPC_URL || 'auth-service:50051';
+
+/**
+ * Send notification (fire-and-forget, never blocks order flow)
+ */
+async function sendNotification(endpoint, data) {
+  try {
+    await axios.post(`${NOTIFICATION_URL}/api/notifications/${endpoint}`, data, { timeout: 5000 });
+    logger.info(`[Notification] Sent ${endpoint} for order ${data.orderNumber}`);
+  } catch (error) {
+    logger.warn(`[Notification] Failed to send ${endpoint}: ${error.message}`);
+  }
+}
+
+/**
+ * Get user email by userId — queries auth_db indirectly via orders_db stored info
+ * Falls back to a placeholder if not available
+ */
+async function getUserEmail(userId) {
+  try {
+    // Try to get from auth service via gRPC
+    const grpc = require('@grpc/grpc-js');
+    const protoLoader = require('@grpc/proto-loader');
+    const path = require('path');
+    const fs = require('fs');
+
+    let PROTO_PATH = path.join(__dirname, '../../protos/auth.proto');
+    if (!fs.existsSync(PROTO_PATH)) {
+      PROTO_PATH = path.join(__dirname, '../../../protos/auth.proto');
+    }
+
+    const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+      keepCase: true, longs: String, enums: String, defaults: true, oneofs: true
+    });
+    const authProto = grpc.loadPackageDefinition(packageDefinition).auth;
+    const client = new authProto.AuthService(AUTH_SERVICE_URL, grpc.credentials.createInsecure());
+
+    return new Promise((resolve) => {
+      client.GetUserById({ id: userId }, { deadline: new Date(Date.now() + 5000) }, (error, response) => {
+        if (error || !response?.user) {
+          logger.warn(`Could not get user email for userId=${userId}: ${error?.message || 'no user'}`);
+          resolve({ email: null, name: null });
+        } else {
+          resolve({ email: response.user.email, name: response.user.name });
+        }
+      });
+    });
+  } catch (error) {
+    logger.warn(`getUserEmail error: ${error.message}`);
+    return { email: null, name: null };
+  }
+}
 
 /**
  * Get all orders
@@ -274,6 +331,17 @@ exports.createOrder = async (req, res) => {
     order.items = orderItems.map(item => item.toJSON());
 
     logger.info(`[createOrder] ORDER CREATED - number=${order.orderNumber}, id=${order.id}, total=Q${order.total}, items=${orderItems.length}`);
+
+    // Notification — order created
+    const userInfo = await getUserEmail(userId);
+    sendNotification('order-created', {
+      orderNumber: order.orderNumber,
+      customerEmail: userInfo.email,
+      customerName: userInfo.name || 'Cliente',
+      restaurantName: finalRestaurantName || 'Restaurante',
+      total: order.total,
+      items: orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price }))
+    });
     
     res.status(201).json({
       success: true,
@@ -299,7 +367,7 @@ exports.createOrder = async (req, res) => {
 };
 
 /**
- * Update order status
+ * Update order status (generic — used by restaurant/admin)
  */
 exports.updateOrderStatus = async (req, res) => {
   try {
@@ -312,6 +380,7 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     const order = Order.fromDatabase(existing[0]);
+    const previousStatus = order.status;
     
     if (!order.canTransitionTo(status)) {
       return res.status(400).json({ 
@@ -325,7 +394,23 @@ exports.updateOrderStatus = async (req, res) => {
     );
 
     order.status = status;
-    logger.info(`Order ${order.orderNumber} status updated to ${status}`);
+    logger.info(`Order ${order.orderNumber} status updated from ${previousStatus} to ${status}`);
+
+    // ── Send notifications based on new status ──────────────────────
+    const userInfo = await getUserEmail(order.userId);
+    const notifBase = {
+      orderNumber: order.orderNumber,
+      customerEmail: userInfo.email,
+      customerName: userInfo.name || 'Cliente',
+      restaurantName: order.restaurantName || 'Restaurante',
+      total: order.total
+    };
+
+    if (status === Order.STATUS.EN_CAMINO) {
+      sendNotification('order-shipped', notifBase);
+    } else if (status === Order.STATUS.CANCELADO) {
+      sendNotification('order-cancelled-provider', { ...notifBase, reason: req.body.reason || 'Cancelado por el restaurante' });
+    }
     
     res.json(order.toJSON());
   } catch (error) {
@@ -335,7 +420,7 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 /**
- * Cancel order
+ * Cancel order — used by the CLIENT (CANCELADO status)
  */
 exports.cancelOrder = async (req, res) => {
   try {
@@ -348,9 +433,55 @@ exports.cancelOrder = async (req, res) => {
 
     const order = Order.fromDatabase(existing[0]);
     
+    if (!order.canTransitionTo(Order.STATUS.CANCELADO)) {
+      return res.status(400).json({ 
+        error: `No se puede cancelar una orden con estado ${order.status}` 
+      });
+    }
+
+    await db().query(
+      'UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?',
+      [Order.STATUS.CANCELADO, id]
+    );
+
+    order.status = Order.STATUS.CANCELADO;
+    logger.info(`Order ${order.orderNumber} cancelled by client`);
+
+    // Notification — order cancelled by client
+    const userInfo = await getUserEmail(order.userId);
+    sendNotification('order-cancelled-client', {
+      orderNumber: order.orderNumber,
+      customerEmail: userInfo.email,
+      customerName: userInfo.name || 'Cliente',
+      restaurantName: order.restaurantName || 'Restaurante',
+      total: order.total
+    });
+    
+    res.json({ message: 'Orden cancelada exitosamente', order: order.toJSON() });
+  } catch (error) {
+    logger.error('Error cancelling order:', error);
+    res.status(500).json({ error: 'Error cancelling order' });
+  }
+};
+
+/**
+ * Reject order — used by the RESTAURANT (RECHAZADA status)
+ */
+exports.rejectOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const [existing] = await db().query('SELECT * FROM orders WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const order = Order.fromDatabase(existing[0]);
+    
     if (!order.canTransitionTo(Order.STATUS.RECHAZADA)) {
       return res.status(400).json({ 
-        error: `Cannot cancel order with status ${order.status}` 
+        error: `No se puede rechazar una orden con estado ${order.status}` 
       });
     }
 
@@ -360,11 +491,22 @@ exports.cancelOrder = async (req, res) => {
     );
 
     order.status = Order.STATUS.RECHAZADA;
-    logger.info(`Order ${order.orderNumber} cancelled`);
+    logger.info(`Order ${order.orderNumber} rejected by restaurant. Reason: ${reason || 'N/A'}`);
+
+    // Notification — order rejected by restaurant
+    const userInfo = await getUserEmail(order.userId);
+    sendNotification('order-rejected', {
+      orderNumber: order.orderNumber,
+      customerEmail: userInfo.email,
+      customerName: userInfo.name || 'Cliente',
+      restaurantName: order.restaurantName || 'Restaurante',
+      total: order.total,
+      reason: reason || 'Rechazada por el restaurante'
+    });
     
-    res.json({ message: 'Order cancelled successfully', order: order.toJSON() });
+    res.json({ message: 'Orden rechazada', order: order.toJSON() });
   } catch (error) {
-    logger.error('Error cancelling order:', error);
-    res.status(500).json({ error: 'Error cancelling order' });
+    logger.error('Error rejecting order:', error);
+    res.status(500).json({ error: 'Error rejecting order' });
   }
 };

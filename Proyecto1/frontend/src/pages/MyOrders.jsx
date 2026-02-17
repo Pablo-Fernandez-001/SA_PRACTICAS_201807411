@@ -6,6 +6,8 @@ export default function MyOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [cancelLoading, setCancelLoading] = useState(null)
+  const [message, setMessage] = useState(null)
   const { user } = useAuthStore()
 
   useEffect(() => {
@@ -30,12 +32,43 @@ export default function MyOrders() {
   }
 
   const statusColors = {
+    CREADA: 'bg-gray-100 text-gray-800',
     PENDIENTE: 'bg-yellow-100 text-yellow-800',
     CONFIRMADO: 'bg-blue-100 text-blue-800',
+    EN_PROCESO: 'bg-blue-100 text-blue-800',
     EN_PREPARACION: 'bg-purple-100 text-purple-800',
+    FINALIZADA: 'bg-purple-100 text-purple-800',
     EN_CAMINO: 'bg-indigo-100 text-indigo-800',
     ENTREGADO: 'bg-green-100 text-green-800',
     CANCELADO: 'bg-red-100 text-red-800',
+    RECHAZADA: 'bg-red-100 text-red-800',
+  }
+
+  const statusLabels = {
+    CREADA: 'Creada',
+    EN_PROCESO: 'En Proceso',
+    FINALIZADA: 'Lista para Envío',
+    EN_CAMINO: 'En Camino',
+    ENTREGADO: 'Entregado',
+    CANCELADO: 'Cancelado',
+    RECHAZADA: 'Rechazada',
+  }
+
+  // Orders that can be cancelled by client
+  const canCancel = (status) => ['CREADA', 'EN_PROCESO'].includes(status)
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('¿Estás seguro de cancelar esta orden?')) return
+    setCancelLoading(orderId)
+    try {
+      await ordersAPI.cancel(orderId)
+      setMessage({ text: 'Orden cancelada exitosamente', type: 'success' })
+      fetchOrders()
+    } catch (err) {
+      setMessage({ text: err.response?.data?.error || 'Error al cancelar', type: 'error' })
+    }
+    setCancelLoading(null)
+    setTimeout(() => setMessage(null), 3000)
   }
 
   if (loading) {
@@ -57,6 +90,12 @@ export default function MyOrders() {
         </div>
       )}
 
+      {message && (
+        <div className={`px-4 py-3 rounded-lg mb-4 ${message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
+          {message.text}
+        </div>
+      )}
+
       {orders.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-gray-400 text-lg">No tienes pedidos aún.</p>
@@ -73,7 +112,7 @@ export default function MyOrders() {
                   </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
-                  {order.status}
+                  {statusLabels[order.status] || order.status}
                 </span>
               </div>
               <div className="text-sm text-gray-600 space-y-1 mb-3">
@@ -105,9 +144,20 @@ export default function MyOrders() {
                 <span className="text-sm text-gray-500">
                   {order.items?.length || 0} item(s)
                 </span>
-                <span className="text-lg font-bold text-orange-600">
-                  Q{parseFloat(order.total || 0).toFixed(2)}
-                </span>
+                <div className="flex items-center gap-3">
+                  {canCancel(order.status) && (
+                    <button
+                      onClick={() => handleCancel(order.id)}
+                      disabled={cancelLoading === order.id}
+                      className="text-sm text-red-600 hover:text-red-800 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-50 disabled:opacity-50 transition"
+                    >
+                      {cancelLoading === order.id ? 'Cancelando...' : 'Cancelar Orden'}
+                    </button>
+                  )}
+                  <span className="text-lg font-bold text-orange-600">
+                    Q{parseFloat(order.total || 0).toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
           ))}

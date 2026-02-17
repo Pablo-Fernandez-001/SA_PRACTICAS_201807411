@@ -26,4 +26,7 @@ router.patch('/:id/status', orderController.updateOrderStatus);
 // POST cancel order
 router.post('/:id/cancel', orderController.cancelOrder);
 
+// POST reject order (restaurant rejects)
+router.post('/:id/reject', orderController.rejectOrder);
+
 module.exports = router;

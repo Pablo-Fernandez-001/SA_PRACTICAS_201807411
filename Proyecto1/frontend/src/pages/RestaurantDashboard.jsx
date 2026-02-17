@@ -31,6 +31,10 @@ const RestaurantDashboard = () => {
     isAvailable: true
   })
 
+  // Order action states (must be at top level — React hooks rules)
+  const [orderActionLoading, setOrderActionLoading] = useState(null)
+  const [orderMessage, setOrderMessage] = useState(null)
+
   useEffect(() => {
     loadRestaurantData()
   }, [])
@@ -42,7 +46,7 @@ const RestaurantDashboard = () => {
       // Get all restaurants and find the one owned by this user
       const resRestaurants = await catalogAPI.getRestaurants()
       const allRestaurants = resRestaurants.data.data || resRestaurants.data || []
-      const myRestaurant = allRestaurants.find(r => r.ownerId === user?.id)
+      const myRestaurant = allRestaurants.find(r => String(r.ownerId) === String(user?.id))
       
       if (!myRestaurant) {
         console.error('No restaurant found for this user')
@@ -218,16 +222,72 @@ const RestaurantDashboard = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'FINALIZADA':
-        return 'bg-green-100 text-green-800'
+        return 'bg-purple-100 text-purple-800'
       case 'EN_PROCESO':
         return 'bg-blue-100 text-blue-800'
       case 'CREADA':
         return 'bg-yellow-100 text-yellow-800'
+      case 'EN_CAMINO':
+        return 'bg-indigo-100 text-indigo-800'
+      case 'ENTREGADO':
+        return 'bg-green-100 text-green-800'
+      case 'CANCELADO':
+        return 'bg-red-100 text-red-800'
       case 'RECHAZADA':
         return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const statusLabels = {
+    CREADA: 'Nueva',
+    EN_PROCESO: 'En Proceso',
+    FINALIZADA: 'Lista',
+    EN_CAMINO: 'En Camino',
+    ENTREGADO: 'Entregado',
+    CANCELADO: 'Cancelado',
+    RECHAZADA: 'Rechazada',
+  }
+
+  const handleAcceptOrder = async (orderId) => {
+    setOrderActionLoading(orderId)
+    try {
+      await ordersAPI.updateStatus(orderId, 'EN_PROCESO')
+      setOrderMessage({ text: 'Orden aceptada — en proceso', type: 'success' })
+      loadRestaurantData()
+    } catch (err) {
+      setOrderMessage({ text: err.response?.data?.error || 'Error', type: 'error' })
+    }
+    setOrderActionLoading(null)
+    setTimeout(() => setOrderMessage(null), 3000)
+  }
+
+  const handleRejectOrder = async (orderId) => {
+    if (!window.confirm('¿Estás seguro de rechazar esta orden?')) return
+    setOrderActionLoading(orderId)
+    try {
+      await ordersAPI.reject(orderId)
+      setOrderMessage({ text: 'Orden rechazada', type: 'success' })
+      loadRestaurantData()
+    } catch (err) {
+      setOrderMessage({ text: err.response?.data?.error || 'Error', type: 'error' })
+    }
+    setOrderActionLoading(null)
+    setTimeout(() => setOrderMessage(null), 3000)
+  }
+
+  const handleFinalizeOrder = async (orderId) => {
+    setOrderActionLoading(orderId)
+    try {
+      await ordersAPI.updateStatus(orderId, 'FINALIZADA')
+      setOrderMessage({ text: 'Orden finalizada — lista para repartidor', type: 'success' })
+      loadRestaurantData()
+    } catch (err) {
+      setOrderMessage({ text: err.response?.data?.error || 'Error', type: 'error' })
+    }
+    setOrderActionLoading(null)
+    setTimeout(() => setOrderMessage(null), 3000)
   }
 
   return (
@@ -429,6 +489,13 @@ const RestaurantDashboard = () => {
           {activeTab === 'orders' && (
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-4">Órdenes Recibidas</h2>
+
+              {orderMessage && (
+                <div className={`mb-4 p-3 rounded-lg ${orderMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
+                  {orderMessage.text}
+                </div>
+              )}
+
               <div className="space-y-4">
                 {orders.map((order) => (
                   <div key={order.id} className="border rounded-lg p-4 hover:shadow-lg transition">
@@ -440,7 +507,7 @@ const RestaurantDashboard = () => {
                         </p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
-                        {order.status}
+                        {statusLabels[order.status] || order.status}
                       </span>
                     </div>
                     
@@ -451,6 +518,46 @@ const RestaurantDashboard = () => {
                       )}
                       <div className="flex justify-between items-center mt-3">
                         <span className="text-2xl font-bold text-orange-600">Q{parseFloat(order.total).toFixed(2)}</span>
+                        
+                        {/* Action buttons based on order status */}
+                        <div className="flex gap-2">
+                          {order.status === 'CREADA' && (
+                            <>
+                              <button
+                                onClick={() => handleAcceptOrder(order.id)}
+                                disabled={orderActionLoading === order.id}
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50 transition"
+                              >
+                                {orderActionLoading === order.id ? '...' : '✅ Aceptar'}
+                              </button>
+                              <button
+                                onClick={() => handleRejectOrder(order.id)}
+                                disabled={orderActionLoading === order.id}
+                                className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200 disabled:opacity-50 transition"
+                              >
+                                Rechazar
+                              </button>
+                            </>
+                          )}
+                          {order.status === 'EN_PROCESO' && (
+                            <>
+                              <button
+                                onClick={() => handleFinalizeOrder(order.id)}
+                                disabled={orderActionLoading === order.id}
+                                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50 transition"
+                              >
+                                {orderActionLoading === order.id ? '...' : '📦 Marcar Lista'}
+                              </button>
+                              <button
+                                onClick={() => handleRejectOrder(order.id)}
+                                disabled={orderActionLoading === order.id}
+                                className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm hover:bg-red-200 disabled:opacity-50 transition"
+                              >
+                                Rechazar
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

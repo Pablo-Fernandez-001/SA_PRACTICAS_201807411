@@ -1,9 +1,38 @@
 const { getPool } = require('../config/database');
 const { Delivery } = require('../models');
 const logger = require('../utils/logger');
+const axios = require('axios');
 
 // Helper — lazy pool access
 const db = () => getPool();
+
+// Service URLs
+const ORDERS_SERVICE_URL = process.env.ORDERS_SERVICE_URL || 'http://orders-service:3003';
+const NOTIFICATION_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3005';
+
+/**
+ * Sync order status in orders-service (fire-and-forget)
+ */
+async function syncOrderStatus(orderExternalId, status) {
+  try {
+    await axios.patch(`${ORDERS_SERVICE_URL}/api/orders/${orderExternalId}/status`, { status }, { timeout: 5000 });
+    logger.info(`[Delivery→Orders] Synced order ${orderExternalId} to ${status}`);
+  } catch (error) {
+    logger.warn(`[Delivery→Orders] Failed to sync order ${orderExternalId}: ${error.message}`);
+  }
+}
+
+/**
+ * Send notification (fire-and-forget)
+ */
+async function sendNotification(endpoint, data) {
+  try {
+    await axios.post(`${NOTIFICATION_URL}/api/notifications/${endpoint}`, data, { timeout: 5000 });
+    logger.info(`[Notification] Sent ${endpoint}`);
+  } catch (error) {
+    logger.warn(`[Notification] Failed ${endpoint}: ${error.message}`);
+  }
+}
 
 /**
  * Get all deliveries
@@ -172,7 +201,19 @@ exports.startDelivery = async (req, res) => {
       [delivery.status, delivery.startedAt, id]
     );
 
-    logger.info(`Delivery ${id} started`);
+    logger.info(`Delivery ${id} started — order ${delivery.orderExternalId} EN_CAMINO`);
+
+    // Sync order status to EN_CAMINO
+    syncOrderStatus(delivery.orderExternalId, 'EN_CAMINO');
+
+    // Notification — order shipped
+    sendNotification('order-shipped', {
+      orderNumber: delivery.orderNumber || `ORD-${delivery.orderExternalId}`,
+      customerEmail: null,
+      customerName: 'Cliente',
+      restaurantName: 'Restaurante'
+    });
+
     res.json(delivery.toJSON());
   } catch (error) {
     logger.error('Error starting delivery:', error);
@@ -205,7 +246,11 @@ exports.completeDelivery = async (req, res) => {
       [delivery.status, delivery.deliveredAt, id]
     );
 
-    logger.info(`Delivery ${id} completed`);
+    logger.info(`Delivery ${id} completed — order ${delivery.orderExternalId} ENTREGADO`);
+
+    // Sync order status to ENTREGADO
+    syncOrderStatus(delivery.orderExternalId, 'ENTREGADO');
+
     res.json(delivery.toJSON());
   } catch (error) {
     logger.error('Error completing delivery:', error);
@@ -238,7 +283,20 @@ exports.cancelDelivery = async (req, res) => {
       [delivery.status, id]
     );
 
-    logger.info(`Delivery ${id} cancelled`);
+    logger.info(`Delivery ${id} cancelled — order ${delivery.orderExternalId} CANCELADO`);
+
+    // Sync order status to CANCELADO
+    syncOrderStatus(delivery.orderExternalId, 'CANCELADO');
+
+    // Notification — order cancelled by provider/driver
+    sendNotification('order-cancelled-provider', {
+      orderNumber: delivery.orderNumber || `ORD-${delivery.orderExternalId}`,
+      customerEmail: null,
+      customerName: 'Cliente',
+      restaurantName: 'Restaurante',
+      reason: 'Cancelado por el repartidor'
+    });
+
     res.json({ message: 'Delivery cancelled successfully', delivery: delivery.toJSON() });
   } catch (error) {
     logger.error('Error cancelling delivery:', error);
@@ -285,5 +343,94 @@ exports.reassignDelivery = async (req, res) => {
   } catch (error) {
     logger.error('Error reassigning delivery:', error);
     res.status(500).json({ error: 'Error reassigning delivery' });
+  }
+};
+
+/**
+ * Accept order — a REPARTIDOR accepts a FINALIZADA order
+ * Creates a new delivery, assigns courier, and starts delivery (EN_CAMINO)
+ */
+exports.acceptOrder = async (req, res) => {
+  try {
+    const courierId = req.body.courier_id || req.body.courierId;
+    const orderExternalId = req.body.order_external_id || req.body.orderExternalId;
+    const deliveryAddress = req.body.delivery_address || req.body.deliveryAddress || '';
+
+    if (!courierId || !orderExternalId) {
+      return res.status(400).json({ error: 'courier_id and order_external_id are required' });
+    }
+
+    // Check if delivery already exists for this order
+    const [existing] = await db().query(
+      'SELECT id FROM deliveries WHERE order_external_id = ?',
+      [orderExternalId]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Esta orden ya fue aceptada por otro repartidor' });
+    }
+
+    // Create delivery with status EN_CAMINO directly (driver is starting)
+    const delivery = new Delivery({
+      order_external_id: orderExternalId,
+      courier_id: courierId,
+      status: Delivery.STATUS.EN_CAMINO,
+      delivery_address: deliveryAddress
+    });
+    delivery.startedAt = new Date();
+
+    const dbData = delivery.toDatabase();
+    const [result] = await db().query(
+      'INSERT INTO deliveries (order_external_id, courier_id, status, delivery_address, started_at) VALUES (?, ?, ?, ?, ?)',
+      [dbData.order_external_id, dbData.courier_id, dbData.status, deliveryAddress, delivery.startedAt]
+    );
+
+    delivery.id = result.insertId;
+    logger.info(`[acceptOrder] Repartidor ${courierId} accepted order ${orderExternalId} — delivery ${delivery.id}`);
+
+    // Sync order status to EN_CAMINO
+    syncOrderStatus(orderExternalId, 'EN_CAMINO');
+
+    // Notification — order shipped
+    sendNotification('order-shipped', {
+      orderNumber: `ORD-${orderExternalId}`,
+      customerEmail: null,
+      customerName: 'Cliente',
+      restaurantName: 'Restaurante'
+    });
+
+    res.status(201).json({
+      message: 'Orden aceptada exitosamente',
+      delivery: delivery.toJSON()
+    });
+  } catch (error) {
+    logger.error('Error accepting order:', error);
+    res.status(500).json({ error: 'Error accepting order' });
+  }
+};
+
+/**
+ * Get available orders (FINALIZADA status) for repartidores to accept
+ */
+exports.getAvailableOrders = async (req, res) => {
+  try {
+    // Get FINALIZADA orders from orders-service
+    const response = await axios.get(`${ORDERS_SERVICE_URL}/api/orders`, { timeout: 5000 });
+    const allOrders = response.data;
+
+    // Filter to FINALIZADA only
+    const finalizadaOrders = allOrders.filter(o => o.status === 'FINALIZADA');
+
+    // Get all order IDs that already have deliveries
+    const [deliveryRows] = await db().query('SELECT order_external_id FROM deliveries WHERE status != ?', [Delivery.STATUS.CANCELADO]);
+    const assignedOrderIds = new Set(deliveryRows.map(r => r.order_external_id));
+
+    // Only return orders without a delivery assignment
+    const available = finalizadaOrders.filter(o => !assignedOrderIds.has(o.id));
+
+    res.json(available);
+  } catch (error) {
+    logger.error('Error fetching available orders:', error);
+    res.status(500).json({ error: 'Error fetching available orders' });
   }
 };

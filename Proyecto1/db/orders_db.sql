@@ -16,7 +16,7 @@ CREATE TABLE orders (
   user_id         INT            NOT NULL,
   restaurant_id   INT            NOT NULL,
   restaurant_name VARCHAR(255),
-  status          ENUM('CREADA','EN_PROCESO','FINALIZADA','RECHAZADA') DEFAULT 'CREADA',
+  status          ENUM('CREADA','EN_PROCESO','FINALIZADA','EN_CAMINO','ENTREGADO','CANCELADO','RECHAZADA') DEFAULT 'CREADA',
   total           DECIMAL(10,2)  NOT NULL DEFAULT 0,
   delivery_address VARCHAR(500),
   notes           TEXT,

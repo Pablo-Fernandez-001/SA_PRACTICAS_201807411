@@ -29,6 +29,9 @@ class Order {
     CREADA: 'CREADA',
     EN_PROCESO: 'EN_PROCESO',
     FINALIZADA: 'FINALIZADA',
+    EN_CAMINO: 'EN_CAMINO',
+    ENTREGADO: 'ENTREGADO',
+    CANCELADO: 'CANCELADO',
     RECHAZADA: 'RECHAZADA'
   };
 
@@ -93,9 +96,12 @@ class Order {
    */
   canTransitionTo(newStatus) {
     const validTransitions = {
-      [Order.STATUS.CREADA]: [Order.STATUS.EN_PROCESO, Order.STATUS.RECHAZADA],
-      [Order.STATUS.EN_PROCESO]: [Order.STATUS.FINALIZADA, Order.STATUS.RECHAZADA],
-      [Order.STATUS.FINALIZADA]: [],
+      [Order.STATUS.CREADA]: [Order.STATUS.EN_PROCESO, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA],
+      [Order.STATUS.EN_PROCESO]: [Order.STATUS.FINALIZADA, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA],
+      [Order.STATUS.FINALIZADA]: [Order.STATUS.EN_CAMINO, Order.STATUS.CANCELADO],
+      [Order.STATUS.EN_CAMINO]: [Order.STATUS.ENTREGADO, Order.STATUS.CANCELADO],
+      [Order.STATUS.ENTREGADO]: [],
+      [Order.STATUS.CANCELADO]: [],
       [Order.STATUS.RECHAZADA]: []
     };
     

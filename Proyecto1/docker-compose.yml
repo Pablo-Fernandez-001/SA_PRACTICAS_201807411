@@ -193,6 +193,25 @@ services:
       interval: 10s
       start_period: 60s
 
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./notification-service/Dockerfile
+    container_name: delivereats-notification-service
+    restart: unless-stopped
+    env_file:
+      - ./notification-service/.env.docker
+    ports:
+      - "3005:3005"
+    networks:
+      - delivereats-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      timeout: 10s
+      retries: 10
+      interval: 10s
+      start_period: 30s
+
   # ═══════════════════════════════════════════════════════════════════════════
   # API GATEWAY
   # ═══════════════════════════════════════════════════════════════════════════

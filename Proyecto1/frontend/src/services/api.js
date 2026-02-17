@@ -70,6 +70,7 @@ export const ordersAPI = {
   create: (data) => api.post('/orders', data),
   updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
   cancel: (id) => api.post(`/orders/${id}/cancel`),
+  reject: (id, reason) => api.post(`/orders/${id}/reject`, { reason }),
 }
 
 // ─── Delivery ────────────────────────────────────────────────────────────────
@@ -77,8 +78,11 @@ export const deliveryAPI = {
   getDeliveries: () => api.get('/delivery'),
   getAll: () => api.get('/delivery'),
   getByCourier: (courierId) => api.get(`/delivery/courier/${courierId}`),
+  getActiveByCourier: (courierId) => api.get(`/delivery/courier/${courierId}/active`),
   getById: (id) => api.get(`/delivery/${id}`),
   getByOrder: (orderId) => api.get(`/delivery/order/${orderId}`),
+  getAvailableOrders: () => api.get('/delivery/available-orders'),
+  acceptOrder: (data) => api.post('/delivery/accept', data),
   create: (data) => api.post('/delivery', data),
   start: (id) => api.post(`/delivery/${id}/start`),
   complete: (id) => api.post(`/delivery/${id}/complete`),

@@ -387,12 +387,22 @@ export default function AdminPanel() {
                       <td className="px-4 py-3 text-sm font-medium">Q{parseFloat(o.total || 0).toFixed(2)}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          o.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                          o.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                          o.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          o.status === 'ENTREGADO' ? 'bg-green-100 text-green-800' :
+                          o.status === 'EN_PROCESO' ? 'bg-blue-100 text-blue-800' :
+                          o.status === 'EN_CAMINO' ? 'bg-indigo-100 text-indigo-800' :
+                          o.status === 'FINALIZADA' ? 'bg-purple-100 text-purple-800' :
+                          o.status === 'CANCELADO' || o.status === 'RECHAZADA' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {o.status}
+                          {{
+                            CREADA: 'Nueva',
+                            EN_PROCESO: 'En Proceso',
+                            FINALIZADA: 'Lista',
+                            EN_CAMINO: 'En Camino',
+                            ENTREGADO: 'Entregado',
+                            CANCELADO: 'Cancelado',
+                            RECHAZADA: 'Rechazada'
+                          }[o.status] || o.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm space-x-2">
@@ -446,12 +456,16 @@ export default function AdminPanel() {
                       <td className="px-4 py-3 text-sm text-gray-500">{d.driver_id || 'Sin asignar'}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          d.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          d.status === 'in_transit' ? 'bg-blue-100 text-blue-800' :
-                          d.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                          d.status === 'ENTREGADO' || d.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          d.status === 'EN_CAMINO' || d.status === 'in_transit' ? 'bg-blue-100 text-blue-800' :
+                          d.status === 'CANCELADO' || d.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {d.status}
+                          {{
+                            EN_CAMINO: 'En Camino',
+                            ENTREGADO: 'Entregado',
+                            CANCELADO: 'Cancelado'
+                          }[d.status] || d.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm space-x-2">

@@ -19,6 +19,35 @@ router.get('/', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, 
   }
 })
 
+// Get available orders for repartidores (MUST be before /:id)
+router.get('/available-orders', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.get(`${DELIVERY_URL}/api/deliveries/available-orders`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (available-orders):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener órdenes disponibles' })
+  }
+})
+
+// Accept order (REPARTIDOR accepts available order)
+router.post('/accept', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
+  try {
+    const acceptData = {
+      ...req.body,
+      courier_id: req.user.id
+    }
+    const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/accept`, acceptData)
+    res.status(201).json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (accept):', error.message)
+    if (error.response?.data) {
+      return res.status(error.response.status).json(error.response.data)
+    }
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al aceptar la orden' })
+  }
+})
+
 // Get deliveries by courier
 router.get('/courier/:courierId', authMiddleware, async (req, res) => {
   try {
@@ -104,6 +133,17 @@ router.put('/:id/reassign', authMiddleware, authorize(['ADMIN']), async (req, re
   } catch (error) {
     logger.error('Delivery proxy error (reassign):', error.message)
     res.status(error.response?.status || 502).json({ success: false, message: 'Error al reasignar entrega' })
+  }
+})
+
+// Get active deliveries for courier
+router.get('/courier/:courierId/active', authMiddleware, async (req, res) => {
+  try {
+    const { data } = await axios.get(`${DELIVERY_URL}/api/deliveries/courier/${req.params.courierId}/active`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (active deliveries):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener entregas activas' })
   }
 })
 

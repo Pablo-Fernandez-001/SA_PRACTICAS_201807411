@@ -46,6 +46,9 @@ export default function Navbar() {
             {user.role === 'RESTAURANTE' && (
               <Link to="/restaurant-dashboard" className="hover:text-orange-200 transition">Mi Restaurante</Link>
             )}
+            {user.role === 'REPARTIDOR' && (
+              <Link to="/repartidor-dashboard" className="hover:text-orange-200 transition">Mis Entregas</Link>
+            )}
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -76,6 +79,15 @@ export default function Navbar() {
                       className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
                     >
                       Mi Restaurante
+                    </Link>
+                  )}
+                  {user.role === 'REPARTIDOR' && (
+                    <Link
+                      to="/repartidor-dashboard"
+                      onClick={() => setMenuOpen(false)}
+                      className="block w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Panel Repartidor
                     </Link>
                   )}
                   {user.role === 'ADMIN' && (

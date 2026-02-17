@@ -1,7 +1,7 @@
 {
-  "name": "delivereats-delivery-service",
+  "name": "delivereats-notification-service",
   "version": "1.0.0",
-  "description": "Delivery Service for DeliverEats - SOA Pattern",
+  "description": "Notification Service — Email notifications for order events (DeliverEats)",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -11,9 +11,8 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "axios": "^1.6.2",
     "express": "^4.18.2",
-    "mysql2": "^3.6.5",
+    "nodemailer": "^6.9.7",
     "winston": "^3.11.0"
   },
   "devDependencies": {

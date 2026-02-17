@@ -16,6 +16,11 @@ export default function Home() {
       navigate('/restaurant-dashboard')
       return
     }
+    // Redirect repartidores to their dashboard
+    if (user?.role === 'REPARTIDOR') {
+      navigate('/repartidor-dashboard')
+      return
+    }
     
     fetchRestaurants()
   }, [user, navigate])
