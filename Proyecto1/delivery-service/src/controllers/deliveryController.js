@@ -8,31 +8,20 @@ const db = () => getPool();
 
 // Service URLs
 const ORDERS_SERVICE_URL = process.env.ORDERS_SERVICE_URL || 'http://orders-service:3003';
-const NOTIFICATION_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3005';
 
 /**
  * Sync order status in orders-service (fire-and-forget)
+ * Also passes extra data for notifications (driverName, reason, etc.)
  */
-async function syncOrderStatus(orderExternalId, status) {
+async function syncOrderStatus(orderExternalId, status, extraData = {}) {
   try {
-    await axios.patch(`${ORDERS_SERVICE_URL}/api/orders/${orderExternalId}/status`, { status }, { timeout: 5000 });
+    await axios.patch(`${ORDERS_SERVICE_URL}/api/orders/${orderExternalId}/status`, { status, ...extraData }, { timeout: 5000 });
     logger.info(`[Delivery→Orders] Synced order ${orderExternalId} to ${status}`);
   } catch (error) {
     logger.warn(`[Delivery→Orders] Failed to sync order ${orderExternalId}: ${error.message}`);
   }
 }
 
-/**
- * Send notification (fire-and-forget)
- */
-async function sendNotification(endpoint, data) {
-  try {
-    await axios.post(`${NOTIFICATION_URL}/api/notifications/${endpoint}`, data, { timeout: 5000 });
-    logger.info(`[Notification] Sent ${endpoint}`);
-  } catch (error) {
-    logger.warn(`[Notification] Failed ${endpoint}: ${error.message}`);
-  }
-}
 
 /**
  * Get all deliveries
@@ -203,16 +192,8 @@ exports.startDelivery = async (req, res) => {
 
     logger.info(`Delivery ${id} started — order ${delivery.orderExternalId} EN_CAMINO`);
 
-    // Sync order status to EN_CAMINO
-    syncOrderStatus(delivery.orderExternalId, 'EN_CAMINO');
-
-    // Notification — order shipped
-    sendNotification('order-shipped', {
-      orderNumber: delivery.orderNumber || `ORD-${delivery.orderExternalId}`,
-      customerEmail: null,
-      customerName: 'Cliente',
-      restaurantName: 'Restaurante'
-    });
+    // Sync order status to EN_CAMINO (orders-service handles notification)
+    syncOrderStatus(delivery.orderExternalId, 'EN_CAMINO', { driverName: req.body.driverName || 'Repartidor asignado' });
 
     res.json(delivery.toJSON());
   } catch (error) {
@@ -285,16 +266,11 @@ exports.cancelDelivery = async (req, res) => {
 
     logger.info(`Delivery ${id} cancelled — order ${delivery.orderExternalId} CANCELADO`);
 
-    // Sync order status to CANCELADO
-    syncOrderStatus(delivery.orderExternalId, 'CANCELADO');
-
-    // Notification — order cancelled by provider/driver
-    sendNotification('order-cancelled-provider', {
-      orderNumber: delivery.orderNumber || `ORD-${delivery.orderExternalId}`,
-      customerEmail: null,
-      customerName: 'Cliente',
-      restaurantName: 'Restaurante',
-      reason: 'Cancelado por el repartidor'
+    // Sync order status to CANCELADO (orders-service handles notification)
+    syncOrderStatus(delivery.orderExternalId, 'CANCELADO', {
+      reason: 'Cancelado por el repartidor',
+      providerName: 'Repartidor',
+      providerType: 'REPARTIDOR'
     });
 
     res.json({ message: 'Delivery cancelled successfully', delivery: delivery.toJSON() });
@@ -388,16 +364,8 @@ exports.acceptOrder = async (req, res) => {
     delivery.id = result.insertId;
     logger.info(`[acceptOrder] Repartidor ${courierId} accepted order ${orderExternalId} — delivery ${delivery.id}`);
 
-    // Sync order status to EN_CAMINO
-    syncOrderStatus(orderExternalId, 'EN_CAMINO');
-
-    // Notification — order shipped
-    sendNotification('order-shipped', {
-      orderNumber: `ORD-${orderExternalId}`,
-      customerEmail: null,
-      customerName: 'Cliente',
-      restaurantName: 'Restaurante'
-    });
+    // Sync order status to EN_CAMINO (orders-service handles notification)
+    syncOrderStatus(orderExternalId, 'EN_CAMINO', { driverName: 'Repartidor asignado' });
 
     res.status(201).json({
       message: 'Orden aceptada exitosamente',

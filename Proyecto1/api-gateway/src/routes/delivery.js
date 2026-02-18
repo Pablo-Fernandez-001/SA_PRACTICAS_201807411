@@ -38,6 +38,12 @@ router.post('/accept', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async
       courier_id: req.user.id
     }
     const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/accept`, acceptData)
+
+    // Emit real-time event — order accepted by driver
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { orderId: parseInt(req.body.orderExternalId || req.body.order_external_id), newStatus: 'EN_CAMINO', data })
+    io.emit('delivery:updated', { type: 'accepted', data })
+
     res.status(201).json({ success: true, data })
   } catch (error) {
     logger.error('Delivery proxy error (accept):', error.message)
@@ -96,6 +102,11 @@ router.post('/', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req
 router.post('/:id/start', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/${req.params.id}/start`)
+
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { newStatus: 'EN_CAMINO', data })
+    io.emit('delivery:updated', { type: 'started', deliveryId: parseInt(req.params.id), data })
+
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Delivery proxy error (start):', error.message)
@@ -107,6 +118,11 @@ router.post('/:id/start', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), as
 router.post('/:id/complete', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/${req.params.id}/complete`)
+
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { newStatus: 'ENTREGADO', data })
+    io.emit('delivery:updated', { type: 'completed', deliveryId: parseInt(req.params.id), data })
+
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Delivery proxy error (complete):', error.message)
@@ -118,6 +134,11 @@ router.post('/:id/complete', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']),
 router.post('/:id/cancel', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/${req.params.id}/cancel`)
+
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { newStatus: 'CANCELADO', data })
+    io.emit('delivery:updated', { type: 'cancelled', deliveryId: parseInt(req.params.id), data })
+
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Delivery proxy error (cancel):', error.message)

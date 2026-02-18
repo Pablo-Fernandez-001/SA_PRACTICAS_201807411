@@ -336,11 +336,12 @@ exports.createOrder = async (req, res) => {
     const userInfo = await getUserEmail(userId);
     sendNotification('order-created', {
       orderNumber: order.orderNumber,
-      customerEmail: userInfo.email,
-      customerName: userInfo.name || 'Cliente',
+      clientEmail: userInfo.email,
+      clientName: userInfo.name || 'Cliente',
       restaurantName: finalRestaurantName || 'Restaurante',
       total: order.total,
-      items: orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price }))
+      createdAt: new Date().toISOString(),
+      items: orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price, subtotal: (i.price * i.quantity) }))
     });
     
     res.status(201).json({
@@ -396,20 +397,30 @@ exports.updateOrderStatus = async (req, res) => {
     order.status = status;
     logger.info(`Order ${order.orderNumber} status updated from ${previousStatus} to ${status}`);
 
+    // ── Fetch order items for notification ──────────────────────
+    const [orderItemRows] = await db().query('SELECT * FROM order_items WHERE order_id = ?', [id]);
+    const orderItemsList = orderItemRows.map(r => ({ name: r.name, quantity: r.quantity, price: parseFloat(r.price), subtotal: parseFloat(r.subtotal) }));
+
     // ── Send notifications based on new status ──────────────────────
     const userInfo = await getUserEmail(order.userId);
     const notifBase = {
       orderNumber: order.orderNumber,
-      customerEmail: userInfo.email,
-      customerName: userInfo.name || 'Cliente',
+      clientEmail: userInfo.email,
+      clientName: userInfo.name || 'Cliente',
       restaurantName: order.restaurantName || 'Restaurante',
-      total: order.total
+      total: order.total,
+      items: orderItemsList
     };
 
     if (status === Order.STATUS.EN_CAMINO) {
-      sendNotification('order-shipped', notifBase);
+      sendNotification('order-shipped', { ...notifBase, driverName: req.body.driverName || 'Repartidor asignado' });
     } else if (status === Order.STATUS.CANCELADO) {
-      sendNotification('order-cancelled-provider', { ...notifBase, reason: req.body.reason || 'Cancelado por el restaurante' });
+      sendNotification('order-cancelled-provider', {
+        ...notifBase,
+        providerName: req.body.providerName || order.restaurantName || 'Restaurante',
+        providerType: req.body.providerType || 'RESTAURANTE',
+        reason: req.body.reason || 'Cancelado por el restaurante'
+      });
     }
     
     res.json(order.toJSON());
@@ -447,14 +458,20 @@ exports.cancelOrder = async (req, res) => {
     order.status = Order.STATUS.CANCELADO;
     logger.info(`Order ${order.orderNumber} cancelled by client`);
 
+    // Fetch order items for notification
+    const [cancelItemRows] = await db().query('SELECT * FROM order_items WHERE order_id = ?', [id]);
+    const cancelItemsList = cancelItemRows.map(r => ({ name: r.name, quantity: r.quantity, price: parseFloat(r.price), subtotal: parseFloat(r.subtotal) }));
+
     // Notification — order cancelled by client
     const userInfo = await getUserEmail(order.userId);
     sendNotification('order-cancelled-client', {
       orderNumber: order.orderNumber,
-      customerEmail: userInfo.email,
-      customerName: userInfo.name || 'Cliente',
+      clientEmail: userInfo.email,
+      clientName: userInfo.name || 'Cliente',
       restaurantName: order.restaurantName || 'Restaurante',
-      total: order.total
+      total: order.total,
+      cancelledAt: new Date().toISOString(),
+      items: cancelItemsList
     });
     
     res.json({ message: 'Orden cancelada exitosamente', order: order.toJSON() });
@@ -493,15 +510,20 @@ exports.rejectOrder = async (req, res) => {
     order.status = Order.STATUS.RECHAZADA;
     logger.info(`Order ${order.orderNumber} rejected by restaurant. Reason: ${reason || 'N/A'}`);
 
+    // Fetch order items for notification
+    const [rejectItemRows] = await db().query('SELECT * FROM order_items WHERE order_id = ?', [id]);
+    const rejectItemsList = rejectItemRows.map(r => ({ name: r.name, quantity: r.quantity, price: parseFloat(r.price), subtotal: parseFloat(r.subtotal) }));
+
     // Notification — order rejected by restaurant
     const userInfo = await getUserEmail(order.userId);
     sendNotification('order-rejected', {
       orderNumber: order.orderNumber,
-      customerEmail: userInfo.email,
-      customerName: userInfo.name || 'Cliente',
+      clientEmail: userInfo.email,
+      clientName: userInfo.name || 'Cliente',
       restaurantName: order.restaurantName || 'Restaurante',
       total: order.total,
-      reason: reason || 'Rechazada por el restaurante'
+      reason: reason || 'Rechazada por el restaurante',
+      items: rejectItemsList
     });
     
     res.json({ message: 'Orden rechazada', order: order.toJSON() });

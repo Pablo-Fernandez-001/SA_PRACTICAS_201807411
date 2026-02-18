@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { catalogAPI, ordersAPI, deliveryAPI } from '../services/api'
 import { PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useSocket } from '../hooks/useSocket'
 
 export default function AdminPanel() {
   const navigate = useNavigate()
@@ -64,6 +65,18 @@ export default function AdminPanel() {
     } catch (e) { console.error(e) }
     setLoading(false)
   }
+
+  // Real-time updates for orders/deliveries tabs
+  useSocket('order:statusChanged', () => {
+    if (tab === 'orders') fetchOrders()
+    if (tab === 'deliveries') fetchDeliveries()
+  })
+  useSocket('order:created', () => {
+    if (tab === 'orders') fetchOrders()
+  })
+  useSocket('delivery:updated', () => {
+    if (tab === 'deliveries') fetchDeliveries()
+  })
 
   // Restaurant CRUD
   const createRestaurant = async (e) => {

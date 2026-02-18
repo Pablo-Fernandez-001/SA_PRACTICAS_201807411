@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline'
 import useAuthStore from '../stores/authStore'
 import { ordersAPI } from '../services/api'
+import { useSocketReload } from '../hooks/useSocket'
 
 const ClientDashboard = () => {
   const { user } = useAuthStore()
@@ -33,6 +34,9 @@ const ClientDashboard = () => {
       setLoading(false)
     }
   }
+
+  // Real-time updates
+  useSocketReload(['order:statusChanged', 'order:created', 'delivery:updated'], fetchOrders)
 
   // Calculate real stats from orders
   const thisMonth = new Date().getMonth()

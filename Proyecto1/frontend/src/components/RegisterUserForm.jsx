@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { XMarkIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import useAuthStore from '../stores/authStore'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+
 const RegisterUserForm = ({ onClose, onSuccess }) => {
   const { token } = useAuthStore()
   const [isLoading, setIsLoading] = useState(false)
@@ -33,7 +35,7 @@ const RegisterUserForm = ({ onClose, onSuccess }) => {
     setSuccess('')
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/admin/register', {
+      const response = await fetch(`${API_URL}/auth/admin/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

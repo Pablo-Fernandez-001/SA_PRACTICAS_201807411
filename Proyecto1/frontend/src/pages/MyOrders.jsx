@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ordersAPI } from '../services/api'
 import useAuthStore from '../stores/authStore'
+import { useSocketReload } from '../hooks/useSocket'
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([])
@@ -30,6 +31,9 @@ export default function MyOrders() {
       setLoading(false)
     }
   }
+
+  // Real-time updates
+  useSocketReload(['order:statusChanged', 'order:created', 'delivery:updated'], fetchOrders)
 
   const statusColors = {
     CREADA: 'bg-gray-100 text-gray-800',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import useAuthStore from '../stores/authStore'
 import { deliveryAPI } from '../services/api'
+import { useSocketReload } from '../hooks/useSocket'
 
 const STATUS_COLORS = {
   ASIGNADO: 'bg-blue-100 text-blue-800',
@@ -54,6 +55,9 @@ export default function RepartidorDashboard() {
     }
     setLoading(false)
   }
+
+  // Real-time updates
+  useSocketReload(['order:statusChanged', 'order:created', 'delivery:updated'], loadData)
 
   const showMessage = (text, type = 'success') => {
     setMessage({ text, type })

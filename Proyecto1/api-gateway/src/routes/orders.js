@@ -49,6 +49,11 @@ router.post('/', authMiddleware, authorize(['CLIENTE', 'ADMIN']), async (req, re
       userId: req.user.id // inject authenticated user ID
     }
     const { data } = await axios.post(`${ORDERS_URL}/api/orders`, orderData)
+
+    // Emit real-time event
+    const io = req.app.get('io')
+    io.emit('order:created', { order: data.order || data, userId: req.user.id, restaurantId: req.body.restaurantId })
+
     res.status(201).json(data) // forward full response (includes validation info)
   } catch (error) {
     logger.error('Orders proxy error (create):', error.message)
@@ -75,6 +80,11 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.patch('/:id/status', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.patch(`${ORDERS_URL}/api/orders/${req.params.id}/status`, req.body)
+
+    // Emit real-time event
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { orderId: parseInt(req.params.id), newStatus: req.body.status, data })
+
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Orders proxy error (status):', error.message)
@@ -86,6 +96,11 @@ router.patch('/:id/status', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']),
 router.post('/:id/cancel', authMiddleware, authorize(['CLIENTE', 'ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.post(`${ORDERS_URL}/api/orders/${req.params.id}/cancel`)
+
+    // Emit real-time event
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { orderId: parseInt(req.params.id), newStatus: 'CANCELADO', data })
+
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Orders proxy error (cancel):', error.message)
@@ -100,6 +115,11 @@ router.post('/:id/cancel', authMiddleware, authorize(['CLIENTE', 'ADMIN']), asyn
 router.post('/:id/reject', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.post(`${ORDERS_URL}/api/orders/${req.params.id}/reject`, req.body)
+
+    // Emit real-time event
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { orderId: parseInt(req.params.id), newStatus: 'RECHAZADA', data })
+
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Orders proxy error (reject):', error.message)

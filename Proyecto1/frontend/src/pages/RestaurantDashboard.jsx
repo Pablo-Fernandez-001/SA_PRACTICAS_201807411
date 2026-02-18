@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline'
 import useAuthStore from '../stores/authStore'
 import { catalogAPI, ordersAPI } from '../services/api'
+import { useSocketReload } from '../hooks/useSocket'
 
 const RestaurantDashboard = () => {
   const { user, token } = useAuthStore()
@@ -70,6 +71,9 @@ const RestaurantDashboard = () => {
       setLoading(false)
     }
   }
+
+  // Real-time updates
+  useSocketReload(['order:statusChanged', 'order:created', 'delivery:updated'], loadRestaurantData)
 
   const handleCreateItem = () => {
     setEditingItem(null)
@@ -282,6 +286,20 @@ const RestaurantDashboard = () => {
     try {
       await ordersAPI.updateStatus(orderId, 'FINALIZADA')
       setOrderMessage({ text: 'Orden finalizada — lista para repartidor', type: 'success' })
+      loadRestaurantData()
+    } catch (err) {
+      setOrderMessage({ text: err.response?.data?.error || 'Error', type: 'error' })
+    }
+    setOrderActionLoading(null)
+    setTimeout(() => setOrderMessage(null), 3000)
+  }
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('¿Estás seguro de cancelar esta orden?')) return
+    setOrderActionLoading(orderId)
+    try {
+      await ordersAPI.updateStatus(orderId, 'CANCELADO')
+      setOrderMessage({ text: 'Orden cancelada', type: 'success' })
       loadRestaurantData()
     } catch (err) {
       setOrderMessage({ text: err.response?.data?.error || 'Error', type: 'error' })
@@ -537,6 +555,13 @@ const RestaurantDashboard = () => {
                               >
                                 Rechazar
                               </button>
+                              <button
+                                onClick={() => handleCancelOrder(order.id)}
+                                disabled={orderActionLoading === order.id}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 disabled:opacity-50 transition"
+                              >
+                                Cancelar
+                              </button>
                             </>
                           )}
                           {order.status === 'EN_PROCESO' && (
@@ -547,6 +572,13 @@ const RestaurantDashboard = () => {
                                 className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50 transition"
                               >
                                 {orderActionLoading === order.id ? '...' : '📦 Marcar Lista'}
+                              </button>
+                              <button
+                                onClick={() => handleCancelOrder(order.id)}
+                                disabled={orderActionLoading === order.id}
+                                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 disabled:opacity-50 transition"
+                              >
+                                Cancelar
                               </button>
                               <button
                                 onClick={() => handleRejectOrder(order.id)}

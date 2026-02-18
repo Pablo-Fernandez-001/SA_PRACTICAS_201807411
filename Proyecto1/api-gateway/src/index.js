@@ -1,5 +1,7 @@
 require('dotenv').config()
 const express = require('express')
+const http = require('http')
+const { Server: SocketIOServer } = require('socket.io')
 const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
@@ -14,6 +16,32 @@ const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
 const PORT = process.env.PORT || 8080
+
+// ── HTTP server + Socket.IO ─────────────────────────────────────────────────
+const server = http.createServer(app)
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE']
+  }
+})
+
+// Make io accessible from routes via req.app
+app.set('io', io)
+
+io.on('connection', (socket) => {
+  logger.info(`[Socket.IO] Client connected: ${socket.id}`)
+
+  // Join rooms based on role
+  socket.on('join', (room) => {
+    socket.join(room)
+    logger.info(`[Socket.IO] ${socket.id} joined room: ${room}`)
+  })
+
+  socket.on('disconnect', () => {
+    logger.info(`[Socket.IO] Client disconnected: ${socket.id}`)
+  })
+})
 
 // Middleware
 app.use(helmet())
@@ -68,8 +96,9 @@ app.use('*', (req, res) => {
 // Error handler
 app.use(errorHandler)
 
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   logger.info(`API Gateway running on port ${PORT}`)
+  logger.info(`Socket.IO listening on port ${PORT}`)
 })
 
 module.exports = app

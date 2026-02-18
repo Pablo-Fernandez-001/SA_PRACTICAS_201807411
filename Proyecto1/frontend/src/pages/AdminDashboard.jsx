@@ -9,6 +9,8 @@ import {
 import useAuthStore from '../stores/authStore'
 import RegisterUserForm from '../components/RegisterUserForm'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+
 const AdminDashboard = () => {
   const { user, token } = useAuthStore()
   const [showRegisterForm, setShowRegisterForm] = useState(false)
@@ -26,7 +28,7 @@ const AdminDashboard = () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch('http://localhost:8080/api/auth/users', {
+      const response = await fetch(`${API_URL}/auth/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -63,7 +65,7 @@ const AdminDashboard = () => {
     try {
       // Update user data
       if (editFormData.name !== editingUser.name || editFormData.email !== editingUser.email) {
-        await fetch(`http://localhost:8080/api/auth/users/${editingUser.id}`, {
+        await fetch(`${API_URL}/auth/users/${editingUser.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ const AdminDashboard = () => {
 
       // Update role if changed
       if (editFormData.role !== editingUser.role) {
-        await fetch(`http://localhost:8080/api/auth/users/${editingUser.id}/role`, {
+        await fetch(`${API_URL}/auth/users/${editingUser.id}/role`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -102,7 +104,7 @@ const AdminDashboard = () => {
     if (!confirm('¿Estás seguro de ELIMINAR PERMANENTEMENTE este usuario? Esta acción no se puede deshacer.')) return
 
     try {
-      await fetch(`http://localhost:8080/api/auth/users/${userId}`, {
+      await fetch(`${API_URL}/auth/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -120,7 +122,7 @@ const AdminDashboard = () => {
     if (!confirm(`¿Estás seguro de ${action} este usuario?`)) return
 
     try {
-      await fetch(`http://localhost:8080/api/auth/users/${userId}`, {
+      await fetch(`${API_URL}/auth/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
