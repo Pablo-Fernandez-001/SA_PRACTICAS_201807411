@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$BASE = "http://localhost:8080"
+$BASE = "http://34.55.27.36:8080"
 $out = ""
 
 function Req {

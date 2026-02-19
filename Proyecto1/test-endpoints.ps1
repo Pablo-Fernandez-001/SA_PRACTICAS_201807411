@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Continue"
-$BASE = "http://localhost:8080"
+$BASE = "http://34.55.27.36:8080"
 $results = @()
 
 function Test-Endpoint {

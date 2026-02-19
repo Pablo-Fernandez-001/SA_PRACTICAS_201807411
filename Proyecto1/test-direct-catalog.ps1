@@ -10,7 +10,7 @@ $restaurantData = @{
 Write-Host "Payload: $restaurantData`n" -ForegroundColor Gray
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3002/api/restaurants" -Method Post -Body $restaurantData -ContentType "application/json" -UseBasicParsing
+    $response = Invoke-WebRequest -Uri "http://34.55.27.36:3002/api/restaurants" -Method Post -Body $restaurantData -ContentType "application/json" -UseBasicParsing
     Write-Host "SUCCESS! Status: $($response.StatusCode)" -ForegroundColor Green
     Write-Host "Response: $($response.Content)" -ForegroundColor Green
 } catch {

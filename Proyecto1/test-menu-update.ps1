@@ -5,7 +5,7 @@ Write-Host "`n=== Testing Menu Item Update ===" -ForegroundColor Cyan
 # Primero, obtener un menu item existente
 Write-Host "`n[1] Getting menu item #4..." -ForegroundColor Yellow
 try {
-    $getResponse = Invoke-WebRequest -Uri "http://localhost:8080/api/catalog/menu-items" -UseBasicParsing
+    $getResponse = Invoke-WebRequest -Uri "http://34.55.27.36:8080/api/catalog/menu-items" -UseBasicParsing
     $items = ($getResponse.Content | ConvertFrom-Json).data
     $item = $items | Where-Object { $_.id -eq 4 } | Select-Object -First 1
     
@@ -42,7 +42,7 @@ $loginData = @{
 } | ConvertTo-Json
 
 try {
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
+    $loginResponse = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
     $token = $loginResponse.token
     if (-not $token) {
         $token = $loginResponse.data.token
@@ -61,7 +61,7 @@ try {
         "Content-Type" = "application/json"
     }
     
-    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/catalog/menu-items/4" -Method Put -Body $updateData -Headers $headers
+    $response = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/catalog/menu-items/4" -Method Put -Body $updateData -Headers $headers
     Write-Host "SUCCESS! Item updated:" -ForegroundColor Green
     Write-Host "  Name: $($response.data.name)" -ForegroundColor Green
     Write-Host "  Price: Q$($response.data.price)" -ForegroundColor Green

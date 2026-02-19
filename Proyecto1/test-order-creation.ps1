@@ -10,7 +10,7 @@ $loginData = @{
 } | ConvertTo-Json
 
 try {
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
+    $loginResponse = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
     $token = $loginResponse.token
     if (-not $token) {
         $token = $loginResponse.data.token
@@ -24,7 +24,7 @@ try {
 # Step 2: Obtener restaurantes
 Write-Host "`n[2] Getting restaurants..." -ForegroundColor Yellow
 try {
-    $restaurants = Invoke-RestMethod -Uri "http://localhost:8080/api/catalog/restaurants"
+    $restaurants = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/catalog/restaurants"
     $activeRestaurants = $restaurants.data | Where-Object { $_.isActive -eq $true }
     Write-Host "Found $($activeRestaurants.Count) active restaurants" -ForegroundColor Green
     
@@ -43,7 +43,7 @@ try {
 # Step 3: Obtener menú del restaurante
 Write-Host "`n[3] Getting menu items for restaurant $($restaurant.id)..." -ForegroundColor Yellow
 try {
-    $menu = Invoke-RestMethod -Uri "http://localhost:8080/api/catalog/restaurants/$($restaurant.id)/menu"
+    $menu = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/catalog/restaurants/$($restaurant.id)/menu"
     $availableItems = $menu.data | Where-Object { $_.isAvailable -eq $true }
     Write-Host "Found $($availableItems.Count) available menu items" -ForegroundColor Green
     if ($availableItems.Count -eq 0) {
@@ -84,7 +84,7 @@ try {
         "Content-Type" = "application/json"
     }
     
-    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/orders" -Method Post -Body $orderData -Headers $headers
+    $response = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/orders" -Method Post -Body $orderData -Headers $headers
     Write-Host "`nSUCCESS! Order created:" -ForegroundColor Green
     Write-Host "  Order ID: $($response.data.id)" -ForegroundColor Green
     Write-Host "  Restaurant: $($response.data.restaurantId)" -ForegroundColor Green

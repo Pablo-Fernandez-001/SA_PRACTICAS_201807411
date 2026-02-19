@@ -1,5 +1,5 @@
 #!/bin/sh
-BASE="http://localhost:8080"
+BASE="http://34.55.27.36:8080"
 
 echo "========================================="
 echo "  DeliverEats - Full Endpoint Tests"

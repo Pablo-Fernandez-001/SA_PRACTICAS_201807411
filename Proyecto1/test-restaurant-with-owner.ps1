@@ -10,7 +10,7 @@ $loginData = @{
 } | ConvertTo-Json
 
 try {
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
+    $loginResponse = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
     $token = $loginResponse.token
     if (-not $token) {
         $token = $loginResponse.data.token
@@ -38,7 +38,7 @@ try {
         "Content-Type" = "application/json"
     }
     
-    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/catalog/restaurants" -Method Post -Body $restaurantData -Headers $headers
+    $response = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/catalog/restaurants" -Method Post -Body $restaurantData -Headers $headers
     Write-Host "SUCCESS! Restaurant created:" -ForegroundColor Green
     Write-Host "  ID: $($response.data.id)" -ForegroundColor Green
     Write-Host "  Name: $($response.data.name)" -ForegroundColor Green

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 
 // Socket.IO URL = same as API but without /api path
-const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api').replace('/api', '')
+const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://34.55.27.36:8080/api').replace('/api', '')
 
 let sharedSocket = null
 

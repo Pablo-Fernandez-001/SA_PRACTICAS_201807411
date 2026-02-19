@@ -48,7 +48,7 @@ echo "Esto puede tardar 2-3 minutos mientras las DBs inicializan..."
 MAX_WAIT=180
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
-  if curl -s http://localhost:8080/api/health > /dev/null 2>&1; then
+  if curl -s http://34.55.27.36:8080/api/health > /dev/null 2>&1; then
     break
   fi
   sleep 5

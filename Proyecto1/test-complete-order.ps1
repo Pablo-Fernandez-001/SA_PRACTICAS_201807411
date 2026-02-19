@@ -10,7 +10,7 @@ $loginData = @{
 } | ConvertTo-Json
 
 try {
-    $loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
+    $loginResponse = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/auth/login" -Method Post -Body $loginData -ContentType "application/json"
     $token = $loginResponse.token
     if (-not $token) {
         $token = $loginResponse.data.token
@@ -28,7 +28,7 @@ try {
 # Obtener restaurante activo
 Write-Host "`n[2] Getting active restaurant..." -ForegroundColor Yellow
 try {
-    $restaurants = Invoke-RestMethod -Uri "http://localhost:8080/api/catalog/restaurants"
+    $restaurants = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/catalog/restaurants"
     $restaurant = ($restaurants.data | Where-Object { $_.name -match "Sushi|Taco" -and $_.is_active -eq $true })[0]
     Write-Host "Using: $($restaurant.name) (ID: $($restaurant.id))" -ForegroundColor Cyan
 } catch {
@@ -39,7 +39,7 @@ try {
 # Obtener menú
 Write-Host "`n[3] Getting menu..." -ForegroundColor Yellow
 try {
-    $menu = Invoke-RestMethod -Uri "http://localhost:8080/api/catalog/restaurants/$($restaurant.id)/menu"
+    $menu = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/catalog/restaurants/$($restaurant.id)/menu"
     $item = ($menu.data | Where-Object { $_.is_available -eq $true })[0]
     Write-Host "Item: $($item.name) - Q$($item.price)" -ForegroundColor Cyan
 } catch {
@@ -69,7 +69,7 @@ try {
         "Content-Type" = "application/json"
     }
     
-    $response = Invoke-RestMethod -Uri "http://localhost:8080/api/orders" -Method Post -Body $orderData -Headers $headers
+    $response = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/orders" -Method Post -Body $orderData -Headers $headers
     Write-Host "SUCCESS! Order created: #$($response.order.id)" -ForegroundColor Green
     Write-Host "  Restaurant: $($response.order.restaurantName)" -ForegroundColor Green
     Write-Host "  Total: Q$($response.order.total)" -ForegroundColor Green
@@ -85,7 +85,7 @@ try {
 # Verificar que la orden aparece en "Mis Pedidos" con toda la info
 Write-Host "`n[5] Checking user's orders..." -ForegroundColor Yellow
 try {
-    $myOrders = Invoke-RestMethod -Uri "http://localhost:8080/api/orders/user/$userId" -Headers $headers
+    $myOrders = Invoke-RestMethod -Uri "http://34.55.27.36:8080/api/orders/user/$userId" -Headers $headers
     $lastOrder = $myOrders[0]
     
     Write-Host "`nOrder Details:" -ForegroundColor Cyan
