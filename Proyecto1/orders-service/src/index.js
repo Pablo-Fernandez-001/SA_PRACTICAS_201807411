@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const logger = require('./utils/logger');
 const { initDatabase } = require('./config/database');
+const { connectRabbitMQ } = require('./messaging/rabbitmqPublisher');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -36,10 +37,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ─── Bootstrap: DB → REST ────────────────────────────────────────────────────
+// ─── Bootstrap: DB → RabbitMQ → REST ────────────────────────────────────────
 async function start() {
   try {
     await initDatabase();
+    logger.info('✅ Database initialized');
+
+    // Conectar a RabbitMQ (PoC Práctica 4)
+    await connectRabbitMQ();
+    logger.info('✅ RabbitMQ publisher initialized');
 
     app.listen(PORT, '0.0.0.0', () => {
       logger.info(`Orders REST API running on port ${PORT}`);

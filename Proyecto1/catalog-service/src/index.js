@@ -4,6 +4,7 @@ const cors = require('cors');
 const logger = require('./utils/logger');
 const { initDatabase } = require('./config/database');
 const { startGrpcServer } = require('./grpc/catalogGrpcServer');
+const { startConsumer } = require('./messaging/rabbitmqConsumer');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -39,10 +40,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ─── Bootstrap: DB → REST → gRPC ────────────────────────────────────────────
+// ─── Bootstrap: DB → REST → gRPC → RabbitMQ Consumer────────────────────────
 async function start() {
   try {
     await initDatabase();
+    logger.info('✅ Database initialized');
 
     app.listen(PORT, '0.0.0.0', () => {
       logger.info(`Catalog REST API running on port ${PORT}`);
@@ -50,6 +52,11 @@ async function start() {
 
     // Start gRPC server for order validation (key deliverable)
     startGrpcServer();
+    logger.info('✅ gRPC Server started');
+
+    // Start RabbitMQ consumer (PoC Práctica 4)
+    await startConsumer();
+    logger.info('✅ RabbitMQ consumer started');
   } catch (error) {
     logger.error('Failed to start catalog service:', error);
     process.exit(1);
