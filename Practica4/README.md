@@ -18,22 +18,22 @@ Sistema completo de gestión de pedidos de comida con autenticación JWT, comuni
 - **Consumer:** Catalog-Service consume eventos y registra órdenes en consola
 - Demostración completa de comunicación asíncrona entre microservicios
 
-**✅ Cache con Redis:**
+**  Cache con Redis:**
 - Redis 7 integrado para cache de restaurantes y menús
 - Mejora de performance en consultas frecuentes al Catalog-Service
 
-**✅ Infraestructura Kubernetes:**
+**  Infraestructura Kubernetes:**
 - 18 manifests YAML completos para despliegue en GKE/EKS/AKS
 - StatefulSets para bases de datos persistentes
 - HorizontalPodAutoscaler (HPA) configurado en todos los servicios
 - Ingress con TLS/SSL para routing HTTP/HTTPS
 
-**✅ CI/CD Pipeline con GitHub Actions:**
+**  CI/CD Pipeline con GitHub Actions:**
 - Pipeline de 8 etapas: Lint → Test → Security → Build → Deploy
 - Ambientes separados: Development (develop) y Production (main)
 - Rollback automatizado en caso de fallo
 
-**✅ Documentación Completa:**
+**  Documentación Completa:**
 - 8 documentos técnicos detallados en carpeta `/docs`:
   - Requerimientos Funcionales (22 RF)
   - Requerimientos No Funcionales (28 RNF)
@@ -153,14 +153,14 @@ docker logs delivereats-catalog-service -f
 
 **Salida esperada en catalog-service:**
 ```
-[RabbitMQ Consumer] ✅ Mensaje de orden recibido de RabbitMQ
-[RabbitMQ Consumer] 📦 ORDEN CREADA - ID: 42
-[RabbitMQ Consumer] 📦 Order Number: ORD-20240223-0042
-[RabbitMQ Consumer] 🏪 Restaurante: La Pizzería (ID: 1)
-[RabbitMQ Consumer] 👤 Usuario ID: 5
-[RabbitMQ Consumer] 📋 Items: [{"itemId":1,"name":"Pizza Margarita","quantity":2,"price":15.00}]
-[RabbitMQ Consumer] 💰 Total: Q30.00
-[RabbitMQ Consumer] 📍 Dirección: Calle Ejemplo 123
+[RabbitMQ Consumer]  Mensaje de orden recibido de RabbitMQ
+[RabbitMQ Consumer]  ORDEN CREADA - ID: 42
+[RabbitMQ Consumer]  Order Number: ORD-20240223-0042
+[RabbitMQ Consumer]  Restaurante: La Pizzería (ID: 1)
+[RabbitMQ Consumer]  Usuario ID: 5
+[RabbitMQ Consumer]  Items: [{"itemId":1,"name":"Pizza Margarita","quantity":2,"price":15.00}]
+[RabbitMQ Consumer]  Total: Q30.00
+[RabbitMQ Consumer]  Dirección: Calle Ejemplo 123
 ```
 
 4. **Verificar en RabbitMQ Management UI:**
@@ -211,15 +211,15 @@ DeliverEats es una plataforma de delivery que centraliza y coordina el ciclo com
 Implementar un sistema de mensajería asíncrona con RabbitMQ que permita la comunicación event-driven entre microservicios, específicamente un flujo productor-consumidor donde el Order-Service publica eventos de creación de órdenes que el Catalog-Service consume y procesa.
 
 ### 2.2 Objetivos Específicos (Práctica 4)
-- ✅ Integrar RabbitMQ 3.12 como Message Broker en la arquitectura de microservicios
-- ✅ Implementar productor (Orders-Service) que publique eventos `order_created` a RabbitMQ
-- ✅ Implementar consumidor (Catalog-Service) que consuma eventos y registre en consola
-- ✅ Integrar Redis 7 como sistema de cache para Catalog-Service
-- ✅ Crear manifests de Kubernetes completos para despliegue en GKE/EKS/AKS
-- ✅ Implementar pipeline CI/CD con GitHub Actions (8 etapas)
-- ✅ Documentar arquitectura, requerimientos, diagramas, y guías de despliegue
-- ✅ Configurar HorizontalPodAutoscaler (HPA) para escalabilidad automática
-- ✅ Implementar estrategias de Rollout/Rollback en Kubernetes
+-  Integrar RabbitMQ 3.12 como Message Broker en la arquitectura de microservicios
+-  Implementar productor (Orders-Service) que publique eventos `order_created` a RabbitMQ
+-  Implementar consumidor (Catalog-Service) que consuma eventos y registre en consola
+-  Integrar Redis 7 como sistema de cache para Catalog-Service
+-  Crear manifests de Kubernetes completos para despliegue en GKE/EKS/AKS
+-  Implementar pipeline CI/CD con GitHub Actions (8 etapas)
+-  Documentar arquitectura, requerimientos, diagramas, y guías de despliegue
+-  Configurar HorizontalPodAutoscaler (HPA) para escalabilidad automática
+-  Implementar estrategias de Rollout/Rollback en Kubernetes
 
 ### 2.3 Objetivos Históricos (Prácticas 2 y 3)
 - Implementar autenticación basada en JWT con expiración de 24 horas
@@ -2151,6 +2151,9 @@ Practica3/
 ```
 
 ---
+
+
+
 
 **Versión:** 0.3.0 | **Fecha:** Febrero 2026 | **Curso:** Software Avanzado  
 **Práctica:** 3 — Arquitectura SOA Completa con Microservicios

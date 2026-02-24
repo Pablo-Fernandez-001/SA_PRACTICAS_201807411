@@ -3,7 +3,6 @@
 # Orquestación completa: 4 DBs aisladas + 4 micro-servicios + API Gateway + Frontend
 # gRPC: catalog-service (server :50052)  ←  orders-service (client)
 ############################################################################
-
 services:
 
   # ═══════════════════════════════════════════════════════════════════════════
