@@ -308,7 +308,11 @@ docker volume inspect delivereats_mysql-data
 
 ---
 
+<<<<<<< HEAD
 ## Notas
+=======
+## Notas Practias 4
+>>>>>>> 5e84f9d3bb8995d75027207d8bc6c5e3efaefd0d
 
 - **Credenciales DB:** root / password
 - **JWT Secret:** delivereats_super_secret_jwt_key_2024
