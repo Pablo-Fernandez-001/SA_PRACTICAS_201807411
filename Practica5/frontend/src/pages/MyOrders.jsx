@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { ordersAPI } from '../services/api'
+import { useNavigate } from 'react-router-dom'
+import { ordersAPI, deliveryAPI } from '../services/api'
 import useAuthStore from '../stores/authStore'
 import { useSocketReload } from '../hooks/useSocket'
 
@@ -9,7 +10,9 @@ export default function MyOrders() {
   const [error, setError] = useState(null)
   const [cancelLoading, setCancelLoading] = useState(null)
   const [message, setMessage] = useState(null)
+  const [photoModal, setPhotoModal] = useState(null) // base64 image or null
   const { user } = useAuthStore()
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchOrders()
@@ -42,24 +45,47 @@ export default function MyOrders() {
     EN_PROCESO: 'bg-blue-100 text-blue-800',
     EN_PREPARACION: 'bg-purple-100 text-purple-800',
     FINALIZADA: 'bg-purple-100 text-purple-800',
+    PAGADO: 'bg-emerald-100 text-emerald-800',
     EN_CAMINO: 'bg-indigo-100 text-indigo-800',
     ENTREGADO: 'bg-green-100 text-green-800',
     CANCELADO: 'bg-red-100 text-red-800',
     RECHAZADA: 'bg-red-100 text-red-800',
+    REEMBOLSADO: 'bg-amber-100 text-amber-800',
   }
 
   const statusLabels = {
     CREADA: 'Creada',
     EN_PROCESO: 'En Proceso',
     FINALIZADA: 'Lista para Envío',
+    PAGADO: 'Pagado',
     EN_CAMINO: 'En Camino',
     ENTREGADO: 'Entregado',
     CANCELADO: 'Cancelado',
     RECHAZADA: 'Rechazada',
+    REEMBOLSADO: 'Reembolsado',
   }
+
+  const canPay = (status) => status === 'CREADA'
 
   // Orders that can be cancelled by client
   const canCancel = (status) => ['CREADA', 'EN_PROCESO'].includes(status)
+
+  const handleViewPhoto = async (orderId) => {
+    try {
+      const { data } = await deliveryAPI.getPhotoByOrder(orderId)
+      const photo = data.data?.photo || data.photo
+      const contentType = data.data?.content_type || data.content_type || 'image/jpeg'
+      if (photo) {
+        setPhotoModal(`data:${contentType};base64,${photo}`)
+      } else {
+        setMessage({ text: 'No se encontró foto para esta orden', type: 'error' })
+        setTimeout(() => setMessage(null), 3000)
+      }
+    } catch {
+      setMessage({ text: 'No hay evidencia fotográfica disponible', type: 'error' })
+      setTimeout(() => setMessage(null), 3000)
+    }
+  }
 
   const handleCancel = async (orderId) => {
     if (!window.confirm('¿Estás seguro de cancelar esta orden?')) return
@@ -149,6 +175,22 @@ export default function MyOrders() {
                   {order.items?.length || 0} item(s)
                 </span>
                 <div className="flex items-center gap-3">
+                  {canPay(order.status) && (
+                    <button
+                      onClick={() => navigate(`/payment?orderId=${order.id}&total=${order.total}`)}
+                      className="text-sm bg-green-600 text-white px-4 py-1.5 rounded-lg hover:bg-green-700 transition font-medium"
+                    >
+                      💰 Pagar
+                    </button>
+                  )}
+                  {order.status === 'ENTREGADO' && (
+                    <button
+                      onClick={() => handleViewPhoto(order.id)}
+                      className="text-sm text-indigo-600 border border-indigo-200 px-3 py-1 rounded-lg hover:bg-indigo-50 transition"
+                    >
+                      📸 Ver Evidencia
+                    </button>
+                  )}
                   {canCancel(order.status) && (
                     <button
                       onClick={() => handleCancel(order.id)}
@@ -157,6 +199,9 @@ export default function MyOrders() {
                     >
                       {cancelLoading === order.id ? 'Cancelando...' : 'Cancelar Orden'}
                     </button>
+                  )}
+                  {order.status === 'REEMBOLSADO' && (
+                    <span className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full">💰 Reembolsado</span>
                   )}
                   <span className="text-lg font-bold text-orange-600">
                     Q{parseFloat(order.total || 0).toFixed(2)}
@@ -174,6 +219,19 @@ export default function MyOrders() {
       >
         Actualizar
       </button>
+
+      {/* Photo Modal */}
+      {photoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50" onClick={() => setPhotoModal(null)}>
+          <div className="bg-white rounded-xl p-4 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-bold">📸 Evidencia de Entrega</h3>
+              <button onClick={() => setPhotoModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+            <img src={photoModal} alt="Evidencia de entrega" className="w-full rounded-lg" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

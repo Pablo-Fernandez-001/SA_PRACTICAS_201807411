@@ -12,6 +12,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import ClientDashboard from './pages/ClientDashboard'
 import RestaurantDashboard from './pages/RestaurantDashboard'
 import RepartidorDashboard from './pages/RepartidorDashboard'
+import PaymentPage from './pages/PaymentPage'
 
 // Protected Route wrapper
 function ProtectedRoute({ children, roles }) {
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/restaurant/:id" element={<ProtectedRoute><RestaurantMenu /></ProtectedRoute>} />
             <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+            <Route path="/payment" element={<ProtectedRoute roles={['CLIENTE', 'ADMIN']}><PaymentPage /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminPanel /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute roles={['CLIENTE']}><ClientDashboard /></ProtectedRoute>} />

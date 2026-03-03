@@ -14,6 +14,11 @@ class Delivery {
     this.createdAt = data.created_at || data.createdAt || new Date();
     this.updatedAt = data.updated_at || data.updatedAt || new Date();
     
+    // Photo evidence (base64)
+    this.photoEvidence = data.photo_evidence || data.photoEvidence || null;
+    this.photoContentType = data.photo_content_type || data.photoContentType || null;
+    this.failureReason = data.failure_reason || data.failureReason || null;
+    
     // Related data (from other services)
     this.courierName = data.courier_name || data.courierName || null;
     this.orderNumber = data.order_number || data.orderNumber || null;
@@ -25,7 +30,8 @@ class Delivery {
     ASIGNADO: 'ASIGNADO',
     EN_CAMINO: 'EN_CAMINO',
     ENTREGADO: 'ENTREGADO',
-    CANCELADO: 'CANCELADO'
+    CANCELADO: 'CANCELADO',
+    FALLIDO: 'FALLIDO'
   };
 
   /**
@@ -64,9 +70,10 @@ class Delivery {
   canTransitionTo(newStatus) {
     const validTransitions = {
       [Delivery.STATUS.ASIGNADO]: [Delivery.STATUS.EN_CAMINO, Delivery.STATUS.CANCELADO],
-      [Delivery.STATUS.EN_CAMINO]: [Delivery.STATUS.ENTREGADO, Delivery.STATUS.CANCELADO],
+      [Delivery.STATUS.EN_CAMINO]: [Delivery.STATUS.ENTREGADO, Delivery.STATUS.CANCELADO, Delivery.STATUS.FALLIDO],
       [Delivery.STATUS.ENTREGADO]: [],
-      [Delivery.STATUS.CANCELADO]: []
+      [Delivery.STATUS.CANCELADO]: [],
+      [Delivery.STATUS.FALLIDO]: []
     };
     
     return validTransitions[this.status]?.includes(newStatus) || false;
@@ -121,6 +128,18 @@ class Delivery {
   }
 
   /**
+   * Mark delivery as failed
+   */
+  fail(reason) {
+    if (this.canTransitionTo(Delivery.STATUS.FALLIDO)) {
+      this.status = Delivery.STATUS.FALLIDO;
+      this.failureReason = reason;
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Convert to plain object for database operations
    * @returns {Object}
    */
@@ -130,7 +149,10 @@ class Delivery {
       courier_id: this.courierId,
       status: this.status,
       started_at: this.startedAt,
-      delivered_at: this.deliveredAt
+      delivered_at: this.deliveredAt,
+      photo_evidence: this.photoEvidence,
+      photo_content_type: this.photoContentType,
+      failure_reason: this.failureReason
     };
 
     if (this.id) {
@@ -153,6 +175,9 @@ class Delivery {
       courierName: this.courierName,
       status: this.status,
       deliveryAddress: this.deliveryAddress,
+      hasPhoto: !!this.photoEvidence,
+      photoContentType: this.photoContentType,
+      failureReason: this.failureReason,
       startedAt: this.startedAt,
       deliveredAt: this.deliveredAt,
       durationMinutes: this.getDurationMinutes(),
@@ -190,6 +215,9 @@ class Delivery {
       courier_name: row.courier_name,
       status: row.status,
       delivery_address: row.delivery_address,
+      photo_evidence: row.photo_evidence,
+      photo_content_type: row.photo_content_type,
+      failure_reason: row.failure_reason,
       started_at: row.started_at,
       delivered_at: row.delivered_at,
       created_at: row.created_at,

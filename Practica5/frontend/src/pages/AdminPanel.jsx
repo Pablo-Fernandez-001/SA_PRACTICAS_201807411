@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { catalogAPI, ordersAPI, deliveryAPI } from '../services/api'
+import { catalogAPI, ordersAPI, deliveryAPI, paymentAPI, fxAPI } from '../services/api'
 import { PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useSocket } from '../hooks/useSocket'
 
@@ -11,8 +11,14 @@ export default function AdminPanel() {
   const [menuItems, setMenuItems] = useState([])
   const [orders, setOrders] = useState([])
   const [deliveries, setDeliveries] = useState([])
+  const [payments, setPayments] = useState([])
+  const [fxStats, setFxStats] = useState(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState(null)
+  const [refundLoading, setRefundLoading] = useState(null)
+  const [refundReason, setRefundReason] = useState('')
+  const [refundModal, setRefundModal] = useState(null) // order object
+  const [photoModal, setPhotoModal] = useState(null) // base64 data URL
   
   // Edit states
   const [editingRestaurant, setEditingRestaurant] = useState(null)
@@ -62,6 +68,24 @@ export default function AdminPanel() {
     try {
       const res = await deliveryAPI.getDeliveries()
       setDeliveries(res.data.data || res.data || [])
+    } catch (e) { console.error(e) }
+    setLoading(false)
+  }
+
+  const fetchPayments = async () => {
+    setLoading(true)
+    try {
+      const res = await paymentAPI.getAll()
+      setPayments(res.data.data || res.data || [])
+    } catch (e) { console.error(e) }
+    setLoading(false)
+  }
+
+  const fetchFxStats = async () => {
+    setLoading(true)
+    try {
+      const res = await fxAPI.getCacheStats()
+      setFxStats(res.data.data || res.data || null)
     } catch (e) { console.error(e) }
     setLoading(false)
   }
@@ -232,12 +256,53 @@ export default function AdminPanel() {
     setTimeout(() => setMessage(null), 4000)
   }
 
+  // Refund handler
+  const handleRefund = async () => {
+    if (!refundModal || !refundReason.trim()) return
+    setRefundLoading(refundModal.id)
+    try {
+      await paymentAPI.processRefund({
+        order_id: refundModal.id,
+        reason: refundReason
+      })
+      setMessage('Reembolso procesado exitosamente para pedido #' + refundModal.id)
+      setRefundModal(null)
+      setRefundReason('')
+      fetchOrders()
+      if (tab === 'payments') fetchPayments()
+    } catch (err) {
+      setMessage('Error reembolso: ' + (err.response?.data?.error || err.response?.data?.message || err.message))
+    }
+    setRefundLoading(null)
+    setTimeout(() => setMessage(null), 4000)
+  }
+
+  // Photo viewing
+  const handleViewDeliveryPhoto = async (deliveryId) => {
+    try {
+      const { data } = await deliveryAPI.getPhoto(deliveryId)
+      const photo = data.data?.photo || data.photo
+      const contentType = data.data?.content_type || data.content_type || 'image/jpeg'
+      if (photo) {
+        setPhotoModal(`data:${contentType};base64,${photo}`)
+      } else {
+        setMessage('No hay foto para esta entrega')
+        setTimeout(() => setMessage(null), 3000)
+      }
+    } catch {
+      setMessage('No se pudo cargar la foto')
+      setTimeout(() => setMessage(null), 3000)
+    }
+  }
+
   const tabs = [
     { key: 'users', label: 'Usuarios', action: () => navigate('/admin/users') },
     { key: 'restaurants', label: 'Restaurantes' },
     { key: 'menu-items', label: 'Menu Items' },
     { key: 'orders', label: 'Pedidos' },
     { key: 'deliveries', label: 'Entregas' },
+    { key: 'payments', label: '💳 Pagos' },
+    { key: 'fx-stats', label: '💱 FX Cache' },
     { key: 'create', label: 'Crear' },
   ]
 
@@ -401,20 +466,24 @@ export default function AdminPanel() {
                       <td className="px-4 py-3">
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                           o.status === 'ENTREGADO' ? 'bg-green-100 text-green-800' :
+                          o.status === 'PAGADO' ? 'bg-emerald-100 text-emerald-800' :
                           o.status === 'EN_PROCESO' ? 'bg-blue-100 text-blue-800' :
                           o.status === 'EN_CAMINO' ? 'bg-indigo-100 text-indigo-800' :
                           o.status === 'FINALIZADA' ? 'bg-purple-100 text-purple-800' :
+                          o.status === 'REEMBOLSADO' ? 'bg-amber-100 text-amber-800' :
                           o.status === 'CANCELADO' || o.status === 'RECHAZADA' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
                           {{
                             CREADA: 'Nueva',
+                            PAGADO: 'Pagado',
                             EN_PROCESO: 'En Proceso',
                             FINALIZADA: 'Lista',
                             EN_CAMINO: 'En Camino',
                             ENTREGADO: 'Entregado',
                             CANCELADO: 'Cancelado',
-                            RECHAZADA: 'Rechazada'
+                            RECHAZADA: 'Rechazada',
+                            REEMBOLSADO: 'Reembolsado'
                           }[o.status] || o.status}
                         </span>
                       </td>
@@ -433,6 +502,17 @@ export default function AdminPanel() {
                           <button onClick={() => handleOrderStatusChange(o.id, 'delivered')} className="text-green-600 hover:text-green-800 text-xs">
                             Entregar
                           </button>
+                        )}
+                        {['ENTREGADO', 'CANCELADO', 'RECHAZADA', 'PAGADO'].includes(o.status) && o.status !== 'REEMBOLSADO' && (
+                          <button
+                            onClick={() => { setRefundModal(o); setRefundReason('') }}
+                            className="text-amber-600 hover:text-amber-800 text-xs bg-amber-50 px-2 py-1 rounded"
+                          >
+                            💰 Reembolsar
+                          </button>
+                        )}
+                        {o.status === 'REEMBOLSADO' && (
+                          <span className="text-xs text-amber-700">Reembolsado</span>
                         )}
                       </td>
                     </tr>
@@ -471,17 +551,29 @@ export default function AdminPanel() {
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                           d.status === 'ENTREGADO' || d.status === 'completed' ? 'bg-green-100 text-green-800' :
                           d.status === 'EN_CAMINO' || d.status === 'in_transit' ? 'bg-blue-100 text-blue-800' :
+                          d.status === 'FALLIDO' ? 'bg-orange-100 text-orange-800' :
                           d.status === 'CANCELADO' || d.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
                           {{
                             EN_CAMINO: 'En Camino',
                             ENTREGADO: 'Entregado',
-                            CANCELADO: 'Cancelado'
+                            CANCELADO: 'Cancelado',
+                            FALLIDO: 'Fallido'
                           }[d.status] || d.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm space-x-2">
+                        {d.status === 'ENTREGADO' && d.hasPhoto && (
+                          <button onClick={() => handleViewDeliveryPhoto(d.id)} className="text-indigo-600 hover:text-indigo-800 text-xs">
+                            📸 Foto
+                          </button>
+                        )}
+                        {d.status === 'ENTREGADO' && !d.hasPhoto && (
+                          <button onClick={() => handleViewDeliveryPhoto(d.id)} className="text-gray-400 hover:text-indigo-600 text-xs">
+                            📷 Ver foto
+                          </button>
+                        )}
                         {d.status === 'pending' && (
                           <button onClick={() => handleDeliveryAction('start', d.id)} className="text-blue-600 hover:text-blue-800 text-xs">
                             Iniciar
@@ -497,6 +589,9 @@ export default function AdminPanel() {
                             Cancelar
                           </button>
                         )}
+                        {d.status === 'FALLIDO' && d.failureReason && (
+                          <span className="text-xs text-orange-600" title={d.failureReason}>⚠️ {d.failureReason.slice(0, 30)}</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -504,6 +599,99 @@ export default function AdminPanel() {
               </table>
               {deliveries.length === 0 && <p className="text-gray-400 text-center py-4">Sin entregas</p>}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payments Tab */}
+      {tab === 'payments' && !loading && (
+        <div className="bg-white rounded-xl shadow">
+          <div className="p-6">
+            <h3 className="text-lg font-bold mb-4">Pagos ({payments.length})</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Número</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Moneda</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">USD</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {payments.map(p => (
+                    <tr key={p.id}>
+                      <td className="px-4 py-3 text-sm">{p.id}</td>
+                      <td className="px-4 py-3 text-sm font-mono">{p.payment_number || p.paymentNumber}</td>
+                      <td className="px-4 py-3 text-sm">#{p.order_id || p.orderId}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{parseFloat(p.amount || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-sm">{p.currency}</td>
+                      <td className="px-4 py-3 text-sm">${parseFloat(p.amount_usd || p.amountUsd || 0).toFixed(2)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          p.status === 'COMPLETADO' ? 'bg-green-100 text-green-800' :
+                          p.status === 'REEMBOLSADO' ? 'bg-amber-100 text-amber-800' :
+                          p.status === 'FALLIDO' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {p.created_at ? new Date(p.created_at).toLocaleString('es-GT') : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {payments.length === 0 && <p className="text-gray-400 text-center py-4">Sin pagos registrados</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FX Cache Stats Tab */}
+      {tab === 'fx-stats' && !loading && (
+        <div className="bg-white rounded-xl shadow">
+          <div className="p-6">
+            <h3 className="text-lg font-bold mb-4">Estado del Servicio FX (Cache Redis)</h3>
+            {fxStats ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5">
+                  <p className="text-xs text-blue-600 font-medium uppercase">Cache Hits</p>
+                  <p className="text-3xl font-bold text-blue-800 mt-1">{fxStats.cache_hits ?? fxStats.cacheHits ?? '-'}</p>
+                </div>
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5">
+                  <p className="text-xs text-orange-600 font-medium uppercase">Cache Misses</p>
+                  <p className="text-3xl font-bold text-orange-800 mt-1">{fxStats.cache_misses ?? fxStats.cacheMisses ?? '-'}</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5">
+                  <p className="text-xs text-green-600 font-medium uppercase">Fallback Hits</p>
+                  <p className="text-3xl font-bold text-green-800 mt-1">{fxStats.fallback_hits ?? fxStats.fallbackHits ?? '-'}</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5">
+                  <p className="text-xs text-purple-600 font-medium uppercase">Cached Rates</p>
+                  <p className="text-3xl font-bold text-purple-800 mt-1">{fxStats.cached_rates ?? fxStats.cachedRates ?? '-'}</p>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5">
+                  <p className="text-xs text-gray-600 font-medium uppercase">Total Requests</p>
+                  <p className="text-3xl font-bold text-gray-800 mt-1">{fxStats.total_requests ?? fxStats.totalRequests ?? '-'}</p>
+                </div>
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-5">
+                  <p className="text-xs text-teal-600 font-medium uppercase">Última Actualización</p>
+                  <p className="text-lg font-bold text-teal-800 mt-1">{fxStats.last_update ? new Date(fxStats.last_update).toLocaleString('es-GT') : 'N/A'}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-400">No se pudo obtener estadísticas del servicio FX.</p>
+            )}
+            <button onClick={fetchFxStats} className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700">
+              Actualizar Stats
+            </button>
           </div>
         </div>
       )}
@@ -626,6 +814,62 @@ export default function AdminPanel() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Modal */}
+      {refundModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">💰 Procesar Reembolso</h3>
+              <button onClick={() => setRefundModal(null)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+              <p className="text-sm"><span className="font-medium">Pedido:</span> #{refundModal.id} ({refundModal.order_number || ''})</p>
+              <p className="text-sm"><span className="font-medium">Total:</span> Q{parseFloat(refundModal.total || 0).toFixed(2)}</p>
+              <p className="text-sm"><span className="font-medium">Estado actual:</span> {refundModal.status}</p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Motivo del Reembolso</label>
+              <textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="Ej: Producto defectuoso, entrega no realizada, solicitud del cliente..."
+                rows={3}
+                className="w-full border-2 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:ring-0 outline-none resize-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setRefundModal(null)} className="flex-1 border rounded-lg py-2 hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button
+                onClick={handleRefund}
+                disabled={!refundReason.trim() || refundLoading === refundModal.id}
+                className="flex-1 bg-amber-600 text-white rounded-lg py-2 hover:bg-amber-700 disabled:opacity-50"
+              >
+                {refundLoading === refundModal.id ? 'Procesando...' : '💰 Confirmar Reembolso'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Modal */}
+      {photoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50" onClick={() => setPhotoModal(null)}>
+          <div className="bg-white rounded-xl p-4 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-bold">📸 Evidencia de Entrega</h3>
+              <button onClick={() => setPhotoModal(null)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <img src={photoModal} alt="Evidencia de entrega" className="w-full rounded-lg" />
           </div>
         </div>
       )}

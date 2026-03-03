@@ -98,6 +98,28 @@ services:
       interval: 10s
       start_period: 40s
 
+  payment-db:
+    image: mysql:8.0
+    container_name: delivereats-payment-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: payment_db
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3310:3306"
+    volumes:
+      - payment_db_data:/var/lib/mysql
+      - ./db/payment_db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - delivereats-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+      start_period: 40s
+
   # ═══════════════════════════════════════════════════════════════════════════
   # MESSAGE BROKER & CACHE — Práctica 4
   # ═══════════════════════════════════════════════════════════════════════════
@@ -261,6 +283,53 @@ services:
       interval: 10s
       start_period: 30s
 
+  fx-service:
+    build:
+      context: .
+      dockerfile: ./fx-service/Dockerfile
+    container_name: delivereats-fx-service
+    restart: unless-stopped
+    env_file:
+      - ./fx-service/.env.docker
+    ports:
+      - "5000:5000"
+      - "50053:50053"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - delivereats-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      timeout: 10s
+      retries: 10
+      interval: 10s
+      start_period: 30s
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./payment-service/Dockerfile
+    container_name: delivereats-payment-service
+    restart: unless-stopped
+    env_file:
+      - ./payment-service/.env.docker
+    ports:
+      - "3006:3006"
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      fx-service:
+        condition: service_healthy
+    networks:
+      - delivereats-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      timeout: 10s
+      retries: 10
+      interval: 10s
+      start_period: 30s
+
   # ═══════════════════════════════════════════════════════════════════════════
   # API GATEWAY
   # ═══════════════════════════════════════════════════════════════════════════
@@ -283,6 +352,10 @@ services:
       orders-service:
         condition: service_healthy
       delivery-service:
+        condition: service_healthy
+      fx-service:
+        condition: service_healthy
+      payment-service:
         condition: service_healthy
     networks:
       - delivereats-network
@@ -326,6 +399,8 @@ volumes:
     name: delivereats_orders_db_data
   delivery_db_data:
     name: delivereats_delivery_db_data
+  payment_db_data:
+    name: delivereats_payment_db_data
   rabbitmq_data:
     name: delivereats_rabbitmq_data
   redis_data:

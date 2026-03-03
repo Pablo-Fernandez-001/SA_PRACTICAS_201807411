@@ -85,9 +85,30 @@ export const deliveryAPI = {
   acceptOrder: (data) => api.post('/delivery/accept', data),
   create: (data) => api.post('/delivery', data),
   start: (id) => api.post(`/delivery/${id}/start`),
-  complete: (id) => api.post(`/delivery/${id}/complete`),
+  complete: (id, data) => api.post(`/delivery/${id}/complete`, data),
+  fail: (id, reason) => api.post(`/delivery/${id}/fail`, { reason }),
   cancel: (id) => api.post(`/delivery/${id}/cancel`),
   reassign: (id, courierId) => api.put(`/delivery/${id}/reassign`, { courierId }),
+  getPhoto: (id) => api.get(`/delivery/${id}/photo`),
+  getPhotoByOrder: (orderId) => api.get(`/delivery/order/${orderId}/photo`),
+}
+
+// ─── FX (Divisas) ────────────────────────────────────────────────────────────
+export const fxAPI = {
+  getRate: (from, to) => api.get(`/fx/rate?from=${from}&to=${to}`),
+  getRates: (base, targets) => api.get(`/fx/rates?base=${base}&targets=${targets}`),
+  convert: (data) => api.post('/fx/convert', data),
+  getCurrencies: () => api.get('/fx/currencies'),
+  getCacheStats: () => api.get('/fx/cache/stats'),
+}
+
+// ─── Payment ─────────────────────────────────────────────────────────────────
+export const paymentAPI = {
+  processPayment: (data) => api.post('/payments/process', data),
+  processRefund: (data) => api.post('/payments/refund', data),
+  getByOrder: (orderId) => api.get(`/payments/order/${orderId}`),
+  getAll: () => api.get('/payments'),
+  convertCurrency: (from, to, amount) => api.get(`/payments/fx/convert?from=${from}&to=${to}&amount=${amount}`),
 }
 
 export default api

@@ -1,14 +1,68 @@
-﻿# Software Avanzado – Proyecto 1 (Evolución: Práctica 2 → Práctica 3 → Práctica 4)
+﻿# Software Avanzado – Proyecto 1 (Evolución: Práctica 2 → Práctica 3 → Práctica 4 → Práctica 5)
 
 ## DeliverEats - Plataforma de Delivery con Microservicios
 
-**Versión Actual:** v1.1.0 (Práctica 4 - Sistema de Mensajería Asíncrona)
+**Versión Actual:** v2.0.0 (Práctica 5 - Integración de Servicios Financieros y Evidencia de Entrega)
 
-Sistema completo de gestión de pedidos de comida con autenticación JWT, comunicación gRPC, mensajería asíncrona con RabbitMQ, cache con Redis, y despliegue en Kubernetes.
+Sistema completo de gestión de pedidos de comida con autenticación JWT, comunicación gRPC, mensajería asíncrona con RabbitMQ, cache con Redis, **servicio de conversión de divisas (FX)**, **procesamiento de pagos**, **evidencia fotográfica de entregas**, **flujo de reembolsos**, y despliegue en Kubernetes.
 
 ---
 
-## 🆕 Novedades de Práctica 4
+## 🆕 Novedades de Práctica 5
+
+### Resumen de Cambios (v1.1.0 → v2.0.0)
+
+**✅ FX-Service (Servicio de Conversión de Divisas):**
+- **Nuevo microservicio** en Python 3.11 + Flask + gRPC
+- API REST y gRPC dual para conversión de divisas en tiempo real
+- Estrategia de **caché Redis de 3 niveles**: Cache principal (TTL 6min) → API externa (ExchangeRate-API) → Fallback de emergencia (TTL 24h)
+- Soporte para 10+ monedas: GTQ, USD, EUR, MXN, HNL, CRC, COP, PEN, BRL, GBP
+- Endpoints: `/api/fx/rate`, `/api/fx/rates`, `/api/fx/convert`, `/api/fx/currencies`, `/api/fx/cache/stats`
+- gRPC proto: `GetExchangeRate`, `GetMultipleRates`, `ConvertAmount`
+- Tests unitarios (5 tests: cache hit, API call, fallback, error, conversion)
+
+**✅ Payment-Service (Procesamiento de Pagos):**
+- **Nuevo microservicio** en Node.js 18 + Express
+- Procesamiento de pagos simulado con conversión FX automática
+- Integración con FX-Service para convertir montos a USD
+- Sincronización de estado con Orders-Service (orden → PAGADO)
+- Flujo de **reembolso completo** (solo ADMIN): registra motivo, marca pago y orden como REEMBOLSADO
+- Base de datos dedicada: payment_db en MySQL 8.0 (puerto 3310)
+
+**✅ Evidencia Fotográfica de Entrega:**
+- Repartidores **adjuntan foto** al completar una entrega
+- Almacenamiento en Base64 (LONGTEXT en MySQL) con justificación técnica documentada
+- Visualización por **clientes** (en "Mis Pedidos") y **administradores** (en Panel Admin)
+- Nuevo estado de entrega: **FALLIDO** con motivo textual
+
+**✅ Flujo de Pago con Conversión de Divisas (Frontend):**
+- **PaymentPage.jsx**: Flujo de 4 pasos (selección de moneda → datos de tarjeta → confirmación → resultado)
+- Tipo de cambio en tiempo real mostrado al usuario
+- Resumen de pago con desglose: monto original, tasa, monto en USD
+
+**✅ Panel de Administración Extendido:**
+- Tab **"💳 Pagos"**: Tabla completa de todos los pagos procesados
+- Tab **"💱 FX Cache"**: Estadísticas de caché (hits, misses, fallback hits, total requests)
+- Botón **"💰 Reembolsar"** en pedidos elegibles con modal de confirmación y motivo
+- Botón **"📸 Foto"** para ver evidencia fotográfica de entregas
+
+**✅ Dashboard de Repartidor Mejorado:**
+- Modal de **captura/upload de foto** al completar entrega (10MB máx)
+- Botón **"⚠️ Reportar Fallo"** para entregas fallidas con motivo
+- Preview de foto antes de enviar
+
+**✅ Documentación Técnica:**
+- `docs/FX-SERVICE.md` — Arquitectura, caché 3-niveles, endpoints, gRPC, tests
+- `docs/REFUND-FLOW.md` — Diagrama de flujo, estados, modelo de datos, seguridad
+- `docs/IMAGE-STORAGE-JUSTIFICATION.md` — Comparativa Base64 vs FileSystem vs Cloud
+
+**✅ Nuevos Estados del Sistema:**
+- Órdenes: `PAGADO`, `REEMBOLSADO`
+- Entregas: `FALLIDO` (con `failure_reason`)
+
+---
+
+## 🆕 Novedades de Práctica 4 (Anteriores)
 
 ### Resumen de Cambios (v1.0.0 → v1.1.0)
 
@@ -68,6 +122,8 @@ Sistema completo de gestión de pedidos de comida con autenticación JWT, comuni
 12. [Casos de Uso del Negocio (CDU)](#12-casos-de-uso-del-negocio-cdu)
 13. [Modelo de Datos](#13-modelo-de-datos)
 14. [Práctica 4: RabbitMQ PoC](#14-práctica-4-rabbitmq-poc)
+15. [Requisitos Cumplidos - Rúbrica](#15-requisitos-cumplidos---rúbrica)
+16. [Práctica 5: FX-Service, Pagos y Evidencia](#16-práctica-5-fx-service-pagos-y-evidencia)
 
 ---
 
@@ -2154,3 +2210,161 @@ Practica3/
 
 **Versión:** 0.3.0 | **Fecha:** Febrero 2026 | **Curso:** Software Avanzado  
 **Práctica:** 3 — Arquitectura SOA Completa con Microservicios
+
+---
+
+## 16. Práctica 5: FX-Service, Pagos y Evidencia
+
+### 16.1 Arquitectura General (Práctica 5)
+
+```
+┌─────────────┐     ┌───────────────┐     ┌─────────────────┐     ┌──────────────┐
+│   Frontend   │────>│  API Gateway  │────>│ Payment-Service │────>│  FX-Service  │
+│  (React)     │     │  (:8080)      │     │   (:3006)       │     │ (:5000/gRPC) │
+└─────────────┘     └───────────────┘     └─────────────────┘     └──────┬───────┘
+                           │                       │                      │
+                           │                       v                      v
+                    ┌──────┴──────┐         ┌────────────┐         ┌──────────┐
+                    │ Orders-Svc  │         │ Payment-DB │         │  Redis   │
+                    │  (:3003)    │         │  (:3310)   │         │ (Cache)  │
+                    └─────────────┘         └────────────┘         └──────────┘
+                           │                                            │
+                    ┌──────┴──────┐                              ┌──────┴──────┐
+                    │Delivery-Svc │                              │ExchangeRate │
+                    │  (:3004)    │                              │   API       │
+                    └─────────────┘                              │ (External)  │
+                           │                                     └─────────────┘
+                    ┌──────┴──────┐
+                    │Delivery-DB  │
+                    │  (:3309)    │
+                    │ +photo_evidence
+                    │ +failure_reason
+                    └─────────────┘
+```
+
+### 16.2 FX-Service — Estrategia de Caché
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  GET /api/fx/rate?from=USD&to=GTQ        │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+                       v
+              ┌─────────────────┐
+              │  Redis Cache    │  TTL: 6 minutos
+              │  (Level 1)      │
+              └───────┬─────────┘
+                      │ MISS
+                      v
+              ┌─────────────────┐
+              │  ExchangeRate   │  API externa
+              │  API (Level 2)  │  open.er-api.com
+              └───────┬─────────┘
+                      │ ERROR
+                      v
+              ┌─────────────────┐
+              │  Redis Fallback │  TTL: 24 horas
+              │  (Level 3)      │  Última tasa conocida
+              └─────────────────┘
+```
+
+### 16.3 Nuevos Endpoints (Práctica 5)
+
+#### FX-Service (vía API Gateway `/api/fx/`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/fx/rate?from=USD&to=GTQ` | Obtener tasa de cambio |
+| GET | `/api/fx/rates?base=USD&targets=GTQ,EUR,MXN` | Múltiples tasas |
+| POST | `/api/fx/convert` | Convertir monto entre monedas |
+| GET | `/api/fx/currencies` | Monedas soportadas |
+| GET | `/api/fx/cache/stats` | Estadísticas de caché |
+
+#### Payment-Service (vía API Gateway `/api/payments/`)
+
+| Método | Endpoint | Auth | Descripción |
+|--------|----------|------|-------------|
+| POST | `/api/payments/process` | CLIENTE/ADMIN | Procesar pago (con FX) |
+| POST | `/api/payments/refund` | ADMIN | Reembolsar pago |
+| GET | `/api/payments/order/:orderId` | Auth | Pagos por pedido |
+| GET | `/api/payments/` | ADMIN | Todos los pagos |
+| GET | `/api/payments/fx/convert` | Auth | Conversión de moneda |
+
+#### Delivery-Service (endpoints actualizados)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| PUT | `/api/deliveries/:id/complete` | Completar con foto (base64) |
+| PUT | `/api/deliveries/:id/fail` | Reportar fallo con motivo |
+| GET | `/api/deliveries/:id/photo` | Obtener foto de evidencia |
+| GET | `/api/deliveries/order/:orderId/photo` | Foto por pedido |
+
+### 16.4 Modelo de Datos (Nuevos/Modificados)
+
+**payment_db.payments:**
+```sql
+payment_number VARCHAR(20) UNIQUE
+order_id INT NOT NULL
+user_id INT NOT NULL
+amount DECIMAL(10,2)
+currency VARCHAR(3)          -- GTQ, USD, EUR, etc.
+amount_usd DECIMAL(10,2)     -- Monto convertido
+exchange_rate DECIMAL(15,8)  -- Tasa aplicada
+payment_method VARCHAR(50)
+card_last_four VARCHAR(4)
+transaction_id VARCHAR(100)
+status ENUM('PENDIENTE','COMPLETADO','FALLIDO','REEMBOLSADO')
+refund_reason TEXT
+original_payment_id INT      -- Para reembolsos
+```
+
+**orders_db.orders.status** (actualizado):
+```
+CREADA → CONFIRMADA → EN_PREPARACION → LISTA → EN_CAMINO → ENTREGADO
+                                                          → PAGADO
+                                                          → REEMBOLSADO
+                                → CANCELADA → RECHAZADA
+```
+
+**delivery_db.deliveries** (columnas nuevas):
+```sql
+photo_evidence LONGTEXT       -- Base64 de la foto
+photo_content_type VARCHAR(50)
+failure_reason TEXT
+status ENUM(..., 'FALLIDO')
+```
+
+### 16.5 Documentación Técnica
+
+| Documento | Contenido |
+|-----------|-----------|
+| [docs/FX-SERVICE.md](docs/FX-SERVICE.md) | Arquitectura completa del FX-Service, caché 3 niveles, REST+gRPC, config, tests |
+| [docs/REFUND-FLOW.md](docs/REFUND-FLOW.md) | Flujo de reembolso, diagrama, estados, modelo de datos, seguridad |
+| [docs/IMAGE-STORAGE-JUSTIFICATION.md](docs/IMAGE-STORAGE-JUSTIFICATION.md) | Comparativa Base64 vs FileSystem vs Cloud Storage, justificación de decisión |
+
+### 16.6 Rúbrica Práctica 5
+
+| Criterio | Puntos | Estado | Evidencia |
+|----------|--------|--------|-----------|
+| **FX-Service funcional** | 10 | ✅ | Python Flask + gRPC, caché Redis 3 niveles |
+| **FX-Service REST + gRPC** | 5 | ✅ | 5 endpoints REST + 3 RPCs gRPC |
+| **FX-Service tests unitarios** | 5 | ✅ | 5 tests (cache, API, fallback, error, convert) |
+| **FX-Service caché Redis** | 5 | ✅ | TTL 6min + fallback 24h + stats endpoint |
+| **Payment-Service** | 5 | ✅ | Node.js Express, pago simulado + FX |
+| **Pago con conversión FX** | 5 | ✅ | Frontend PaymentPage 4 pasos + tasa en tiempo real |
+| **Reembolso (solo admin)** | 5 | ✅ | POST /refund + modal frontend + motivo |
+| **Foto al completar entrega** | 5 | ✅ | RepartidorDashboard con upload modal |
+| **Entrega fallida** | 5 | ✅ | Botón "Reportar Fallo" + motivo + estado FALLIDO |
+| **Ver foto (cliente + admin)** | 5 | ✅ | MyOrders + AdminPanel photo modals |
+| **Panel admin pagos/FX** | 5 | ✅ | Tabs "Pagos" y "FX Cache" en AdminPanel |
+| **Nuevos estados (PAGADO, REEMBOLSADO, FALLIDO)** | 5 | ✅ | Orders + Delivery models actualizados |
+| **Docker Compose completo** | 5 | ✅ | 3 nuevos containers + payment-db + volumes |
+| **Frontend para toda funcionalidad** | 10 | ✅ | PaymentPage + RepartidorDashboard + MyOrders + AdminPanel |
+| **Documentación técnica (3 docs)** | 10 | ✅ | FX-SERVICE.md + REFUND-FLOW.md + IMAGE-STORAGE-JUSTIFICATION.md |
+| **Health endpoints nuevos servicios** | 5 | ✅ | /health en fx-service y payment-service |
+| **TOTAL** | **100** | ✅ | **100/100** |
+
+---
+
+**Versión:** 2.0.0 | **Fecha:** 2025 | **Curso:** Software Avanzado  
+**Práctica:** 5 — Integración de Servicios Financieros y Evidencia de Entrega (DeliverEats Fase 2)

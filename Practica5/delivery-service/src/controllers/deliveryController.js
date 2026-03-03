@@ -203,11 +203,19 @@ exports.startDelivery = async (req, res) => {
 };
 
 /**
- * Complete delivery
+ * Complete delivery — REQUIRES photo evidence
  */
 exports.completeDelivery = async (req, res) => {
   try {
     const { id } = req.params;
+    const { photo, photoContentType } = req.body;
+
+    // Photo is MANDATORY for completing a delivery
+    if (!photo) {
+      return res.status(400).json({ 
+        error: 'Se requiere fotografía de evidencia para marcar como entregado. Envía el campo "photo" en base64.' 
+      });
+    }
     
     const [existing] = await db().query('SELECT * FROM deliveries WHERE id = ?', [id]);
     if (existing.length === 0) {
@@ -222,20 +230,117 @@ exports.completeDelivery = async (req, res) => {
       });
     }
 
+    // Save photo evidence
     await db().query(
-      'UPDATE deliveries SET status = ?, delivered_at = ? WHERE id = ?',
-      [delivery.status, delivery.deliveredAt, id]
+      'UPDATE deliveries SET status = ?, delivered_at = ?, photo_evidence = ?, photo_content_type = ? WHERE id = ?',
+      [delivery.status, delivery.deliveredAt, photo, photoContentType || 'image/jpeg', id]
     );
 
-    logger.info(`Delivery ${id} completed — order ${delivery.orderExternalId} ENTREGADO`);
+    logger.info(`Delivery ${id} completed with photo evidence — order ${delivery.orderExternalId} ENTREGADO`);
 
     // Sync order status to ENTREGADO
     syncOrderStatus(delivery.orderExternalId, 'ENTREGADO');
 
-    res.json(delivery.toJSON());
+    res.json({ ...delivery.toJSON(), hasPhoto: true });
   } catch (error) {
     logger.error('Error completing delivery:', error);
     res.status(500).json({ error: 'Error completing delivery' });
+  }
+};
+
+/**
+ * Mark delivery as failed (entrega fallida)
+ */
+exports.failDelivery = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ error: 'Se requiere motivo de fallo' });
+    }
+
+    const [existing] = await db().query('SELECT * FROM deliveries WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: 'Delivery not found' });
+    }
+
+    const delivery = Delivery.fromDatabase(existing[0]);
+    
+    if (!delivery.fail(reason)) {
+      return res.status(400).json({ 
+        error: `Cannot mark as failed delivery with status ${delivery.status}` 
+      });
+    }
+
+    await db().query(
+      'UPDATE deliveries SET status = ?, failure_reason = ? WHERE id = ?',
+      [delivery.status, reason, id]
+    );
+
+    logger.info(`Delivery ${id} marked as FAILED — order ${delivery.orderExternalId} — reason: ${reason}`);
+
+    // Sync order status to CANCELADO
+    syncOrderStatus(delivery.orderExternalId, 'CANCELADO', {
+      reason: `Entrega fallida: ${reason}`,
+      providerName: 'Repartidor',
+      providerType: 'REPARTIDOR'
+    });
+
+    res.json({ message: 'Entrega marcada como fallida', delivery: delivery.toJSON() });
+  } catch (error) {
+    logger.error('Error failing delivery:', error);
+    res.status(500).json({ error: 'Error marking delivery as failed' });
+  }
+};
+
+/**
+ * Get delivery photo by delivery ID
+ */
+exports.getDeliveryPhoto = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db().query(
+      'SELECT photo_evidence, photo_content_type FROM deliveries WHERE id = ?',
+      [id]
+    );
+
+    if (rows.length === 0 || !rows[0].photo_evidence) {
+      return res.status(404).json({ error: 'Foto no encontrada para esta entrega' });
+    }
+
+    res.json({
+      photo: rows[0].photo_evidence,
+      contentType: rows[0].photo_content_type || 'image/jpeg'
+    });
+  } catch (error) {
+    logger.error('Error fetching delivery photo:', error);
+    res.status(500).json({ error: 'Error fetching photo' });
+  }
+};
+
+/**
+ * Get delivery photo by order ID
+ */
+exports.getPhotoByOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const [rows] = await db().query(
+      'SELECT photo_evidence, photo_content_type FROM deliveries WHERE order_external_id = ? AND photo_evidence IS NOT NULL',
+      [orderId]
+    );
+
+    if (rows.length === 0 || !rows[0].photo_evidence) {
+      return res.status(404).json({ error: 'Foto no encontrada para esta orden' });
+    }
+
+    res.json({
+      photo: rows[0].photo_evidence,
+      contentType: rows[0].photo_content_type || 'image/jpeg'
+    });
+  } catch (error) {
+    logger.error('Error fetching photo by order:', error);
+    res.status(500).json({ error: 'Error fetching photo' });
   }
 };
 

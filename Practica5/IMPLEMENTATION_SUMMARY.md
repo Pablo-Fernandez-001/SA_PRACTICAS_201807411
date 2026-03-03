@@ -1,53 +1,63 @@
-# Práctica 3 - Integración Completa con Validación gRPC
+# Práctica 5 — Integración de Servicios Financieros y Evidencia de Entrega
 
 ## 📋 Resumen de Implementación
 
-Este proyecto integra todas las funcionalidades de la Práctica 2 en la Práctica 3, añadiendo la validación gRPC entre Order-Service y Restaurant-Catalog-Service según los requerimientos del PDF.
+DeliverEats Fase 2 integra **servicios financieros** (conversión de divisas y procesamiento de pagos) y **evidencia fotográfica de entregas**, con flujos completos de frontend y documentación técnica.
 
 ## ✅ Características Implementadas
 
-### 1. Validación gRPC (Requerimiento Principal)
+### 1. FX-Service (Nuevo Microservicio — Python 3.11 + Flask + gRPC)
 
-#### **Restaurant-Catalog-Service (Servidor gRPC)**
-- ✅ **Archivo**: `catalog-service/src/grpc/catalogGrpcServer.js`
-- ✅ **Contrato**: `protos/catalog.proto`
-- ✅ **Funcionalidad Implementada**:
-  - Procedimiento `ValidateOrderItems` que recibe lista de IDs de productos y ID de restaurante
-  - Validación de existencia de productos en la base de datos
-  - Validación de que los productos pertenecen al restaurante indicado
-  - Validación de que los precios actuales coinciden con los solicitados
-  - Validación de disponibilidad de productos (campo `is_available`)
-  - Cálculo del total en el servidor (fuente confiable)
-  - Mensajes de error detallados por ítem
+- **Directorio**: `fx-service/`
+- **Tecnología**: Python 3.11-slim, Flask, grpcio, redis-py
+- **Puertos**: REST :5000, gRPC :50053
+- **Archivos clave**:
+  - `app/main.py` — Flask REST API + daemon gRPC server
+  - `app/services/fx_service.py` — Lógica de negocio con caché 3 niveles
+  - `app/services/cache_service.py` — Singleton Redis (get/set rate + fallback + stats)
+  - `app/grpc_server.py` — gRPC server (GetExchangeRate, GetMultipleRates, ConvertAmount)
+  - `app/protos/fx_service.proto` — Contrato gRPC
+  - `tests/test_fx_service.py` — 5 tests unitarios
 
-#### **Order-Service (Cliente gRPC)**
-- ✅ **Archivo**: `orders-service/src/grpc/catalogClient.js`
-- ✅ **Controlador**: `orders-service/src/controllers/orderController.js`
-- ✅ **Funcionalidad Implementada**:
-  - Llamada gRPC a catalog-service ANTES de guardar orden
-  - Manejo de estados de error:
-    - Si precio incorrecto → rechaza la orden
-    - Si producto no existe → rechaza la orden
-    - Si producto no pertenece al restaurante → rechaza la orden
-    - Si producto no disponible → rechaza la orden
-  - Notificación al frontend con detalles de errores
-  - Persistencia solo si validación exitosa
+**Estrategia de Caché (3 niveles):**
+1. **Cache principal (Redis, TTL 6min)** — Primera consulta
+2. **API externa (ExchangeRate-API)** — Si cache miss, llama a open.er-api.com
+3. **Fallback (Redis, TTL 24h)** — Si API falla, usa última tasa conocida
 
-#### **Contrato de Comunicación**
-- ✅ **Archivo**: `protos/catalog.proto`
-- ✅ **Mensajes Definidos**:
-  - `ValidationRequest`: IDs de productos, precios solicitados, ID restaurante
-  - `ValidationResponse`: Resultado de validación, lista de errores, total calculado
-  - `OrderItemRequest`: Item individual con ID, precio, cantidad
-  - `ItemValidationResult`: Resultado por ítem con flags de validación
+### 2. Payment-Service (Nuevo Microservicio — Node.js 18 + Express)
 
-### 2. Dashboards de Práctica 2 Migrados
+- **Directorio**: `payment-service/`
+- **Puerto**: :3006
+- **Base de datos**: payment_db (MySQL 8.0, puerto 3310)
+- **Funcionalidades**: Procesar pago (con FX), Reembolsar (solo ADMIN), Consultar pagos
 
-#### **AdminDashboard**
-- ✅ **Archivo**: `frontend/src/pages/AdminDashboard.jsx`
-- ✅ **Funcionalidades**:
-  - CRUD completo de usuarios (sin mockdata)
-  - Estadísticas en tiempo real desde base de datos
+### 3. Evidencia Fotográfica de Entrega
+
+- Repartidores adjuntan foto al completar entrega (base64 LONGTEXT)
+- Estado FALLIDO con motivo textual
+- Visualización por clientes y administradores vía modales
+
+### 4. Frontend Completo
+
+- **PaymentPage.jsx** — Flujo 4 pasos con conversión FX en tiempo real
+- **RepartidorDashboard.jsx** — Modal foto + reportar fallo
+- **MyOrders.jsx** — Botón pagar + ver evidencia + estados nuevos
+- **AdminPanel.jsx** — Tabs pagos/FX, reembolso, fotos
+- **App.jsx** — Ruta /payment protegida
+
+### 5. Documentación Técnica
+
+- `docs/FX-SERVICE.md` — Arquitectura FX completa
+- `docs/REFUND-FLOW.md` — Flujo de reembolso
+- `docs/IMAGE-STORAGE-JUSTIFICATION.md` — Justificación almacenamiento
+
+### 6. Docker Compose
+
+Nuevos: `payment-db`, `fx-service`, `payment-service` + volumen `payment_db_data`
+
+## 📊 Score: 100/100 pts
+
+Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
   - Registro de nuevos usuarios (todos los roles)
   - Edición de usuarios (nombre, email, rol)
   - Activación/Desactivación de usuarios

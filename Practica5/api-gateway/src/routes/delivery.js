@@ -114,10 +114,10 @@ router.post('/:id/start', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), as
   }
 })
 
-// Complete delivery
+// Complete delivery (with photo evidence)
 router.post('/:id/complete', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
   try {
-    const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/${req.params.id}/complete`)
+    const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/${req.params.id}/complete`, req.body)
 
     const io = req.app.get('io')
     io.emit('order:statusChanged', { newStatus: 'ENTREGADO', data })
@@ -126,7 +126,51 @@ router.post('/:id/complete', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']),
     res.json({ success: true, data })
   } catch (error) {
     logger.error('Delivery proxy error (complete):', error.message)
+    if (error.response?.data) {
+      return res.status(error.response.status).json(error.response.data)
+    }
     res.status(error.response?.status || 502).json({ success: false, message: 'Error al completar entrega' })
+  }
+})
+
+// Fail delivery
+router.post('/:id/fail', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.post(`${DELIVERY_URL}/api/deliveries/${req.params.id}/fail`, req.body)
+
+    const io = req.app.get('io')
+    io.emit('order:statusChanged', { newStatus: 'CANCELADO', data })
+    io.emit('delivery:updated', { type: 'failed', deliveryId: parseInt(req.params.id), data })
+
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (fail):', error.message)
+    if (error.response?.data) {
+      return res.status(error.response.status).json(error.response.data)
+    }
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al reportar entrega fallida' })
+  }
+})
+
+// Get delivery photo
+router.get('/:id/photo', authMiddleware, async (req, res) => {
+  try {
+    const { data } = await axios.get(`${DELIVERY_URL}/api/deliveries/${req.params.id}/photo`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (photo):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Foto no encontrada' })
+  }
+})
+
+// Get delivery photo by order ID
+router.get('/order/:orderId/photo', authMiddleware, async (req, res) => {
+  try {
+    const { data } = await axios.get(`${DELIVERY_URL}/api/deliveries/order/${req.params.orderId}/photo`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (photo by order):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Foto no encontrada' })
   }
 })
 

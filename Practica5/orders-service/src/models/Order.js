@@ -27,12 +27,14 @@ class Order {
   // Order statuses
   static STATUS = {
     CREADA: 'CREADA',
+    PAGADO: 'PAGADO',
     EN_PROCESO: 'EN_PROCESO',
     FINALIZADA: 'FINALIZADA',
     EN_CAMINO: 'EN_CAMINO',
     ENTREGADO: 'ENTREGADO',
     CANCELADO: 'CANCELADO',
-    RECHAZADA: 'RECHAZADA'
+    RECHAZADA: 'RECHAZADA',
+    REEMBOLSADO: 'REEMBOLSADO'
   };
 
   /**
@@ -96,13 +98,15 @@ class Order {
    */
   canTransitionTo(newStatus) {
     const validTransitions = {
-      [Order.STATUS.CREADA]: [Order.STATUS.EN_PROCESO, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA],
+      [Order.STATUS.CREADA]: [Order.STATUS.PAGADO, Order.STATUS.EN_PROCESO, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA],
+      [Order.STATUS.PAGADO]: [Order.STATUS.EN_PROCESO, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA, Order.STATUS.REEMBOLSADO],
       [Order.STATUS.EN_PROCESO]: [Order.STATUS.FINALIZADA, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA],
       [Order.STATUS.FINALIZADA]: [Order.STATUS.EN_CAMINO, Order.STATUS.CANCELADO],
       [Order.STATUS.EN_CAMINO]: [Order.STATUS.ENTREGADO, Order.STATUS.CANCELADO],
-      [Order.STATUS.ENTREGADO]: [],
-      [Order.STATUS.CANCELADO]: [],
-      [Order.STATUS.RECHAZADA]: []
+      [Order.STATUS.ENTREGADO]: [Order.STATUS.REEMBOLSADO],
+      [Order.STATUS.CANCELADO]: [Order.STATUS.REEMBOLSADO],
+      [Order.STATUS.RECHAZADA]: [Order.STATUS.REEMBOLSADO],
+      [Order.STATUS.REEMBOLSADO]: []
     };
     
     return validTransitions[this.status]?.includes(newStatus) || false;

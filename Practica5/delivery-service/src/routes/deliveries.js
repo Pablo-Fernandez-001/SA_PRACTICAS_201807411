@@ -26,8 +26,17 @@ router.post('/', deliveryController.createDelivery);
 // POST start delivery
 router.post('/:id/start', deliveryController.startDelivery);
 
-// POST complete delivery
+// POST complete delivery (with photo evidence)
 router.post('/:id/complete', deliveryController.completeDelivery);
+
+// POST mark delivery as failed
+router.post('/:id/fail', deliveryController.failDelivery);
+
+// GET delivery photo by delivery ID
+router.get('/:id/photo', deliveryController.getDeliveryPhoto);
+
+// GET delivery photo by order ID
+router.get('/order/:orderId/photo', deliveryController.getPhotoByOrder);
 
 // POST cancel delivery
 router.post('/:id/cancel', deliveryController.cancelDelivery);

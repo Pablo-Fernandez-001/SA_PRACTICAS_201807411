@@ -12,6 +12,8 @@ const authRoutes = require('./routes/auth')
 const catalogRoutes = require('./routes/catalog')
 const orderRoutes = require('./routes/orders')
 const deliveryRoutes = require('./routes/delivery')
+const fxRoutes = require('./routes/fx')
+const paymentRoutes = require('./routes/payment')
 const errorHandler = require('./middleware/errorHandler')
 
 const app = express()
@@ -59,8 +61,8 @@ const limiter = rateLimit({
 app.use(limiter)
 
 app.use(morgan('combined', { stream: { write: message => logger.info(message) } }))
-app.use(express.json({ limit: '10mb' }))
-app.use(express.urlencoded({ extended: true }))
+app.use(express.json({ limit: '20mb' }))
+app.use(express.urlencoded({ extended: true, limit: '20mb' }))
 
 // Health check - both routes for compatibility
 app.get('/health', (req, res) => {
@@ -84,6 +86,8 @@ app.use('/api/auth', authRoutes)
 app.use('/api/catalog', catalogRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/delivery', deliveryRoutes)
+app.use('/api/fx', fxRoutes)
+app.use('/api/payments', paymentRoutes)
 
 // 404 handler
 app.use('*', (req, res) => {
