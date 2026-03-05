@@ -14,6 +14,7 @@ router.post('/process', authMiddleware, authorize(['CLIENTE', 'ADMIN']), async (
       ...req.body,
       userId: req.user.id
     }
+    console.log('Processing payment with data:', paymentData)
     const { data } = await axios.post(`${PAYMENT_URL}/api/payments/process`, paymentData)
 
     // Emit real-time event
