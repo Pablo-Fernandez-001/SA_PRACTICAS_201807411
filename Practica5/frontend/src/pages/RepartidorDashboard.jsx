@@ -54,6 +54,7 @@ export default function RepartidorDashboard() {
     try {
       if (tab === 'available') {
         const { data } = await deliveryAPI.getAvailableOrders()
+        console.log('Available orders:', data)
         setAvailableOrders(data.data || data || [])
       } else if (tab === 'active') {
         const { data } = await deliveryAPI.getActiveByCourier(user.id)

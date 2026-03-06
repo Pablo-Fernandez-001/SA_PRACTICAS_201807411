@@ -408,6 +408,7 @@ exports.updateOrderStatus = async (req, res) => {
     const previousStatus = order.status;
     
     if (!order.canTransitionTo(status)) {
+      console.log(`[updateOrderStatus] Invalid status transition attempted: ${order.status} → ${status}`);
       return res.status(400).json({ 
         error: `Cannot transition from ${order.status} to ${status}` 
       });

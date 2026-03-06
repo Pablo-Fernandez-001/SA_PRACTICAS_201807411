@@ -492,7 +492,7 @@ exports.getAvailableOrders = async (req, res) => {
     const allOrders = response.data;
 
     // Filter to FINALIZADA only
-    const finalizadaOrders = allOrders.filter(o => o.status === 'FINALIZADA');
+    const finalizadaOrders = allOrders.filter(o => o.status === 'PAGADO');
 
     // Get all order IDs that already have deliveries
     const [deliveryRows] = await db().query('SELECT order_external_id FROM deliveries WHERE status != ?', [Delivery.STATUS.CANCELADO]);
