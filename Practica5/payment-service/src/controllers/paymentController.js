@@ -127,16 +127,15 @@ exports.processPayment = async (req, res) => {
  */
 exports.processRefund = async (req, res) => {
   try {
-    const { orderId, reason = 'Reembolso aprobado por administrador' } = req.body;
-
-    if (!orderId) {
+    const { order_id, reason = 'Reembolso aprobado por administrador' } = req.body;
+    if (!order_id) {
       return res.status(400).json({ error: 'orderId es requerido' });
     }
 
     // Buscar pago original
     const [payments] = await db().query(
       'SELECT * FROM payments WHERE order_id = ? AND status = ?',
-      [orderId, 'COMPLETADO']
+      [order_id, 'COMPLETADO']
     );
 
     if (payments.length === 0) {
@@ -154,7 +153,7 @@ exports.processRefund = async (req, res) => {
        (payment_number, order_id, user_id, amount, currency, amount_usd, exchange_rate, 
         payment_method, card_last_four, transaction_id, status, refund_reason, original_payment_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'REEMBOLSADO', ?, ?)`,
-      [refundNumber, orderId, originalPayment.user_id, originalPayment.amount,
+      [refundNumber, order_id, originalPayment.user_id, originalPayment.amount,
        originalPayment.currency, originalPayment.amount_usd, originalPayment.exchange_rate,
        originalPayment.payment_method, originalPayment.card_last_four,
        refundTransactionId, reason, originalPayment.id]
@@ -167,9 +166,9 @@ exports.processRefund = async (req, res) => {
     );
 
     // Actualizar estado de la orden a REEMBOLSADO
-    await syncOrderStatus(orderId, 'REEMBOLSADO');
+    await syncOrderStatus(order_id, 'REEMBOLSADO');
 
-    logger.info(`💰 Reembolso procesado: ${refundNumber} — Orden #${orderId} — Q${originalPayment.amount}`);
+    logger.info(`💰 Reembolso procesado: ${refundNumber} — Orden #${order_id} — Q${originalPayment.amount}`);
 
     res.status(201).json({
       success: true,
@@ -177,7 +176,7 @@ exports.processRefund = async (req, res) => {
       refund: {
         id: result.insertId,
         refundNumber,
-        orderId,
+        orderId: order_id,
         amount: parseFloat(originalPayment.amount),
         currency: originalPayment.currency,
         reason,
