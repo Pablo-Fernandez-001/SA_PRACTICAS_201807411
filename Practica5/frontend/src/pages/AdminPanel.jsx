@@ -34,6 +34,8 @@ export default function AdminPanel() {
     if (tab === 'menu-items') fetchMenuItems()
     if (tab === 'orders') fetchOrders()
     if (tab === 'deliveries') fetchDeliveries()
+    if (tab === 'payments') fetchPayments() // <- ¡Esta línea faltaba!
+    if (tab === 'fx-stats') fetchFxStats()
   }, [tab])
 
   const fetchRestaurants = async () => {
@@ -85,6 +87,7 @@ export default function AdminPanel() {
     setLoading(true)
     try {
       const res = await fxAPI.getCacheStats()
+      console.log('FX Cache Stats:', res.data)
       setFxStats(res.data.data || res.data || null)
     } catch (e) { console.error(e) }
     setLoading(false)
@@ -503,7 +506,7 @@ export default function AdminPanel() {
                             Entregar
                           </button>
                         )}
-                        {['ENTREGADO', 'CANCELADO', 'RECHAZADA', 'PAGADO'].includes(o.status) && o.status !== 'REEMBOLSADO' && (
+                        {['CANCELADO', 'RECHAZADA'].includes(o.status) && o.status !== 'REEMBOLSADO' && (
                           <button
                             onClick={() => { setRefundModal(o); setRefundReason('') }}
                             className="text-amber-600 hover:text-amber-800 text-xs bg-amber-50 px-2 py-1 rounded"
@@ -662,28 +665,34 @@ export default function AdminPanel() {
             {fxStats ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5">
-                  <p className="text-xs text-blue-600 font-medium uppercase">Cache Hits</p>
-                  <p className="text-3xl font-bold text-blue-800 mt-1">{fxStats.cache_hits ?? fxStats.cacheHits ?? '-'}</p>
+                  <p className="text-xs text-blue-600 font-medium uppercase">Llaves en Caché</p>
+                  <p className="text-3xl font-bold text-blue-800 mt-1">{fxStats.cache_keys ?? '-'}</p>
                 </div>
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5">
-                  <p className="text-xs text-orange-600 font-medium uppercase">Cache Misses</p>
-                  <p className="text-3xl font-bold text-orange-800 mt-1">{fxStats.cache_misses ?? fxStats.cacheMisses ?? '-'}</p>
-                </div>
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5">
-                  <p className="text-xs text-green-600 font-medium uppercase">Fallback Hits</p>
-                  <p className="text-3xl font-bold text-green-800 mt-1">{fxStats.fallback_hits ?? fxStats.fallbackHits ?? '-'}</p>
+                  <p className="text-xs text-orange-600 font-medium uppercase">Llaves de Fallback</p>
+                  <p className="text-3xl font-bold text-orange-800 mt-1">{fxStats.fallback_keys ?? '-'}</p>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5">
-                  <p className="text-xs text-purple-600 font-medium uppercase">Cached Rates</p>
-                  <p className="text-3xl font-bold text-purple-800 mt-1">{fxStats.cached_rates ?? fxStats.cachedRates ?? '-'}</p>
+                  <p className="text-xs text-purple-600 font-medium uppercase">Total de Llaves</p>
+                  <p className="text-3xl font-bold text-purple-800 mt-1">{fxStats.total_keys ?? '-'}</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5">
+                  <p className="text-xs text-green-600 font-medium uppercase">Memoria Usada</p>
+                  <p className="text-3xl font-bold text-green-800 mt-1">{fxStats.used_memory ?? '-'}</p>
                 </div>
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5">
-                  <p className="text-xs text-gray-600 font-medium uppercase">Total Requests</p>
-                  <p className="text-3xl font-bold text-gray-800 mt-1">{fxStats.total_requests ?? fxStats.totalRequests ?? '-'}</p>
+                  <p className="text-xs text-gray-600 font-medium uppercase">Tiempo de Vida (TTL)</p>
+                  <p className="text-lg font-bold text-gray-800 mt-1">Caché: {fxStats.cache_ttl}s</p>
                 </div>
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-5">
-                  <p className="text-xs text-teal-600 font-medium uppercase">Última Actualización</p>
-                  <p className="text-lg font-bold text-teal-800 mt-1">{fxStats.last_update ? new Date(fxStats.last_update).toLocaleString('es-GT') : 'N/A'}</p>
+                <div className={`bg-gradient-to-br ${fxStats.connected ? 'from-teal-50 to-teal-100' : 'from-red-50 to-red-100'} rounded-xl p-5`}>
+                  <p className={`text-xs ${fxStats.connected ? 'text-teal-600' : 'text-red-600'} font-medium uppercase`}>Estado de Conexión</p>
+                  <p className={`text-xl font-bold ${fxStats.connected ? 'text-teal-800' : 'text-red-800'} mt-1 flex items-center gap-2`}>
+                    {fxStats.connected ? (
+                      <><span className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></span> Conectado</>
+                    ) : (
+                      <><span className="h-3 w-3 bg-red-500 rounded-full"></span> Desconectado</>
+                    )}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -695,7 +704,7 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
-
+      
       {/* Create Tab */}
       {tab === 'create' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

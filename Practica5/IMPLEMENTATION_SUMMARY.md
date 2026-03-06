@@ -55,9 +55,7 @@ DeliverEats Fase 2 integra **servicios financieros** (conversión de divisas y p
 
 Nuevos: `payment-db`, `fx-service`, `payment-service` + volumen `payment_db_data`
 
-## 📊 Score: 100/100 pts
 
-Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
   - Registro de nuevos usuarios (todos los roles)
   - Edición de usuarios (nombre, email, rol)
   - Activación/Desactivación de usuarios
@@ -201,7 +199,7 @@ Practica3/
         └── App.jsx              ✅ Rutas actualizadas
 ```
 
-## 🎯 Validaciones Implementadas (según PDF)
+## 🎯 Validaciones Implementadas 
 
 ### ✅ Restaurant-Catalog-Service
 - [x] Procedimiento de verificación de lista de IDs

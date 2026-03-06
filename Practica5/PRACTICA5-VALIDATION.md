@@ -1,8 +1,7 @@
 # Práctica 5 — Validación de Implementación
 
-## Rúbrica de Evaluación (100 pts)
 
-### 1. FX-Service (Servicio de Conversión de Divisas) — 25 pts
+### 1. FX-Service (Servicio de Conversión de Divisas) — 
 
 | # | Criterio | Pts | Estado | Evidencia |
 |---|----------|-----|--------|-----------|
@@ -12,7 +11,7 @@
 | 1.4 | Comunicación gRPC con proto definido | 5 | ✅ | `fx_service.proto` con GetExchangeRate, GetMultipleRates, ConvertAmount |
 | 1.5 | Tests unitarios | 5 | ✅ | `fx-service/tests/test_fx_service.py` — 5 tests (cache hit, API, fallback, error, convert) |
 
-### 2. Payment-Service (Servicio de Pagos) — 20 pts
+### 2. Payment-Service (Servicio de Pagos) —
 
 | # | Criterio | Pts | Estado | Evidencia |
 |---|----------|-----|--------|-----------|
@@ -21,7 +20,7 @@
 | 2.3 | Integración con FX-Service (conversión GTQ→USD) | 5 | ✅ | Llama a fx-service para convertir monto a USD al procesar pago |
 | 2.4 | Sincronización de estado con Orders-Service | 5 | ✅ | Actualiza orden a PAGADO tras pago exitoso |
 
-### 3. Flujo de Reembolso — 15 pts
+### 3. Flujo de Reembolso — 
 
 | # | Criterio | Pts | Estado | Evidencia |
 |---|----------|-----|--------|-----------|
@@ -29,7 +28,7 @@
 | 3.2 | Registro de reembolso con motivo | 5 | ✅ | Campo `refund_reason`, `original_payment_id` en tabla payments |
 | 3.3 | Sincroniza estado REEMBOLSADO en order | 5 | ✅ | Actualiza orden a REEMBOLSADO + pago original a REEMBOLSADO |
 
-### 4. Evidencia Fotográfica de Entrega — 15 pts
+### 4. Evidencia Fotográfica de Entrega — 
 
 | # | Criterio | Pts | Estado | Evidencia |
 |---|----------|-----|--------|-----------|
@@ -37,7 +36,7 @@
 | 4.2 | Almacenamiento persistente | 5 | ✅ | LONGTEXT en MySQL delivery_db + justificación técnica en docs/ |
 | 4.3 | Visualización por admin y cliente | 5 | ✅ | AdminPanel: "📸 Foto", MyOrders: "📸 Ver Evidencia" |
 
-### 5. Frontend — 15 pts
+### 5. Frontend — 
 
 | # | Criterio | Pts | Estado | Evidencia |
 |---|----------|-----|--------|-----------|
@@ -45,7 +44,7 @@
 | 5.2 | Panel admin con reembolso y fotos | 5 | ✅ | AdminPanel: tabs "Pagos" y "FX Cache", botón "Reembolsar", modal foto |
 | 5.3 | Dashboard repartidor con foto y fallo | 5 | ✅ | RepartidorDashboard: modal foto al completar, botón "Reportar Fallo" |
 
-### 6. Documentación — 10 pts
+### 6. Documentación — 
 
 | # | Criterio | Pts | Estado | Evidencia |
 |---|----------|-----|--------|-----------|
@@ -55,7 +54,6 @@
 
 ---
 
-## Total: 100/100 pts ✅
 
 ---
 

@@ -36,7 +36,6 @@ router.post('/process', authMiddleware, authorize(['CLIENTE', 'ADMIN']), async (
 router.post('/refund', authMiddleware, authorize(['ADMIN']), async (req, res) => {
   try {
     const { data } = await axios.post(`${PAYMENT_URL}/api/payments/refund`, req.body)
-
     // Emit real-time event
     const io = req.app.get('io')
     io.emit('order:statusChanged', { orderId: parseInt(req.body.orderId), newStatus: 'REEMBOLSADO', data })
