@@ -3,7 +3,6 @@
 # Orquestación completa: 4 DBs aisladas + 4 micro-servicios + API Gateway + Frontend
 # gRPC: catalog-service (server :50052)  ←  orders-service (client)
 ############################################################################
-
 services:
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -304,7 +303,7 @@ services:
     container_name: delivereats-frontend
     restart: unless-stopped
     environment:
-      - VITE_API_URL=http://34.55.27.36:8080/api
+      - VITE_API_URL=http://localhost:8080/api
     ports:
       - "3000:3000"
     depends_on:
