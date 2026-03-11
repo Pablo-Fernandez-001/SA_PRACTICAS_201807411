@@ -14,10 +14,47 @@ export default function RestaurantMenu() {
   const [orderLoading, setOrderLoading] = useState(false)
   const [message, setMessage] = useState(null)
   const [error, setError] = useState(null)
+  const [promoValidation, setPromoValidation] = useState(null)
+  const [promoDiscount, setPromoDiscount] = useState(0)
+  const [couponCode, setCouponCode] = useState('')
+  const [couponValidation, setCouponValidation] = useState(null)
+  const [couponDiscount, setCouponDiscount] = useState(0)
+  const [couponError, setCouponError] = useState(null)
+
+  const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0)
+  const totalDiscount = Math.min(cartTotal, promoDiscount + couponDiscount)
+  const totalAfterDiscount = Math.max(0, cartTotal - totalDiscount)
+
+  const validatePromotion = async () => {
+    if (!id || cartTotal <= 0) {
+      setPromoValidation(null)
+      setPromoDiscount(0)
+      return
+    }
+    try {
+      const res = await catalogAPI.validatePromotion({ restaurantId: parseInt(id), subtotal: cartTotal })
+      const payload = res.data?.data || res.data
+      if (payload?.valid) {
+        setPromoValidation(payload.promotion)
+        setPromoDiscount(payload.discountAmount || 0)
+      } else {
+        setPromoValidation(null)
+        setPromoDiscount(0)
+      }
+    } catch (err) {
+      console.error('Error validating promotion:', err)
+      setPromoValidation(null)
+      setPromoDiscount(0)
+    }
+  }
 
   useEffect(() => {
     fetchData()
   }, [id])
+
+  useEffect(() => {
+    validatePromotion()
+  }, [cartTotal, id])
 
   const fetchData = async () => {
     try {
@@ -57,7 +94,37 @@ export default function RestaurantMenu() {
     }))
   }
 
-  const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0)
+  const applyCoupon = async () => {
+    setCouponError(null)
+    if (!couponCode.trim() || cartTotal <= 0) return
+    try {
+      const res = await catalogAPI.validateCoupon({
+        restaurantId: parseInt(id),
+        code: couponCode.trim(),
+        subtotal: cartTotal
+      })
+      const payload = res.data?.data || res.data
+      if (payload?.valid) {
+        setCouponValidation(payload.coupon)
+        setCouponDiscount(payload.discountAmount || 0)
+      } else {
+        setCouponValidation(null)
+        setCouponDiscount(0)
+        setCouponError('Cupon no valido para este pedido')
+      }
+    } catch (err) {
+      setCouponValidation(null)
+      setCouponDiscount(0)
+      setCouponError(err.response?.data?.message || 'Error validando cupon')
+    }
+  }
+
+  const clearCoupon = () => {
+    setCouponCode('')
+    setCouponValidation(null)
+    setCouponDiscount(0)
+    setCouponError(null)
+  }
 
   const placeOrder = async () => {
     if (cart.length === 0) return
@@ -65,6 +132,14 @@ export default function RestaurantMenu() {
     setMessage(null)
     setError(null)
     try {
+      const notesParts = []
+      if (promoValidation) {
+        notesParts.push(`Promo: ${promoValidation.title} (${promoValidation.discount_type === 'PERCENT' ? promoValidation.discount_value + '%' : 'Q' + promoValidation.discount_value})`)
+      }
+      if (couponValidation) {
+        notesParts.push(`Cupon: ${couponValidation.code} (${couponValidation.discount_type === 'PERCENT' ? couponValidation.discount_value + '%' : 'Q' + couponValidation.discount_value})`)
+      }
+
       const orderData = {
         restaurant_id: parseInt(id),
         items: cart.map(c => ({
@@ -72,11 +147,26 @@ export default function RestaurantMenu() {
           quantity: c.quantity,
           unit_price: c.price
         })),
-        delivery_address: 'Dirección de prueba, Ciudad de Guatemala'
+        delivery_address: 'Dirección de prueba, Ciudad de Guatemala',
+        notes: notesParts.join(' | ')
       }
       const res = await ordersAPI.createOrder(orderData)
-      setMessage('¡Pedido creado exitosamente! ID: ' + (res.data.data?.id || res.data.orderId || 'OK'))
+      const orderId = res.data?.order?.id || res.data?.data?.id || res.data?.orderId
+      if (orderId && totalDiscount > 0) {
+        const raw = localStorage.getItem('order-discounts')
+        const current = raw ? JSON.parse(raw) : {}
+        current[String(orderId)] = {
+          discountAmount: totalDiscount,
+          promo: promoValidation,
+          coupon: couponValidation
+        }
+        localStorage.setItem('order-discounts', JSON.stringify(current))
+      }
+      setMessage('¡Pedido creado exitosamente! ID: ' + (orderId || 'OK'))
       setCart([])
+      setPromoValidation(null)
+      setPromoDiscount(0)
+      clearCoupon()
     } catch (err) {
       const errData = err.response?.data
       let errMsg = errData?.message || err.message
@@ -183,10 +273,63 @@ export default function RestaurantMenu() {
                   ))}
                 </div>
                 <div className="border-t pt-3 mb-4">
+                  <div className="flex justify-between text-sm text-gray-500 mb-1">
+                    <span>Subtotal:</span>
+                    <span>Q{cartTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 mb-1">
+                    <span>Descuentos:</span>
+                    <span>- Q{totalDiscount.toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total:</span>
-                    <span className="text-orange-600">Q{cartTotal.toFixed(2)}</span>
+                    <span className="text-orange-600">Q{totalAfterDiscount.toFixed(2)}</span>
                   </div>
+                </div>
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Cupon</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="Ingresar codigo"
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    />
+                    {couponValidation ? (
+                      <button
+                        onClick={clearCoupon}
+                        className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50"
+                      >
+                        Quitar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={applyCoupon}
+                        className="px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                      >
+                        Aplicar
+                      </button>
+                    )}
+                  </div>
+                  {couponValidation && (
+                    <p className="text-xs text-green-600 mt-2">
+                      Cupón aplicado: {couponValidation.code}
+                    </p>
+                  )}
+                  {couponError && (
+                    <p className="text-xs text-red-600 mt-2">{couponError}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Promocion</p>
+                  {promoValidation ? (
+                    <div className="text-xs text-green-600">
+                      Promo activa: {promoValidation.title}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-400">No hay promo activa para este pedido</div>
+                  )}
                 </div>
                 <button
                   onClick={placeOrder}
