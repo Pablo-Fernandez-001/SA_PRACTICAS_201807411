@@ -29,11 +29,13 @@ const restaurantRoutes = require('./routes/restaurants');
 const menuItemRoutes = require('./routes/menuItems');
 const promotionsRoutes = require('./routes/promotions');
 const couponsRoutes = require('./routes/coupons');
+const ratingsRoutes = require('./routes/ratings');
 
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/menu-items', menuItemRoutes);
 app.use('/api/promotions', promotionsRoutes);
 app.use('/api/coupons', couponsRoutes);
+app.use('/api/ratings', ratingsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

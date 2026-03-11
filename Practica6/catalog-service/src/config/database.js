@@ -133,6 +133,36 @@ async function createTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS restaurant_ratings (
+      id             INT AUTO_INCREMENT PRIMARY KEY,
+      restaurant_id  INT           NOT NULL,
+      order_id       INT           NOT NULL,
+      user_id        INT           NOT NULL,
+      rating         INT           NOT NULL,
+      comment        TEXT,
+      created_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_restaurant_rating (restaurant_id, order_id, user_id),
+      FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+      INDEX idx_restaurant_rating_restaurant (restaurant_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS menu_item_ratings (
+      id             INT AUTO_INCREMENT PRIMARY KEY,
+      menu_item_id   INT           NOT NULL,
+      order_id       INT           NOT NULL,
+      user_id        INT           NOT NULL,
+      rating         INT           NOT NULL,
+      comment        TEXT,
+      created_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_menu_item_rating (menu_item_id, order_id, user_id),
+      FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
+      INDEX idx_menu_item_rating_item (menu_item_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
   logger.info('[catalog-db] Tables verified / created');
 }
 

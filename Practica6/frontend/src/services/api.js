@@ -59,6 +59,10 @@ export const catalogAPI = {
   deleteCoupon: (id) => api.delete(`/catalog/coupons/${id}`),
   validatePromotion: (data) => api.post('/catalog/promotions/validate', data),
   validateCoupon: (data) => api.post('/catalog/coupons/validate', data),
+  createRestaurantRating: (data) => api.post('/catalog/ratings/restaurants', data),
+  createMenuItemRating: (data) => api.post('/catalog/ratings/menu-items', data),
+  getRestaurantRating: (restaurantId) => api.get(`/catalog/ratings/restaurants/${restaurantId}`),
+  getMenuItemRating: (menuItemId) => api.get(`/catalog/ratings/menu-items/${menuItemId}`),
   createRestaurant: (data) => api.post('/catalog/restaurants', data),
   updateRestaurant: (id, data) => api.put(`/catalog/restaurants/${id}`, data),
   deleteRestaurant: (id) => api.delete(`/catalog/restaurants/${id}`),
@@ -101,6 +105,8 @@ export const deliveryAPI = {
   reassign: (id, courierId) => api.put(`/delivery/${id}/reassign`, { courierId }),
   getPhoto: (id) => api.get(`/delivery/${id}/photo`),
   getPhotoByOrder: (orderId) => api.get(`/delivery/order/${orderId}/photo`),
+  createCourierRating: (data) => api.post('/delivery/ratings/couriers', data),
+  getCourierRating: (courierId) => api.get(`/delivery/ratings/couriers/${courierId}`),
 }
 
 // ─── FX (Divisas) ────────────────────────────────────────────────────────────

@@ -20,6 +20,8 @@ export default function RestaurantMenu() {
   const [couponValidation, setCouponValidation] = useState(null)
   const [couponDiscount, setCouponDiscount] = useState(0)
   const [couponError, setCouponError] = useState(null)
+  const [restaurantRating, setRestaurantRating] = useState(0)
+  const [itemRatings, setItemRatings] = useState({})
 
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0)
   const totalDiscount = Math.min(cartTotal, promoDiscount + couponDiscount)
@@ -63,12 +65,40 @@ export default function RestaurantMenu() {
         catalogAPI.getRestaurant(id),
         catalogAPI.getMenu(id)
       ])
-      setRestaurant(restRes.data.data || restRes.data)
-      setMenuItems(menuRes.data.data || menuRes.data || [])
+      const restaurantData = restRes.data.data || restRes.data
+      const itemsData = menuRes.data.data || menuRes.data || []
+      setRestaurant(restaurantData)
+      setMenuItems(itemsData)
+      fetchRatings(restaurantData?.id, itemsData)
     } catch (err) {
       setError('Error al cargar el menú: ' + (err.response?.data?.message || err.message))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchRatings = async (restaurantId, items) => {
+    if (!restaurantId) return
+    try {
+      const res = await catalogAPI.getRestaurantRating(restaurantId)
+      const data = res.data.data || res.data
+      setRestaurantRating(data?.average || 0)
+    } catch {
+      setRestaurantRating(0)
+    }
+    try {
+      const entries = await Promise.all(items.map(async (item) => {
+        try {
+          const res = await catalogAPI.getMenuItemRating(item.id)
+          const data = res.data.data || res.data
+          return [item.id, data?.average || 0]
+        } catch {
+          return [item.id, 0]
+        }
+      }))
+      setItemRatings(Object.fromEntries(entries))
+    } catch {
+      setItemRatings({})
     }
   }
 
@@ -198,9 +228,14 @@ export default function RestaurantMenu() {
         <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl p-6 mb-6 text-white">
           <h1 className="text-3xl font-bold">{restaurant.name}</h1>
           <p className="mt-1 opacity-90">{restaurant.description || 'Restaurante disponible'}</p>
-          <span className="inline-block mt-2 text-sm bg-white/20 px-3 py-1 rounded-full">
-            {restaurant.category || 'General'}
-          </span>
+          <div className="flex items-center gap-3 mt-2">
+            <span className="inline-block text-sm bg-white/20 px-3 py-1 rounded-full">
+              {restaurant.category || 'General'}
+            </span>
+            <span className="text-sm bg-white/20 px-3 py-1 rounded-full">
+              ⭐ {Number(restaurantRating || 0).toFixed(1)}
+            </span>
+          </div>
         </div>
       )}
 
@@ -233,6 +268,7 @@ export default function RestaurantMenu() {
                       <span className={`text-xs ${item.is_available ? 'text-green-500' : 'text-red-500'}`}>
                         {item.is_available ? 'Disponible' : 'No disponible'}
                       </span>
+                      <span className="text-xs text-gray-400">⭐ {Number(itemRatings[item.id] || 0).toFixed(1)}</span>
                     </div>
                   </div>
                   <button

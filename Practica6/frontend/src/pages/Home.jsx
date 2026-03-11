@@ -5,6 +5,7 @@ import useAuthStore from '../stores/authStore'
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([])
+  const [ratings, setRatings] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { user } = useAuthStore()
@@ -29,11 +30,30 @@ export default function Home() {
     try {
       setLoading(true)
       const res = await catalogAPI.getRestaurants()
-      setRestaurants(res.data.data || res.data || [])
+      const list = res.data.data || res.data || []
+      setRestaurants(list)
+      fetchRatings(list)
     } catch (err) {
       setError('Error al cargar restaurantes: ' + (err.response?.data?.message || err.message))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchRatings = async (list) => {
+    try {
+      const entries = await Promise.all(list.map(async (r) => {
+        try {
+          const res = await catalogAPI.getRestaurantRating(r.id)
+          const data = res.data.data || res.data
+          return [r.id, data?.average || 0]
+        } catch {
+          return [r.id, 0]
+        }
+      }))
+      setRatings(Object.fromEntries(entries))
+    } catch {
+      setRatings({})
     }
   }
 
@@ -88,9 +108,12 @@ export default function Home() {
                   <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-medium">
                     {r.category || 'General'}
                   </span>
-                  <span className={`text-xs font-medium ${r.is_active ? 'text-green-600' : 'text-red-500'}`}>
-                    {r.is_active ? 'Abierto' : 'Cerrado'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500">⭐ {Number(ratings[r.id] || 0).toFixed(1)}</span>
+                    <span className={`text-xs font-medium ${r.is_active ? 'text-green-600' : 'text-red-500'}`}>
+                      {r.is_active ? 'Abierto' : 'Cerrado'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </Link>

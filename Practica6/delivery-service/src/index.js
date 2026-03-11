@@ -21,7 +21,9 @@ app.get('/health', (req, res) => {
 });
 
 const deliveryRoutes = require('./routes/deliveries');
+const ratingsRoutes = require('./routes/ratings');
 app.use('/api/deliveries', deliveryRoutes);
+app.use('/api/ratings', ratingsRoutes);
 
 app.use((err, req, res, next) => {
   logger.error(err.stack);

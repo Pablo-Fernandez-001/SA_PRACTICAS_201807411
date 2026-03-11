@@ -87,6 +87,36 @@ CREATE TABLE coupons (
   INDEX idx_coupon_code (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ─── Ratings: Restaurants ──────────────────────────────────────────────────
+DROP TABLE IF EXISTS restaurant_ratings;
+CREATE TABLE restaurant_ratings (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id  INT           NOT NULL,
+  order_id       INT           NOT NULL,
+  user_id        INT           NOT NULL,
+  rating         INT           NOT NULL,
+  comment        TEXT,
+  created_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_restaurant_rating (restaurant_id, order_id, user_id),
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+  INDEX idx_restaurant_rating_restaurant (restaurant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ─── Ratings: Menu Items ───────────────────────────────────────────────────
+DROP TABLE IF EXISTS menu_item_ratings;
+CREATE TABLE menu_item_ratings (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  menu_item_id   INT           NOT NULL,
+  order_id       INT           NOT NULL,
+  user_id        INT           NOT NULL,
+  rating         INT           NOT NULL,
+  comment        TEXT,
+  created_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_menu_item_rating (menu_item_id, order_id, user_id),
+  FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
+  INDEX idx_menu_item_rating_item (menu_item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ─── Seed: Restaurants ───────────────────────────────────────────────────────
 INSERT INTO restaurants (id, owner_id, name, description, address, phone) VALUES
   (1, 3, 'Burger Palace',          'The best burgers in town',            '6ta Avenida 12-34, Zona 1',   '2234-5678'),
