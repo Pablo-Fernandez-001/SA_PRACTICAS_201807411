@@ -90,3 +90,44 @@ INSERT INTO menu_items (id, restaurant_id, name, description, price, category, s
   (23, 5, 'Alitas BBQ',            'BBQ chicken wings (8 pcs)',        45.00,  'Wings',   55, TRUE),
   (24, 5, 'Coleslaw',              'Fresh coleslaw',                   10.00,  'Sides',   90, TRUE),
   (25, 5, 'Papas Fritas Campero',  'Seasoned fries',                   18.00,  'Sides',   0, FALSE);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- PRÁCTICA 6: Arquitectura Orientada a Eventos (EDA)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ─── Received Orders (from RabbitMQ) ─────────────────────────────────────────
+-- Tabla para persistir órdenes recibidas a través de RabbitMQ desde Order-Service
+-- Esto permite al Restaurant-Service mantener un registro de las órdenes asignadas
+
+DROP TABLE IF EXISTS received_order_items;
+DROP TABLE IF EXISTS received_orders;
+
+CREATE TABLE received_orders (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  order_id            VARCHAR(36)    NOT NULL UNIQUE,  -- UUID de la orden original
+  restaurant_id       INT            NOT NULL,
+  user_id             VARCHAR(36)    NOT NULL,         -- UUID del usuario
+  total_amount        DECIMAL(10,2)  NOT NULL,
+  delivery_address    VARCHAR(500)   NOT NULL,
+  event_timestamp     DATETIME       NOT NULL,         -- Timestamp del evento RabbitMQ
+  received_at         TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
+  processed           BOOLEAN        DEFAULT FALSE,    -- Marca si fue procesada
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+  INDEX idx_order_id      (order_id),
+  INDEX idx_restaurant    (restaurant_id),
+  INDEX idx_processed     (processed),
+  INDEX idx_received_at   (received_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE received_order_items (
+  id                      INT AUTO_INCREMENT PRIMARY KEY,
+  received_order_id       INT            NOT NULL,
+  item_id                 INT            NOT NULL,       -- ID del menu_item
+  quantity                INT            NOT NULL,
+  unit_price              DECIMAL(10,2)  NOT NULL,
+  subtotal                DECIMAL(10,2)  NOT NULL,
+  FOREIGN KEY (received_order_id) REFERENCES received_orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
+  INDEX idx_received_order (received_order_id),
+  INDEX idx_item           (item_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

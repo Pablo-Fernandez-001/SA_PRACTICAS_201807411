@@ -1,5 +1,5 @@
 # Diagramas de Actividades y Secuencia - DeliverEats
-## Versión 1.1.0 - Práctica 4
+## Versión 1.3.0 - Práctica 6 (Arquitectura Orientada a Eventos)
 
 ---
 
@@ -122,7 +122,7 @@ sequenceDiagram
 
 ---
 
-## 3. Diagrama de Secuencia: Creación de Orden con RabbitMQ (PoC)
+## 3. Diagrama de Secuencia: Creación de Orden con RabbitMQ (Arquitectura Orientada a Eventos)
 
 ```mermaid
 sequenceDiagram
@@ -133,6 +133,7 @@ sequenceDiagram
     participant CAT as Catalog Service
     participant RMQ as RabbitMQ
     participant CATCONS as Catalog Consumer
+    participant CATDB as Catalog DB
     participant NOT as Notification Service
     participant DB as Orders DB
 
@@ -163,23 +164,35 @@ sequenceDiagram
             DB-->>ORD: Order ID generado
             ORD->>DB: INSERT INTO order_items (...)
             
-            Note over ORD,RMQ: 🚀 Fase 2: Comunicación Asíncrona
+            Note over ORD,RMQ: 🚀 Práctica 6: Comunicación Asíncrona
             ORD->>RMQ: Publish(orders.created, orderData)
-            Note over ORD,RMQ: Message: {<br/>  orderId,<br/>  restaurantId,<br/>  userId,<br/>  items,<br/>  total<br/>}
+            Note over ORD,RMQ: Message: {<br/>  event: "order.created",<br/>  timestamp,<br/>  data: {<br/>    orderId,<br/>    restaurantId,<br/>    userId,<br/>    items[],<br/>    total,<br/>    deliveryAddress<br/>  }<br/>}
             
             RMQ-->>ORD: ACK (Mensaje recibido)
             ORD-->>GW: CreateOrderResponse(orderId, total, status)
             GW-->>FE: 201 Created + JSON
             FE->>Cliente: ✅ Orden creada exitosamente<br/>Número: {orderId}
             
-            Note over RMQ,CATCONS: Procesamiento Asíncrono (PoC)
+            Note over RMQ,CATCONS: 📦 Procesamiento Asíncrono por Restaurant-Service
             RMQ->>CATCONS: Consume(orders.created)
-            CATCONS->>CATCONS: console.log("📦 Orden recibida:", orderData)
-            CATCONS->>CATCONS: console.log("Restaurante ID:", restaurantId)
-            CATCONS->>CATCONS: console.log("Total:", total)
+            CATCONS->>CATCONS: Parse event data
+            CATCONS->>CATCONS: Log order details
+            
+            CATCONS->>CATDB: BEGIN TRANSACTION
+            CATCONS->>CATDB: INSERT INTO received_orders<br/>(order_id, restaurant_id, user_id,<br/>total_amount, delivery_address)
+            CATDB-->>CATCONS: received_order_id
+            
+            loop Para cada item
+                CATCONS->>CATDB: INSERT INTO received_order_items<br/>(received_order_id, item_id,<br/>quantity, unit_price, subtotal)
+            end
+            
+            CATCONS->>CATDB: COMMIT
+            CATDB-->>CATCONS: Transaction OK
+            
+            CATCONS->>CATCONS: Log success message
             CATCONS-->>RMQ: ACK (Mensaje procesado)
             
-            Note over RMQ,NOT: Notificaciones por Email
+            Note over RMQ,NOT: 📧 Notificaciones por Email (Paralelo)
             RMQ->>NOT: Consume(orders.created)
             NOT->>NOT: Generar email para cliente
             NOT->>NOT: Generar email para restaurante
@@ -188,6 +201,26 @@ sequenceDiagram
         end
     end
 ```
+
+**Notas importantes:**
+
+1. **Comunicación Síncrona (gRPC):** 
+   - Order-Service → Catalog-Service: Validación de items antes de crear la orden
+   
+2. **Comunicación Asíncrona (RabbitMQ):**
+   - Order-Service publica evento `orders.created` después de persistir la orden
+   - Catalog-Service consume el evento y persiste la orden en `catalog_db`
+   - Notification-Service consume el evento para enviar emails (independiente)
+
+3. **Persistencia Dual:**
+   - `orders_db`: Contiene la orden original creada por Order-Service
+   - `catalog_db`: Contiene copia de la orden recibida vía RabbitMQ para procesamiento del restaurante
+
+4. **Ventajas del Patrón:**
+   - Desacoplamiento entre servicios
+   - Procesamiento asíncrono no bloquea la respuesta al cliente
+   - Tolerancia a fallos: Si Catalog-Service está caído, el mensaje queda en cola
+   - Múltiples consumidores pueden procesar el mismo evento
 
 ---
 
