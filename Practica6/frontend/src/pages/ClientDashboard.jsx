@@ -7,16 +7,19 @@ import {
   TruckIcon 
 } from '@heroicons/react/24/outline'
 import useAuthStore from '../stores/authStore'
-import { ordersAPI } from '../services/api'
+import { ordersAPI, catalogAPI } from '../services/api'
 import { useSocketReload } from '../hooks/useSocket'
 
 const ClientDashboard = () => {
   const { user } = useAuthStore()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [promotions, setPromotions] = useState([])
+  const [coupons, setCoupons] = useState([])
 
   useEffect(() => {
     fetchOrders()
+    fetchOffers()
   }, [])
 
   const fetchOrders = async () => {
@@ -32,6 +35,19 @@ const ClientDashboard = () => {
       console.error('Error fetching orders:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchOffers = async () => {
+    try {
+      const [promosRes, couponsRes] = await Promise.all([
+        catalogAPI.getPromotions({ active: true }),
+        catalogAPI.getCoupons({ active: true })
+      ])
+      setPromotions(promosRes.data?.data || promosRes.data || [])
+      setCoupons(couponsRes.data?.data || couponsRes.data || [])
+    } catch (error) {
+      console.error('Error fetching offers:', error)
     }
   }
 
@@ -171,6 +187,60 @@ const ClientDashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Promotions & Coupons */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Promociones vigentes</h3>
+            {promotions.length === 0 ? (
+              <p className="text-sm text-gray-400">No hay promociones activas.</p>
+            ) : (
+              <div className="space-y-3">
+                {promotions.slice(0, 4).map((promo) => (
+                  <div key={promo.id} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-800">{promo.title}</p>
+                        <p className="text-xs text-gray-500">{promo.description || 'Sin descripcion'}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-orange-600">
+                        {promo.discount_type === 'PERCENT' ? `${promo.discount_value}%` : `Q${promo.discount_value}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                      <span>Minimo: {promo.min_order || 'sin minimo'}</span>
+                      <span>Hasta: {promo.expires_at || 'sin fecha'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Cupones disponibles</h3>
+            {coupons.length === 0 ? (
+              <p className="text-sm text-gray-400">No hay cupones activos.</p>
+            ) : (
+              <div className="space-y-3">
+                {coupons.slice(0, 4).map((coupon) => (
+                  <div key={coupon.id} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-gray-800">{coupon.code}</p>
+                      <span className="text-sm font-semibold text-orange-600">
+                        {coupon.discount_type === 'PERCENT' ? `${coupon.discount_value}%` : `Q${coupon.discount_value}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                      <span>Minimo: {coupon.min_order || 'sin minimo'}</span>
+                      <span>Hasta: {coupon.expires_at || 'sin fecha'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Recent Orders */}

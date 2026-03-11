@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ordersAPI, deliveryAPI } from '../services/api'
+import { ordersAPI, deliveryAPI, catalogAPI } from '../services/api'
 import useAuthStore from '../stores/authStore'
 import { useSocketReload } from '../hooks/useSocket'
 
@@ -11,6 +11,10 @@ export default function MyOrders() {
   const [cancelLoading, setCancelLoading] = useState(null)
   const [message, setMessage] = useState(null)
   const [photoModal, setPhotoModal] = useState(null) // base64 image or null
+  const [ratingOpen, setRatingOpen] = useState({})
+  const [ratingForms, setRatingForms] = useState({})
+  const [deliveryByOrder, setDeliveryByOrder] = useState({})
+  const [ratingMessage, setRatingMessage] = useState(null)
   const { user } = useAuthStore()
   const navigate = useNavigate()
 
@@ -32,6 +36,82 @@ export default function MyOrders() {
       setError('Error al cargar pedidos: ' + (err.response?.data?.message || err.message))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadDeliveryForOrder = async (orderId) => {
+    if (deliveryByOrder[orderId]) return
+    try {
+      const res = await deliveryAPI.getByOrder(orderId)
+      const data = res.data.data || res.data
+      setDeliveryByOrder(prev => ({ ...prev, [orderId]: data }))
+    } catch {
+      setDeliveryByOrder(prev => ({ ...prev, [orderId]: null }))
+    }
+  }
+
+  const initRatingForm = (order) => {
+    const items = {}
+    order.items?.forEach((item) => {
+      items[item.menuItemExternalId] = 5
+    })
+    setRatingForms(prev => ({
+      ...prev,
+      [order.id]: {
+        restaurant: 5,
+        courier: 5,
+        items,
+        comment: ''
+      }
+    }))
+  }
+
+  const handleToggleRating = (order) => {
+    setRatingOpen(prev => ({ ...prev, [order.id]: !prev[order.id] }))
+    if (!ratingForms[order.id]) {
+      initRatingForm(order)
+    }
+    loadDeliveryForOrder(order.id)
+  }
+
+  const submitRatings = async (order) => {
+    const form = ratingForms[order.id]
+    if (!form) return
+    try {
+      await catalogAPI.createRestaurantRating({
+        restaurantId: order.restaurantId,
+        orderId: order.id,
+        userId: user.id,
+        rating: form.restaurant,
+        comment: form.comment
+      })
+
+      if (deliveryByOrder[order.id]?.courier_id) {
+        await deliveryAPI.createCourierRating({
+          courierId: deliveryByOrder[order.id].courier_id,
+          orderId: order.id,
+          userId: user.id,
+          rating: form.courier,
+          comment: form.comment
+        })
+      }
+
+      const itemEntries = Object.entries(form.items || {})
+      for (const [menuItemId, rating] of itemEntries) {
+        await catalogAPI.createMenuItemRating({
+          menuItemId: parseInt(menuItemId),
+          orderId: order.id,
+          userId: user.id,
+          rating
+        })
+      }
+
+      setRatingMessage({ text: 'Calificacion enviada', type: 'success' })
+      setTimeout(() => setRatingMessage(null), 3000)
+      setRatingOpen(prev => ({ ...prev, [order.id]: false }))
+    } catch (err) {
+      setRatingMessage({ text: err.response?.data?.error || 'Error enviando calificacion', type: 'error' })
+      setTimeout(() => setRatingMessage(null), 3000)
     }
   }
 
@@ -65,7 +145,7 @@ export default function MyOrders() {
     REEMBOLSADO: 'Reembolsado',
   }
 
-  const canPay = (status) => status === 'FINALIZADA'
+  const canPay = (status) => status === 'PAGADO'
 
   // Orders that can be cancelled by client
   const canCancel = (status) => ['CREADA', 'EN_PROCESO'].includes(status)
@@ -101,6 +181,17 @@ export default function MyOrders() {
     setTimeout(() => setMessage(null), 3000)
   }
 
+  const getOrderDiscount = (orderId) => {
+    try {
+      const raw = localStorage.getItem('order-discounts')
+      if (!raw) return 0
+      const data = JSON.parse(raw)
+      return data?.[String(orderId)]?.discountAmount || 0
+    } catch {
+      return 0
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
@@ -123,6 +214,11 @@ export default function MyOrders() {
       {message && (
         <div className={`px-4 py-3 rounded-lg mb-4 ${message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
           {message.text}
+        </div>
+      )}
+      {ratingMessage && (
+        <div className={`px-4 py-3 rounded-lg mb-4 ${ratingMessage.type === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
+          {ratingMessage.text}
         </div>
       )}
 
@@ -177,7 +273,11 @@ export default function MyOrders() {
                 <div className="flex items-center gap-3">
                   {canPay(order.status) && (
                     <button
-                      onClick={() => navigate(`/payment?orderId=${order.id}&total=${order.total}`)}
+                      onClick={() => {
+                        const discount = getOrderDiscount(order.id)
+                        const finalTotal = Math.max(0, parseFloat(order.total || 0) - discount)
+                        navigate(`/payment?orderId=${order.id}&total=${finalTotal}`)
+                      }}
                       className="text-sm bg-green-600 text-white px-4 py-1.5 rounded-lg hover:bg-green-700 transition font-medium"
                     >
                       💰 Pagar
@@ -189,6 +289,14 @@ export default function MyOrders() {
                       className="text-sm text-indigo-600 border border-indigo-200 px-3 py-1 rounded-lg hover:bg-indigo-50 transition"
                     >
                       📸 Ver Evidencia
+                    </button>
+                  )}
+                  {order.status === 'ENTREGADO' && (
+                    <button
+                      onClick={() => handleToggleRating(order)}
+                      className="text-sm text-orange-600 border border-orange-200 px-3 py-1 rounded-lg hover:bg-orange-50 transition"
+                    >
+                      ⭐ Calificar
                     </button>
                   )}
                   {canCancel(order.status) && (
@@ -204,10 +312,93 @@ export default function MyOrders() {
                     <span className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full">💰 Reembolsado</span>
                   )}
                   <span className="text-lg font-bold text-orange-600">
-                    Q{parseFloat(order.total || 0).toFixed(2)}
+                    Q{(parseFloat(order.total || 0) - getOrderDiscount(order.id)).toFixed(2)}
                   </span>
                 </div>
               </div>
+
+              {ratingOpen[order.id] && (
+                <div className="mt-4 border-t pt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Calificaciones</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Restaurante</label>
+                      <select
+                        value={ratingForms[order.id]?.restaurant || 5}
+                        onChange={(e) => setRatingForms(prev => ({
+                          ...prev,
+                          [order.id]: { ...prev[order.id], restaurant: parseInt(e.target.value) }
+                        }))}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm"
+                      >
+                        {[5,4,3,2,1].map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Repartidor</label>
+                      <select
+                        value={ratingForms[order.id]?.courier || 5}
+                        onChange={(e) => setRatingForms(prev => ({
+                          ...prev,
+                          [order.id]: { ...prev[order.id], courier: parseInt(e.target.value) }
+                        }))}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm"
+                      >
+                        {[5,4,3,2,1].map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-500 mb-1">Productos</label>
+                    <div className="space-y-2">
+                      {order.items?.map(item => (
+                        <div key={item.menuItemExternalId} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">{item.name}</span>
+                          <select
+                            value={ratingForms[order.id]?.items?.[item.menuItemExternalId] || 5}
+                            onChange={(e) => setRatingForms(prev => ({
+                              ...prev,
+                              [order.id]: {
+                                ...prev[order.id],
+                                items: { ...prev[order.id]?.items, [item.menuItemExternalId]: parseInt(e.target.value) }
+                              }
+                            }))}
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm"
+                          >
+                            {[5,4,3,2,1].map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-500 mb-1">Comentario (opcional)</label>
+                    <textarea
+                      rows="2"
+                      value={ratingForms[order.id]?.comment || ''}
+                      onChange={(e) => setRatingForms(prev => ({
+                        ...prev,
+                        [order.id]: { ...prev[order.id], comment: e.target.value }
+                      }))}
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={() => submitRatings(order)}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700"
+                    >
+                      Enviar calificacion
+                    </button>
+                    <button
+                      onClick={() => setRatingOpen(prev => ({ ...prev, [order.id]: false }))}
+                      className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

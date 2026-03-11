@@ -8,6 +8,27 @@ const router = express.Router()
 const DELIVERY_URL = `http://${process.env.DELIVERY_SERVICE_URL || 'delivery-service:3004'}`
   .replace(':50054', ':3004')
 
+// Ratings (couriers)
+router.post('/ratings/couriers', authMiddleware, authorize(['CLIENTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.post(`${DELIVERY_URL}/api/ratings/couriers`, req.body)
+    res.status(201).json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (courier rating):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al calificar repartidor' })
+  }
+})
+
+router.get('/ratings/couriers/:courierId', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${DELIVERY_URL}/api/ratings/couriers/${req.params.courierId}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Delivery proxy error (courier rating get):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener calificacion' })
+  }
+})
+
 // Get all deliveries
 router.get('/', authMiddleware, authorize(['REPARTIDOR', 'ADMIN']), async (req, res) => {
   try {

@@ -1,10 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { catalogAPI } from '../services/api'
 import useAuthStore from '../stores/authStore'
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([])
+  const [ratings, setRatings] = useState({})
+  const [foodTypes, setFoodTypes] = useState([])
+  const [searchText, setSearchText] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [foodTypeFilter, setFoodTypeFilter] = useState('')
+  const [promoOnly, setPromoOnly] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const searchTimer = useRef(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { user } = useAuthStore()
@@ -22,18 +30,66 @@ export default function Home() {
       return
     }
     
-    fetchRestaurants()
+    fetchRestaurants({ silent: false })
   }, [user, navigate])
 
-  const fetchRestaurants = async () => {
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => {
+      fetchRestaurants({ silent: true })
+    }, 300)
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current)
+    }
+  }, [searchText, categoryFilter, foodTypeFilter, promoOnly])
+
+  const fetchRestaurants = async ({ silent }) => {
     try {
-      setLoading(true)
-      const res = await catalogAPI.getRestaurants()
-      setRestaurants(res.data.data || res.data || [])
+      if (!silent) setLoading(true)
+      if (silent) setIsSearching(true)
+      const res = await catalogAPI.searchCatalog({
+        q: searchText || undefined,
+        category: categoryFilter || undefined,
+        foodType: foodTypeFilter || undefined,
+        promotions: promoOnly ? 'true' : undefined
+      })
+      const list = res.data.data?.restaurants || res.data?.restaurants || []
+      setRestaurants(list)
+      fetchRatings(list)
+      fetchFoodTypes()
     } catch (err) {
       setError('Error al cargar restaurantes: ' + (err.response?.data?.message || err.message))
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
+      if (silent) setIsSearching(false)
+    }
+  }
+
+  const fetchFoodTypes = async () => {
+    try {
+      const res = await catalogAPI.getAllMenuItems()
+      const items = res.data.data || res.data || []
+      const types = Array.from(new Set(items.map(i => i.category).filter(Boolean)))
+      setFoodTypes(types)
+    } catch {
+      setFoodTypes([])
+    }
+  }
+
+  const fetchRatings = async (list) => {
+    try {
+      const entries = await Promise.all(list.map(async (r) => {
+        try {
+          const res = await catalogAPI.getRestaurantRating(r.id)
+          const data = res.data.data || res.data
+          return [r.id, data?.average || 0]
+        } catch {
+          return [r.id, 0]
+        }
+      }))
+      setRatings(Object.fromEntries(entries))
+    } catch {
+      setRatings({})
     }
   }
 
@@ -57,6 +113,49 @@ export default function Home() {
           ¡Bienvenido{user?.name ? `, ${user.name}` : ''}!
         </h1>
         <p className="text-gray-500 mt-2">Elige tu restaurante favorito y haz tu pedido</p>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Buscar restaurante..."
+            className="border border-gray-200 rounded-lg px-3 py-2"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2"
+          >
+            <option value="">Categorias dinamicas</option>
+            <option value="new">Nuevos</option>
+            <option value="featured">Destacados</option>
+            <option value="top">Mejores puntuados</option>
+          </select>
+          <select
+            value={foodTypeFilter}
+            onChange={(e) => setFoodTypeFilter(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2"
+          >
+            <option value="">Tipo de comida</option>
+            {foodTypes.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={promoOnly}
+              onChange={(e) => setPromoOnly(e.target.checked)}
+            />
+            Solo con promociones
+          </label>
+        </div>
+        {isSearching && (
+          <p className="text-xs text-gray-400 mt-2">Buscando...</p>
+        )}
       </div>
 
       {error && (
@@ -88,9 +187,12 @@ export default function Home() {
                   <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-medium">
                     {r.category || 'General'}
                   </span>
-                  <span className={`text-xs font-medium ${r.is_active ? 'text-green-600' : 'text-red-500'}`}>
-                    {r.is_active ? 'Abierto' : 'Cerrado'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-500">⭐ {Number(ratings[r.id] || 0).toFixed(1)}</span>
+                    <span className={`text-xs font-medium ${r.is_active ? 'text-green-600' : 'text-red-500'}`}>
+                      {r.is_active ? 'Abierto' : 'Cerrado'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </Link>

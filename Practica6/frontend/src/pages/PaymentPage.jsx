@@ -24,6 +24,21 @@ export default function PaymentPage() {
   const orderId = searchParams.get("orderId");
   const orderTotal = parseFloat(searchParams.get("total") || "0");
 
+  const getOrderDiscount = (id) => {
+    try {
+      const raw = localStorage.getItem("order-discounts");
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      return data?.[String(id)]?.discountAmount || 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const orderDiscount = orderId ? getOrderDiscount(orderId) : 0;
+  const discountedTotal = Math.max(0, orderTotal);
+  const originalTotal = orderDiscount > 0 ? orderTotal + orderDiscount : orderTotal;
+
   const [step, setStep] = useState(1); // 1=select currency, 2=card info, 3=confirm, 4=result
   const [currency, setCurrency] = useState("GTQ");
   const [convertedAmount, setConvertedAmount] = useState(null);
@@ -44,20 +59,20 @@ export default function PaymentPage() {
   // Fetch exchange rate when currency changes
   useEffect(() => {
     if (currency === "GTQ") {
-      setConvertedAmount(orderTotal);
+      setConvertedAmount(discountedTotal);
       setExchangeRate(1);
       setFxError(null);
       return;
     }
     fetchRate();
-  }, [currency, orderTotal]);
+  }, [currency, discountedTotal]);
 
   const fetchRate = async () => {
     setFxLoading(true);
     setFxError(null);
     try {
       const { data } = await fxAPI.convert({
-        amount: orderTotal,
+        amount: discountedTotal,
         from_currency: "GTQ",
         to_currency: currency,
       });
@@ -144,9 +159,9 @@ export default function PaymentPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-2">Pagar Pedido</h1>
-      <p className="text-gray-500 mb-6">
-        Orden #{orderId} — Total: Q{orderTotal.toFixed(2)}
-      </p>
+          <p className="text-gray-500 mb-6">
+            Orden #{orderId} — Total: Q{discountedTotal.toFixed(2)}
+          </p>
 
       {/* Progress Steps */}
       <div className="flex items-center mb-8">
@@ -211,9 +226,27 @@ export default function PaymentPage() {
               <div className="flex justify-between items-center mb-3">
                 <span className="text-gray-600">Monto original (GTQ):</span>
                 <span className="font-bold text-lg">
-                  Q{orderTotal.toFixed(2)}
+                  Q{originalTotal.toFixed(2)}
                 </span>
               </div>
+              {orderDiscount > 0 && (
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-gray-600">Descuento aplicado:</span>
+                  <span className="font-medium text-green-700">
+                    -Q{orderDiscount.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {orderDiscount > 0 && (
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-gray-700 font-medium">
+                    Subtotal con descuento:
+                  </span>
+                  <span className="font-bold text-lg text-green-700">
+                    Q{discountedTotal.toFixed(2)}
+                  </span>
+                </div>
+              )}
               {currency !== "GTQ" && (
                 <>
                   <div className="flex justify-between items-center mb-3">
