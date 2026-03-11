@@ -26,3 +26,18 @@ CREATE TABLE deliveries (
   INDEX idx_courier (courier_id),
   INDEX idx_status  (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ─── Ratings: Couriers ─────────────────────────────────────────────────────
+DROP TABLE IF EXISTS courier_ratings;
+
+CREATE TABLE courier_ratings (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  courier_id INT      NOT NULL,
+  order_id   INT      NOT NULL,
+  user_id    INT      NOT NULL,
+  rating     INT      NOT NULL,
+  comment    TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_courier_rating (courier_id, order_id, user_id),
+  INDEX idx_courier_rating_courier (courier_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

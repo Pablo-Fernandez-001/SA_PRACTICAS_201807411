@@ -66,6 +66,20 @@ async function createTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS courier_ratings (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      courier_id INT      NOT NULL,
+      order_id   INT      NOT NULL,
+      user_id    INT      NOT NULL,
+      rating     INT      NOT NULL,
+      comment    TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_courier_rating (courier_id, order_id, user_id),
+      INDEX idx_courier_rating_courier (courier_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
   logger.info('[delivery-db] Tables verified / created');
 }
 
