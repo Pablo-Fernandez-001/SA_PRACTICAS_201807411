@@ -41,6 +41,52 @@ CREATE TABLE menu_items (
   INDEX idx_available  (is_available)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ─── Promotions ────────────────────────────────────────────────────────────
+DROP TABLE IF EXISTS promotions;
+CREATE TABLE promotions (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id  INT           NOT NULL,
+  title          VARCHAR(255)  NOT NULL,
+  description    TEXT,
+  discount_type  ENUM('PERCENT','AMOUNT') NOT NULL,
+  discount_value DECIMAL(10,2) NOT NULL,
+  min_order      DECIMAL(10,2),
+  max_uses       INT,
+  used_count     INT           DEFAULT 0,
+  restrictions   TEXT,
+  starts_at      DATETIME,
+  expires_at     DATETIME,
+  is_active      BOOLEAN       DEFAULT TRUE,
+  created_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+  INDEX idx_promo_restaurant (restaurant_id),
+  INDEX idx_promo_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ─── Coupons ───────────────────────────────────────────────────────────────
+DROP TABLE IF EXISTS coupons;
+CREATE TABLE coupons (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id  INT           NOT NULL,
+  code           VARCHAR(50)   NOT NULL UNIQUE,
+  discount_type  ENUM('PERCENT','AMOUNT') NOT NULL,
+  discount_value DECIMAL(10,2) NOT NULL,
+  min_order      DECIMAL(10,2),
+  max_uses       INT,
+  used_count     INT           DEFAULT 0,
+  restrictions   TEXT,
+  starts_at      DATETIME,
+  expires_at     DATETIME,
+  is_active      BOOLEAN       DEFAULT TRUE,
+  created_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+  INDEX idx_coupon_restaurant (restaurant_id),
+  INDEX idx_coupon_active (is_active),
+  INDEX idx_coupon_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ─── Seed: Restaurants ───────────────────────────────────────────────────────
 INSERT INTO restaurants (id, owner_id, name, description, address, phone) VALUES
   (1, 3, 'Burger Palace',          'The best burgers in town',            '6ta Avenida 12-34, Zona 1',   '2234-5678'),

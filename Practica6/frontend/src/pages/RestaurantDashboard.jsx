@@ -19,7 +19,7 @@ const RestaurantDashboard = () => {
   const [menuItems, setMenuItems] = useState([])
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('menu') // menu, orders, inventory
+  const [activeTab, setActiveTab] = useState('menu') // menu, orders, inventory, promos
   
   // Modal states
   const [showItemModal, setShowItemModal] = useState(false)
@@ -36,9 +36,168 @@ const RestaurantDashboard = () => {
   const [orderActionLoading, setOrderActionLoading] = useState(null)
   const [orderMessage, setOrderMessage] = useState(null)
 
+  const [promotions, setPromotions] = useState([])
+  const [coupons, setCoupons] = useState([])
+  const [promoForm, setPromoForm] = useState({
+    title: '',
+    description: '',
+    discountType: 'PERCENT',
+    discountValue: '',
+    minOrder: '',
+    maxUses: '',
+    restrictions: '',
+    startsAt: '',
+    expiresAt: '',
+    active: true
+  })
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    discountType: 'PERCENT',
+    discountValue: '',
+    minOrder: '',
+    maxUses: '',
+    restrictions: '',
+    startsAt: '',
+    expiresAt: '',
+    active: true
+  })
+
   useEffect(() => {
     loadRestaurantData()
   }, [])
+
+  useEffect(() => {
+    if (!restaurant?.id) return
+    loadOffers()
+  }, [restaurant?.id])
+
+  const loadOffers = async () => {
+    if (!restaurant?.id) return
+    try {
+      const [promosRes, couponsRes] = await Promise.all([
+        catalogAPI.getPromotions({ restaurantId: restaurant.id }),
+        catalogAPI.getCoupons({ restaurantId: restaurant.id })
+      ])
+      setPromotions(promosRes.data?.data || promosRes.data || [])
+      setCoupons(couponsRes.data?.data || couponsRes.data || [])
+    } catch (error) {
+      console.error('Error loading offers:', error)
+    }
+  }
+
+  const generateCode = (prefix = 'DELI', length = 6) => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    let out = prefix
+    for (let i = 0; i < length; i += 1) {
+      out += chars[Math.floor(Math.random() * chars.length)]
+    }
+    return out
+  }
+
+  const handleCreatePromotion = async () => {
+    if (!promoForm.title.trim() || !promoForm.discountValue) return
+    try {
+      await catalogAPI.createPromotion({
+        restaurantId: restaurant.id,
+        title: promoForm.title.trim(),
+        description: promoForm.description.trim(),
+        discountType: promoForm.discountType,
+        discountValue: parseFloat(promoForm.discountValue),
+        minOrder: promoForm.minOrder ? parseFloat(promoForm.minOrder) : null,
+        maxUses: promoForm.maxUses ? parseInt(promoForm.maxUses) : null,
+        restrictions: promoForm.restrictions.trim(),
+        startsAt: promoForm.startsAt || null,
+        expiresAt: promoForm.expiresAt || null,
+        isActive: !!promoForm.active
+      })
+      await loadOffers()
+      setPromoForm({
+        title: '',
+        description: '',
+        discountType: 'PERCENT',
+        discountValue: '',
+        minOrder: '',
+        maxUses: '',
+        restrictions: '',
+        startsAt: '',
+        expiresAt: '',
+        active: true
+      })
+    } catch (error) {
+      console.error('Error creating promotion:', error)
+      alert('Error al crear promocion')
+    }
+  }
+
+  const handleCreateCoupon = async () => {
+    if (!couponForm.discountValue) return
+    try {
+      const code = couponForm.code.trim() || generateCode('CUP')
+      await catalogAPI.createCoupon({
+        restaurantId: restaurant.id,
+        code,
+        discountType: couponForm.discountType,
+        discountValue: parseFloat(couponForm.discountValue),
+        minOrder: couponForm.minOrder ? parseFloat(couponForm.minOrder) : null,
+        maxUses: couponForm.maxUses ? parseInt(couponForm.maxUses) : null,
+        restrictions: couponForm.restrictions.trim(),
+        startsAt: couponForm.startsAt || null,
+        expiresAt: couponForm.expiresAt || null,
+        isActive: !!couponForm.active
+      })
+      await loadOffers()
+      setCouponForm({
+        code: '',
+        discountType: 'PERCENT',
+        discountValue: '',
+        minOrder: '',
+        maxUses: '',
+        restrictions: '',
+        startsAt: '',
+        expiresAt: '',
+        active: true
+      })
+    } catch (error) {
+      console.error('Error creating coupon:', error)
+      alert('Error al crear cupon')
+    }
+  }
+
+  const togglePromotion = async (promoId) => {
+    try {
+      await catalogAPI.togglePromotion(promoId)
+      await loadOffers()
+    } catch (error) {
+      console.error('Error toggling promotion:', error)
+    }
+  }
+
+  const toggleCoupon = async (couponId) => {
+    try {
+      await catalogAPI.toggleCoupon(couponId)
+      await loadOffers()
+    } catch (error) {
+      console.error('Error toggling coupon:', error)
+    }
+  }
+
+  const deletePromotion = async (promoId) => {
+    try {
+      await catalogAPI.deletePromotion(promoId)
+      await loadOffers()
+    } catch (error) {
+      console.error('Error deleting promotion:', error)
+    }
+  }
+
+  const deleteCoupon = async (couponId) => {
+    try {
+      await catalogAPI.deleteCoupon(couponId)
+      await loadOffers()
+    } catch (error) {
+      console.error('Error deleting coupon:', error)
+    }
+  }
 
   const loadRestaurantData = async () => {
     try {
@@ -367,6 +526,16 @@ const RestaurantDashboard = () => {
             >
               Órdenes Recibidas
             </button>
+            <button
+              onClick={() => setActiveTab('promos')}
+              className={`px-6 py-3 border-b-2 font-medium text-sm ${
+                activeTab === 'promos'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Cupones y Promos
+            </button>
           </nav>
         </div>
 
@@ -601,6 +770,295 @@ const RestaurantDashboard = () => {
                   No hay órdenes recibidas aún
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Promotions & Coupons Tab */}
+          {activeTab === 'promos' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-xl p-5">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Crear promocion</h2>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={promoForm.title}
+                      onChange={(e) => setPromoForm({ ...promoForm, title: e.target.value })}
+                      placeholder="Titulo de la promocion"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                    />
+                    <textarea
+                      value={promoForm.description}
+                      onChange={(e) => setPromoForm({ ...promoForm, description: e.target.value })}
+                      placeholder="Descripcion"
+                      rows="3"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={promoForm.discountType}
+                        onChange={(e) => setPromoForm({ ...promoForm, discountType: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      >
+                        <option value="PERCENT">% Descuento</option>
+                        <option value="AMOUNT">Monto fijo (Q)</option>
+                      </select>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={promoForm.discountValue}
+                        onChange={(e) => setPromoForm({ ...promoForm, discountValue: e.target.value })}
+                        placeholder={promoForm.discountType === 'PERCENT' ? 'Ej: 15' : 'Ej: 25'}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        value={promoForm.minOrder}
+                        onChange={(e) => setPromoForm({ ...promoForm, minOrder: e.target.value })}
+                        placeholder="Minimo (ej: Q60)"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                      <input
+                        type="number"
+                        value={promoForm.maxUses}
+                        onChange={(e) => setPromoForm({ ...promoForm, maxUses: e.target.value })}
+                        placeholder="Max usos"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                        min="1"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={promoForm.startsAt}
+                        onChange={(e) => setPromoForm({ ...promoForm, startsAt: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                      <input
+                        type="date"
+                        value={promoForm.expiresAt}
+                        onChange={(e) => setPromoForm({ ...promoForm, expiresAt: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                    </div>
+                    <textarea
+                      value={promoForm.restrictions}
+                      onChange={(e) => setPromoForm({ ...promoForm, restrictions: e.target.value })}
+                      placeholder="Restricciones (opcional)"
+                      rows="2"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={promoForm.active}
+                        onChange={(e) => setPromoForm({ ...promoForm, active: e.target.checked })}
+                      />
+                      Visible para clientes (activa)
+                    </label>
+                    <button
+                      onClick={handleCreatePromotion}
+                      className="w-full bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 transition"
+                    >
+                      Guardar promocion
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-5">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Crear cupon</h2>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                      <input
+                        type="text"
+                        value={couponForm.code}
+                        onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value })}
+                        placeholder="Codigo (dejar vacio para generar)"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                      <button
+                        onClick={() => setCouponForm({ ...couponForm, code: generateCode('CUP') })}
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm hover:bg-white"
+                      >
+                        Generar
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        value={couponForm.discountType}
+                        onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      >
+                        <option value="PERCENT">% Descuento</option>
+                        <option value="AMOUNT">Monto fijo (Q)</option>
+                      </select>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={couponForm.discountValue}
+                        onChange={(e) => setCouponForm({ ...couponForm, discountValue: e.target.value })}
+                        placeholder={couponForm.discountType === 'PERCENT' ? 'Ej: 10' : 'Ej: 20'}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        value={couponForm.minOrder}
+                        onChange={(e) => setCouponForm({ ...couponForm, minOrder: e.target.value })}
+                        placeholder="Minimo (ej: Q80)"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                      <input
+                        type="number"
+                        value={couponForm.maxUses}
+                        onChange={(e) => setCouponForm({ ...couponForm, maxUses: e.target.value })}
+                        placeholder="Max usos"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                        min="1"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={couponForm.startsAt}
+                        onChange={(e) => setCouponForm({ ...couponForm, startsAt: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                      <input
+                        type="date"
+                        value={couponForm.expiresAt}
+                        onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      />
+                    </div>
+                    <textarea
+                      value={couponForm.restrictions}
+                      onChange={(e) => setCouponForm({ ...couponForm, restrictions: e.target.value })}
+                      placeholder="Restricciones (opcional)"
+                      rows="2"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={couponForm.active}
+                        onChange={(e) => setCouponForm({ ...couponForm, active: e.target.checked })}
+                      />
+                      Visible para clientes (activo)
+                    </label>
+                    <button
+                      onClick={handleCreateCoupon}
+                      className="w-full bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 transition"
+                    >
+                      Guardar cupon
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Promociones existentes</h3>
+                  {promotions.length === 0 ? (
+                    <p className="text-sm text-gray-400">No hay promociones registradas.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {promotions.map((promo) => (
+                        <div key={promo.id} className="border rounded-lg p-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-800">{promo.title}</p>
+                              <p className="text-sm text-gray-500">{promo.description || 'Sin descripcion'}</p>
+                              {promo.restrictions && (
+                                <p className="text-xs text-gray-400 mt-1">Restricciones: {promo.restrictions}</p>
+                              )}
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded-full ${promo.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {promo.active ? 'Activa' : 'Inactiva'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-3 text-sm">
+                            <span className="text-orange-600 font-semibold">
+                              {promo.discount_type === 'PERCENT' ? `${promo.discount_value}%` : `Q${promo.discount_value}`}
+                            </span>
+                            <span className="text-gray-400">Hasta {promo.expires_at || 'sin fecha'}</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                            <span>Minimo: {promo.min_order || 'sin minimo'}</span>
+                            <span>Max usos: {promo.max_uses || 'sin limite'}</span>
+                          </div>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => togglePromotion(promo.id)}
+                              className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
+                            >
+                              {promo.active ? 'Inhabilitar' : 'Habilitar'}
+                            </button>
+                            <button
+                              onClick={() => deletePromotion(promo.id)}
+                              className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Cupones existentes</h3>
+                  {coupons.length === 0 ? (
+                    <p className="text-sm text-gray-400">No hay cupones registrados.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {coupons.map((coupon) => (
+                        <div key={coupon.id} className="border rounded-lg p-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-800">{coupon.code}</p>
+                              {coupon.restrictions && (
+                                <p className="text-xs text-gray-400 mt-1">Restricciones: {coupon.restrictions}</p>
+                              )}
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded-full ${coupon.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {coupon.active ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-3 text-sm">
+                            <span className="text-orange-600 font-semibold">
+                              {coupon.discount_type === 'PERCENT' ? `${coupon.discount_value}%` : `Q${coupon.discount_value}`}
+                            </span>
+                            <span className="text-gray-400">Hasta {coupon.expires_at || 'sin fecha'}</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                            <span>Minimo: {coupon.min_order || 'sin minimo'}</span>
+                            <span>Max usos: {coupon.max_uses || 'sin limite'}</span>
+                          </div>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => toggleCoupon(coupon.id)}
+                              className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
+                            >
+                              {coupon.active ? 'Inhabilitar' : 'Habilitar'}
+                            </button>
+                            <button
+                              onClick={() => deleteCoupon(coupon.id)}
+                              className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
