@@ -130,4 +130,65 @@ router.post('/:id/reject', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), 
   }
 })
 
+// ─── Ratings ─────────────────────────────────────────────────────────────────
+
+// Create rating
+router.post('/ratings', authMiddleware, async (req, res) => {
+  try {
+    const ratingData = { ...req.body, userId: req.user.id }
+    const { data } = await axios.post(`${ORDERS_URL}/api/ratings`, ratingData)
+    res.status(201).json({ success: true, data })
+  } catch (error) {
+    logger.error('Orders proxy error (create rating):', error.message)
+    if (error.response?.data) {
+      return res.status(error.response.status).json(error.response.data)
+    }
+    res.status(502).json({ success: false, message: 'Error al crear calificacion' })
+  }
+})
+
+// Get ratings by order
+router.get('/ratings/order/:orderId', authMiddleware, async (req, res) => {
+  try {
+    const { data } = await axios.get(`${ORDERS_URL}/api/ratings/order/${req.params.orderId}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Orders proxy error (ratings by order):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener calificaciones' })
+  }
+})
+
+// Get ratings by user
+router.get('/ratings/user/:userId', authMiddleware, async (req, res) => {
+  try {
+    const { data } = await axios.get(`${ORDERS_URL}/api/ratings/user/${req.params.userId}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Orders proxy error (ratings by user):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener calificaciones del usuario' })
+  }
+})
+
+// Get ratings by target (RESTAURANTE, REPARTIDOR, PRODUCTO)
+router.get('/ratings/:targetType/:targetId', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${ORDERS_URL}/api/ratings/${req.params.targetType}/${req.params.targetId}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Orders proxy error (ratings by target):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener calificaciones' })
+  }
+})
+
+// Get average rating for target
+router.get('/ratings/:targetType/:targetId/average', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${ORDERS_URL}/api/ratings/${req.params.targetType}/${req.params.targetId}/average`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Orders proxy error (average rating):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener promedio de calificaciones' })
+  }
+})
+
 module.exports = router

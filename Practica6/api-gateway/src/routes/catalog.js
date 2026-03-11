@@ -145,4 +145,140 @@ router.patch('/menu-items/:id/toggle', authMiddleware, authorize(['RESTAURANTE',
   }
 })
 
+// ─── Promotions ──────────────────────────────────────────────────────────────
+
+// Get all promotions
+router.get('/promotions', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${CATALOG_URL}/api/promotions`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (promotions):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener promociones' })
+  }
+})
+
+// Get active promotions
+router.get('/promotions/active', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${CATALOG_URL}/api/promotions/active`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (active promotions):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener promociones activas' })
+  }
+})
+
+// Get promotions by restaurant
+router.get('/promotions/restaurant/:restaurantId', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${CATALOG_URL}/api/promotions/restaurant/${req.params.restaurantId}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (restaurant promotions):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener promociones del restaurante' })
+  }
+})
+
+// Create promotion
+router.post('/promotions', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.post(`${CATALOG_URL}/api/promotions`, req.body)
+    res.status(201).json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (create promotion):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al crear promocion' })
+  }
+})
+
+// Update promotion
+router.put('/promotions/:id', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.put(`${CATALOG_URL}/api/promotions/${req.params.id}`, req.body)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (update promotion):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al actualizar promocion' })
+  }
+})
+
+// Delete promotion
+router.delete('/promotions/:id', authMiddleware, authorize(['RESTAURANTE', 'ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.delete(`${CATALOG_URL}/api/promotions/${req.params.id}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (delete promotion):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al eliminar promocion' })
+  }
+})
+
+// ─── Coupons ─────────────────────────────────────────────────────────────────
+
+// Get all coupons
+router.get('/coupons', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${CATALOG_URL}/api/coupons`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (coupons):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al obtener cupones' })
+  }
+})
+
+// Validate coupon
+router.post('/coupons/validate', authMiddleware, async (req, res) => {
+  try {
+    const { data } = await axios.post(`${CATALOG_URL}/api/coupons/validate`, req.body)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (validate coupon):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al validar cupon' })
+  }
+})
+
+// Apply coupon (increment uses)
+router.post('/coupons/apply', authMiddleware, async (req, res) => {
+  try {
+    const { data } = await axios.post(`${CATALOG_URL}/api/coupons/apply`, req.body)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (apply coupon):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al aplicar cupon' })
+  }
+})
+
+// Create coupon
+router.post('/coupons', authMiddleware, authorize(['ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.post(`${CATALOG_URL}/api/coupons`, req.body)
+    res.status(201).json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (create coupon):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al crear cupon' })
+  }
+})
+
+// Update coupon
+router.put('/coupons/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.put(`${CATALOG_URL}/api/coupons/${req.params.id}`, req.body)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (update coupon):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al actualizar cupon' })
+  }
+})
+
+// Delete coupon
+router.delete('/coupons/:id', authMiddleware, authorize(['ADMIN']), async (req, res) => {
+  try {
+    const { data } = await axios.delete(`${CATALOG_URL}/api/coupons/${req.params.id}`)
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (delete coupon):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: error.response?.data?.error || 'Error al eliminar cupon' })
+  }
+})
+
 module.exports = router

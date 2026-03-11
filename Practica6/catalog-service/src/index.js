@@ -27,9 +27,13 @@ app.get('/health', (req, res) => {
 // Routes
 const restaurantRoutes = require('./routes/restaurants');
 const menuItemRoutes = require('./routes/menuItems');
+const promotionRoutes = require('./routes/promotions');
+const couponRoutes = require('./routes/coupons');
 
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/menu-items', menuItemRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

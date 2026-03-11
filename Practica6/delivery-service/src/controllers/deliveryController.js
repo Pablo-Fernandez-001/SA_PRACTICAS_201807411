@@ -491,8 +491,8 @@ exports.getAvailableOrders = async (req, res) => {
     const response = await axios.get(`${ORDERS_SERVICE_URL}/api/orders`, { timeout: 5000 });
     const allOrders = response.data;
 
-    // Filter to FINALIZADA only
-    const finalizadaOrders = allOrders.filter(o => o.status === 'PAGADO');
+    // Filter to FINALIZADA only (restaurant has finished preparing)
+    const finalizadaOrders = allOrders.filter(o => o.status === 'FINALIZADA');
 
     // Get all order IDs that already have deliveries
     const [deliveryRows] = await db().query('SELECT order_external_id FROM deliveries WHERE status != ?', [Delivery.STATUS.CANCELADO]);

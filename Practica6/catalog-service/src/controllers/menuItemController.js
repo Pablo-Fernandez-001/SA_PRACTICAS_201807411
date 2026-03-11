@@ -97,8 +97,8 @@ exports.createMenuItem = async (req, res) => {
 
     const dbData = menuItem.toDatabase();
     const [result] = await db().query(
-      'INSERT INTO menu_items (restaurant_id, name, description, price, stock, is_available) VALUES (?, ?, ?, ?, ?, ?)',
-      [dbData.restaurant_id, dbData.name, dbData.description, dbData.price, dbData.stock, dbData.is_available]
+      'INSERT INTO menu_items (restaurant_id, name, description, price, stock, is_available, food_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [dbData.restaurant_id, dbData.name, dbData.description, dbData.price, dbData.stock, dbData.is_available, dbData.food_type]
     );
 
     menuItem.id = result.insertId;
@@ -136,8 +136,8 @@ exports.updateMenuItem = async (req, res) => {
 
     const dbData = menuItem.toDatabase();
     await db().query(
-      'UPDATE menu_items SET name = ?, description = ?, price = ?, stock = ?, is_available = ? WHERE id = ?',
-      [dbData.name, dbData.description, dbData.price, dbData.stock, dbData.is_available, id]
+      'UPDATE menu_items SET name = ?, description = ?, price = ?, stock = ?, is_available = ?, food_type = ? WHERE id = ?',
+      [dbData.name, dbData.description, dbData.price, dbData.stock, dbData.is_available, dbData.food_type, id]
     );
 
     logger.info(`Menu item updated: ${menuItem.name} (ID: ${id})`);

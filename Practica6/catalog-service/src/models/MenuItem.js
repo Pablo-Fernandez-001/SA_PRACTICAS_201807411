@@ -13,6 +13,7 @@ class MenuItem {
     this.price = typeof data.price === 'string' ? parseFloat(data.price) : (data.price || 0);
     this.stock = data.stock !== undefined ? parseInt(data.stock) : 100;
     this.isAvailable = data.is_available !== undefined ? data.is_available : (data.isAvailable !== undefined ? data.isAvailable : true);
+    this.foodType = data.food_type || data.foodType || null;
     this.createdAt = data.created_at || data.createdAt || new Date();
     this.updatedAt = data.updated_at || data.updatedAt || new Date();
     
@@ -67,7 +68,8 @@ class MenuItem {
       description: this.description,
       price: this.price,
       stock: this.stock,
-      is_available: this.isAvailable
+      is_available: this.isAvailable,
+      food_type: this.foodType
     };
 
     if (this.id) {
@@ -91,7 +93,8 @@ class MenuItem {
       stock: this.stock,
       price: this.price,
       isAvailable: this.isAvailable,
-      is_available: this.isAvailable,  // Include snake_case for compatibility
+      is_available: this.isAvailable,
+      foodType: this.foodType,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };
@@ -128,6 +131,7 @@ class MenuItem {
       stock: row.stock,
       price: parseFloat(row.price),
       is_available: row.is_available,
+      food_type: row.food_type,
       created_at: row.created_at,
       updated_at: row.updated_at
     });

@@ -18,6 +18,8 @@ CREATE TABLE orders (
   restaurant_name VARCHAR(255),
   status          ENUM('CREADA','PAGADO','EN_PROCESO','FINALIZADA','EN_CAMINO','ENTREGADO','CANCELADO','RECHAZADA','REEMBOLSADO') DEFAULT 'CREADA',
   total           DECIMAL(10,2)  NOT NULL DEFAULT 0,
+  coupon_code     VARCHAR(50),
+  discount_amount DECIMAL(10,2)  DEFAULT 0,
   delivery_address VARCHAR(500),
   notes           TEXT,
   created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -41,4 +43,27 @@ CREATE TABLE order_items (
   created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   INDEX idx_order (order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- PRACTICA 6: Ratings / Calificaciones
+-- ═══════════════════════════════════════════════════════════════════════════
+
+DROP TABLE IF EXISTS ratings;
+
+CREATE TABLE ratings (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT            NOT NULL,
+  order_id    INT            NOT NULL,
+  target_type ENUM('RESTAURANTE', 'REPARTIDOR', 'PRODUCTO') NOT NULL,
+  target_id   INT            NOT NULL,
+  score       INT            NOT NULL,
+  comment     TEXT,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_rating (user_id, order_id, target_type, target_id),
+  INDEX idx_target (target_type, target_id),
+  INDEX idx_user   (user_id),
+  INDEX idx_order  (order_id),
+  CHECK (score >= 1 AND score <= 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

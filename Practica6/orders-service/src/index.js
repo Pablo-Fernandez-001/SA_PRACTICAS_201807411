@@ -25,8 +25,10 @@ app.get('/health', (req, res) => {
 
 // Routes
 const orderRoutes = require('./routes/orders');
+const ratingRoutes = require('./routes/ratings');
 
 app.use('/api/orders', orderRoutes);
+app.use('/api/ratings', ratingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

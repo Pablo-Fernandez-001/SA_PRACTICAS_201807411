@@ -31,6 +31,7 @@ CREATE TABLE menu_items (
   description   TEXT,
   price         DECIMAL(10,2)  NOT NULL,
   category      VARCHAR(100),
+  food_type     VARCHAR(100),
   image_url     VARCHAR(500),
   stock         INT            DEFAULT 100,
   is_available  BOOLEAN DEFAULT TRUE,
@@ -38,7 +39,8 @@ CREATE TABLE menu_items (
   updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
   INDEX idx_restaurant (restaurant_id),
-  INDEX idx_available  (is_available)
+  INDEX idx_available  (is_available),
+  INDEX idx_food_type  (food_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ─── Seed: Restaurants ───────────────────────────────────────────────────────
@@ -52,47 +54,105 @@ INSERT INTO restaurants (id, owner_id, name, description, address, phone) VALUES
 -- ─── Seed: Menu Items ────────────────────────────────────────────────────────
 
 -- Burger Palace (restaurant_id = 1)
-INSERT INTO menu_items (id, restaurant_id, name, description, price, category, stock, is_available) VALUES
-  (1,  1, 'Classic Burger',   'Beef patty with lettuce, tomato, and special sauce', 45.00,  'Burgers', 50, TRUE),
-  (2,  1, 'Cheese Burger',    'Classic burger with melted cheddar',                 50.00,  'Burgers', 45, TRUE),
-  (3,  1, 'Double Burger',    'Two beef patties with cheese',                       65.00,  'Burgers', 30, TRUE),
-  (4,  1, 'French Fries',     'Crispy golden fries',                                20.00,  'Sides',   100, TRUE),
-  (5,  1, 'Milkshake',        'Chocolate or vanilla milkshake',                     25.00,  'Drinks',  0, FALSE);
+INSERT INTO menu_items (id, restaurant_id, name, description, price, category, food_type, stock, is_available) VALUES
+  (1,  1, 'Classic Burger',   'Beef patty with lettuce, tomato, and special sauce', 45.00,  'Burgers', 'Hamburguesas', 50, TRUE),
+  (2,  1, 'Cheese Burger',    'Classic burger with melted cheddar',                 50.00,  'Burgers', 'Hamburguesas', 45, TRUE),
+  (3,  1, 'Double Burger',    'Two beef patties with cheese',                       65.00,  'Burgers', 'Hamburguesas', 30, TRUE),
+  (4,  1, 'French Fries',     'Crispy golden fries',                                20.00,  'Sides',   'Hamburguesas', 100, TRUE),
+  (5,  1, 'Milkshake',        'Chocolate or vanilla milkshake',                     25.00,  'Drinks',  'Hamburguesas', 0, FALSE);
 
 -- Pizza Roma (restaurant_id = 2)
-INSERT INTO menu_items (id, restaurant_id, name, description, price, category, stock, is_available) VALUES
-  (6,  2, 'Margherita Pizza', 'Classic tomato, mozzarella, and basil',              55.00,  'Pizzas',   40, TRUE),
-  (7,  2, 'Pepperoni Pizza',  'Loaded with pepperoni and cheese',                   65.00,  'Pizzas',   35, TRUE),
-  (8,  2, 'Hawaiian Pizza',   'Ham and pineapple pizza',                            60.00,  'Pizzas',   25, TRUE),
-  (9,  2, 'Garlic Bread',     'Toasted garlic bread with butter',                   15.00,  'Sides',    80, TRUE),
-  (10, 2, 'Tiramisu',         'Classic Italian dessert',                            35.00,  'Desserts', 0, FALSE);
+INSERT INTO menu_items (id, restaurant_id, name, description, price, category, food_type, stock, is_available) VALUES
+  (6,  2, 'Margherita Pizza', 'Classic tomato, mozzarella, and basil',              55.00,  'Pizzas',   'Pizza', 40, TRUE),
+  (7,  2, 'Pepperoni Pizza',  'Loaded with pepperoni and cheese',                   65.00,  'Pizzas',   'Pizza', 35, TRUE),
+  (8,  2, 'Hawaiian Pizza',   'Ham and pineapple pizza',                            60.00,  'Pizzas',   'Pizza', 25, TRUE),
+  (9,  2, 'Garlic Bread',     'Toasted garlic bread with butter',                   15.00,  'Sides',    'Pizza', 80, TRUE),
+  (10, 2, 'Tiramisu',         'Classic Italian dessert',                            35.00,  'Desserts', 'Pizza', 0, FALSE);
 
 -- Sushi Master (restaurant_id = 3)
-INSERT INTO menu_items (id, restaurant_id, name, description, price, category, stock, is_available) VALUES
-  (11, 3, 'California Roll',  '8 pieces — crab, avocado, cucumber',                45.00,  'Rolls',  60, TRUE),
-  (12, 3, 'Salmon Nigiri',    '4 pieces of fresh salmon',                          55.00,  'Nigiri', 40, TRUE),
-  (13, 3, 'Tempura Roll',     '8 pieces — shrimp tempura roll',                    50.00,  'Rolls',  35, TRUE),
-  (14, 3, 'Miso Soup',        'Traditional miso soup',                             15.00,  'Soups',  50, TRUE),
-  (15, 3, 'Dragon Roll',      'Special dragon roll with eel',                      70.00,  'Rolls',  0, FALSE);
+INSERT INTO menu_items (id, restaurant_id, name, description, price, category, food_type, stock, is_available) VALUES
+  (11, 3, 'California Roll',  '8 pieces -- crab, avocado, cucumber',               45.00,  'Rolls',  'Sushi', 60, TRUE),
+  (12, 3, 'Salmon Nigiri',    '4 pieces of fresh salmon',                          55.00,  'Nigiri', 'Sushi', 40, TRUE),
+  (13, 3, 'Tempura Roll',     '8 pieces -- shrimp tempura roll',                   50.00,  'Rolls',  'Sushi', 35, TRUE),
+  (14, 3, 'Miso Soup',        'Traditional miso soup',                             15.00,  'Soups',  'Sushi', 50, TRUE),
+  (15, 3, 'Dragon Roll',      'Special dragon roll with eel',                      70.00,  'Rolls',  'Sushi', 0, FALSE);
 
 -- Taco Loco (restaurant_id = 4)
-INSERT INTO menu_items (id, restaurant_id, name, description, price, category, stock, is_available) VALUES
-  (16, 4, 'Tacos al Pastor',  '3 tacos with marinated pork',                       35.00,  'Tacos',       55, TRUE),
-  (17, 4, 'Quesadilla',       'Cheese quesadilla with guacamole',                  30.00,  'Quesadillas', 48, TRUE),
-  (18, 4, 'Burrito Supreme',  'Large burrito with beans, rice, and meat',           40.00,  'Burritos',    42, TRUE),
-  (19, 4, 'Nachos',           'Nachos with cheese and jalapeños',                   25.00,  'Sides',       70, TRUE),
-  (20, 4, 'Horchata',         'Traditional rice drink',                             15.00,  'Drinks',      0, FALSE);
+INSERT INTO menu_items (id, restaurant_id, name, description, price, category, food_type, stock, is_available) VALUES
+  (16, 4, 'Tacos al Pastor',  '3 tacos with marinated pork',                       35.00,  'Tacos',       'Mexicana', 55, TRUE),
+  (17, 4, 'Quesadilla',       'Cheese quesadilla with guacamole',                  30.00,  'Quesadillas', 'Mexicana', 48, TRUE),
+  (18, 4, 'Burrito Supreme',  'Large burrito with beans, rice, and meat',           40.00,  'Burritos',    'Mexicana', 42, TRUE),
+  (19, 4, 'Nachos',           'Nachos with cheese and jalapenos',                   25.00,  'Sides',       'Mexicana', 70, TRUE),
+  (20, 4, 'Horchata',         'Traditional rice drink',                             15.00,  'Drinks',      'Mexicana', 0, FALSE);
 
 -- Pollo Campero Express (restaurant_id = 5)
-INSERT INTO menu_items (id, restaurant_id, name, description, price, category, stock, is_available) VALUES
-  (21, 5, 'Pollo Frito 2pc',       '2 pieces fried chicken',           30.00,  'Chicken', 65, TRUE),
-  (22, 5, 'Pollo Frito 5pc',       '5 pieces fried chicken',           65.00,  'Chicken', 40, TRUE),
-  (23, 5, 'Alitas BBQ',            'BBQ chicken wings (8 pcs)',        45.00,  'Wings',   55, TRUE),
-  (24, 5, 'Coleslaw',              'Fresh coleslaw',                   10.00,  'Sides',   90, TRUE),
-  (25, 5, 'Papas Fritas Campero',  'Seasoned fries',                   18.00,  'Sides',   0, FALSE);
+INSERT INTO menu_items (id, restaurant_id, name, description, price, category, food_type, stock, is_available) VALUES
+  (21, 5, 'Pollo Frito 2pc',       '2 pieces fried chicken',           30.00,  'Chicken', 'Pollo', 65, TRUE),
+  (22, 5, 'Pollo Frito 5pc',       '5 pieces fried chicken',           65.00,  'Chicken', 'Pollo', 40, TRUE),
+  (23, 5, 'Alitas BBQ',            'BBQ chicken wings (8 pcs)',        45.00,  'Wings',   'Pollo', 55, TRUE),
+  (24, 5, 'Coleslaw',              'Fresh coleslaw',                   10.00,  'Sides',   'Pollo', 90, TRUE),
+  (25, 5, 'Papas Fritas Campero',  'Seasoned fries',                   18.00,  'Sides',   'Pollo', 0, FALSE);
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- PRÁCTICA 6: Arquitectura Orientada a Eventos (EDA)
+-- PRACTICA 6: Promotions y Coupons
+-- ═══════════════════════════════════════════════════════════════════════════
+
+DROP TABLE IF EXISTS promotions;
+DROP TABLE IF EXISTS coupons;
+
+-- ─── Promotions ──────────────────────────────────────────────────────────────
+CREATE TABLE promotions (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id       INT            NOT NULL,
+  name                VARCHAR(255)   NOT NULL,
+  description         TEXT,
+  discount_percentage DECIMAL(5,2)   NOT NULL,
+  start_date          DATETIME       NOT NULL,
+  end_date            DATETIME       NOT NULL,
+  is_active           BOOLEAN DEFAULT TRUE,
+  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+  INDEX idx_restaurant (restaurant_id),
+  INDEX idx_active     (is_active),
+  INDEX idx_dates      (start_date, end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ─── Coupons ─────────────────────────────────────────────────────────────────
+CREATE TABLE coupons (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  code                VARCHAR(50) UNIQUE NOT NULL,
+  description         TEXT,
+  discount_percentage DECIMAL(5,2),
+  discount_amount     DECIMAL(10,2),
+  min_order_amount    DECIMAL(10,2)  DEFAULT 0,
+  max_uses            INT            DEFAULT 1,
+  current_uses        INT            DEFAULT 0,
+  start_date          DATETIME       NOT NULL,
+  end_date            DATETIME       NOT NULL,
+  is_active           BOOLEAN DEFAULT TRUE,
+  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_code       (code),
+  INDEX idx_active     (is_active),
+  INDEX idx_dates      (start_date, end_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ─── Seed: Promotions ────────────────────────────────────────────────────────
+INSERT INTO promotions (restaurant_id, name, description, discount_percentage, start_date, end_date) VALUES
+  (1, '2x1 en Burgers',      'Descuento del 20% en todas las hamburguesas',  20.00, '2026-01-01 00:00:00', '2026-12-31 23:59:59'),
+  (2, 'Pizza Mania',         'Descuento del 15% en pizzas',                  15.00, '2026-01-01 00:00:00', '2026-06-30 23:59:59'),
+  (3, 'Sushi Happy Hour',    'Descuento del 25% en rolls',                   25.00, '2026-03-01 00:00:00', '2026-12-31 23:59:59'),
+  (4, 'Taco Tuesday',        'Descuento del 30% los martes',                 30.00, '2026-01-01 00:00:00', '2026-12-31 23:59:59');
+
+-- ─── Seed: Coupons ──────────────────────────────────────────────────────────
+INSERT INTO coupons (code, description, discount_percentage, discount_amount, min_order_amount, max_uses, start_date, end_date) VALUES
+  ('BIENVENIDO10', 'Descuento de bienvenida 10%',    10.00, NULL,  0.00, 100, '2026-01-01 00:00:00', '2026-12-31 23:59:59'),
+  ('DESCUENTO20',  'Cupon de descuento Q20',          NULL, 20.00, 50.00, 50, '2026-01-01 00:00:00', '2026-12-31 23:59:59'),
+  ('PROMO15',      'Descuento del 15% en tu pedido', 15.00, NULL,  30.00, 200, '2026-03-01 00:00:00', '2026-06-30 23:59:59');
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- PRACTICA 6: Arquitectura Orientada a Eventos (EDA)
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ─── Received Orders (from RabbitMQ) ─────────────────────────────────────────

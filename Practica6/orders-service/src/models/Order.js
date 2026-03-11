@@ -18,6 +18,10 @@ class Order {
     this.createdAt = data.created_at || data.createdAt || new Date();
     this.updatedAt = data.updated_at || data.updatedAt || new Date();
     
+    // Coupon / discount
+    this.couponCode = data.coupon_code || data.couponCode || null;
+    this.discountAmount = data.discount_amount || data.discountAmount || 0;
+
     // Related data
     this.items = data.items || [];
     this.userName = data.user_name || data.userName || null;
@@ -97,15 +101,16 @@ class Order {
    * @returns {boolean}
    */
   canTransitionTo(newStatus) {
+    // Flujo correcto: CREADA -> PAGADO -> EN_PROCESO/RECHAZADA -> FINALIZADA -> EN_CAMINO -> ENTREGADO
     const validTransitions = {
-      [Order.STATUS.CREADA]: [Order.STATUS.EN_PROCESO, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA],
-      [Order.STATUS.PAGADO]: [Order.STATUS.EN_CAMINO, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA, Order.STATUS.REEMBOLSADO],
-      [Order.STATUS.EN_PROCESO]: [Order.STATUS.FINALIZADA, Order.STATUS.CANCELADO, Order.STATUS.RECHAZADA],
-      [Order.STATUS.FINALIZADA]: [Order.STATUS.PAGADO, Order.STATUS.CANCELADO],
+      [Order.STATUS.CREADA]: [Order.STATUS.PAGADO, Order.STATUS.CANCELADO],
+      [Order.STATUS.PAGADO]: [Order.STATUS.EN_PROCESO, Order.STATUS.RECHAZADA, Order.STATUS.CANCELADO],
+      [Order.STATUS.EN_PROCESO]: [Order.STATUS.FINALIZADA, Order.STATUS.CANCELADO],
+      [Order.STATUS.FINALIZADA]: [Order.STATUS.EN_CAMINO],
       [Order.STATUS.EN_CAMINO]: [Order.STATUS.ENTREGADO, Order.STATUS.CANCELADO],
       [Order.STATUS.ENTREGADO]: [Order.STATUS.REEMBOLSADO],
-      [Order.STATUS.CANCELADO]: [Order.STATUS.REEMBOLSADO],
       [Order.STATUS.RECHAZADA]: [Order.STATUS.REEMBOLSADO],
+      [Order.STATUS.CANCELADO]: [Order.STATUS.REEMBOLSADO],
       [Order.STATUS.REEMBOLSADO]: []
     };
     
@@ -125,7 +130,9 @@ class Order {
       status: this.status,
       total: this.total,
       delivery_address: this.deliveryAddress,
-      notes: this.notes
+      notes: this.notes,
+      coupon_code: this.couponCode,
+      discount_amount: this.discountAmount
     };
 
     if (this.id) {
@@ -149,6 +156,8 @@ class Order {
       restaurantName: this.restaurantName,
       status: this.status,
       total: this.total,
+      couponCode: this.couponCode,
+      discountAmount: this.discountAmount,
       deliveryAddress: this.deliveryAddress,
       delivery_address: this.deliveryAddress,
       notes: this.notes,
@@ -170,6 +179,8 @@ class Order {
       restaurantName: this.restaurantName,
       status: this.status,
       total: this.total,
+      couponCode: this.couponCode,
+      discountAmount: this.discountAmount,
       deliveryAddress: this.deliveryAddress,
       delivery_address: this.deliveryAddress,
       notes: this.notes,
@@ -195,6 +206,8 @@ class Order {
       restaurant_name: row.restaurant_name,
       status: row.status,
       total: parseFloat(row.total),
+      coupon_code: row.coupon_code,
+      discount_amount: parseFloat(row.discount_amount || 0),
       delivery_address: row.delivery_address,
       notes: row.notes,
       created_at: row.created_at,

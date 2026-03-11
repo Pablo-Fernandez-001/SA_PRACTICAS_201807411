@@ -5,8 +5,10 @@
 
 const Order = require('./Order');
 const OrderItem = require('./OrderItem');
+const Rating = require('./Rating');
 
 module.exports = {
   Order,
-  OrderItem
+  OrderItem,
+  Rating
 };

@@ -5,8 +5,12 @@
 
 const Restaurant = require('./Restaurant');
 const MenuItem = require('./MenuItem');
+const Promotion = require('./Promotion');
+const Coupon = require('./Coupon');
 
 module.exports = {
   Restaurant,
-  MenuItem
+  MenuItem,
+  Promotion,
+  Coupon
 };

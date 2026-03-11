@@ -59,6 +59,26 @@ export const catalogAPI = {
   toggleMenuItem: (id) => api.patch(`/catalog/menu-items/${id}/toggle`),
 }
 
+// ─── Promotions ──────────────────────────────────────────────────────────────
+export const promotionAPI = {
+  getAll: () => api.get('/catalog/promotions'),
+  getActive: () => api.get('/catalog/promotions/active'),
+  getByRestaurant: (restaurantId) => api.get(`/catalog/promotions/restaurant/${restaurantId}`),
+  create: (data) => api.post('/catalog/promotions', data),
+  update: (id, data) => api.put(`/catalog/promotions/${id}`, data),
+  delete: (id) => api.delete(`/catalog/promotions/${id}`),
+}
+
+// ─── Coupons ─────────────────────────────────────────────────────────────────
+export const couponAPI = {
+  getAll: () => api.get('/catalog/coupons'),
+  validate: (code, orderTotal) => api.post('/catalog/coupons/validate', { code, orderTotal }),
+  apply: (code) => api.post('/catalog/coupons/apply', { code }),
+  create: (data) => api.post('/catalog/coupons', data),
+  update: (id, data) => api.put(`/catalog/coupons/${id}`, data),
+  delete: (id) => api.delete(`/catalog/coupons/${id}`),
+}
+
 // ─── Orders ──────────────────────────────────────────────────────────────────
 export const ordersAPI = {
   getOrders: () => api.get('/orders'),
@@ -71,6 +91,15 @@ export const ordersAPI = {
   updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
   cancel: (id) => api.post(`/orders/${id}/cancel`),
   reject: (id, reason) => api.post(`/orders/${id}/reject`, { reason }),
+}
+
+// ─── Ratings ─────────────────────────────────────────────────────────────────
+export const ratingAPI = {
+  create: (data) => api.post('/orders/ratings', data),
+  getByOrder: (orderId) => api.get(`/orders/ratings/order/${orderId}`),
+  getByUser: (userId) => api.get(`/orders/ratings/user/${userId}`),
+  getByTarget: (targetType, targetId) => api.get(`/orders/ratings/${targetType}/${targetId}`),
+  getAverage: (targetType, targetId) => api.get(`/orders/ratings/${targetType}/${targetId}/average`),
 }
 
 // ─── Delivery ────────────────────────────────────────────────────────────────

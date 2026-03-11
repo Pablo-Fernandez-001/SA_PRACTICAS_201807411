@@ -333,30 +333,7 @@ exports.createOrder = async (req, res) => {
 
     logger.info(`[createOrder] ORDER CREATED - number=${order.orderNumber}, id=${order.id}, total=Q${order.total}, items=${orderItems.length}`);
 
-    // ── PRÁCTICA 4: Publish order event to RabbitMQ ─────────────────────────
-    try {
-      await publishOrderCreated({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        restaurantId,
-        restaurantName: finalRestaurantName,
-        userId,
-        items: orderItems.map(item => ({
-          itemId: item.menuItemExternalId,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        total: order.total,
-        deliveryAddress
-      });
-      logger.info(`[createOrder] Order event published to RabbitMQ - orderId=${order.id}`);
-    } catch (mqError) {
-      logger.error('[createOrder] Failed to publish to RabbitMQ (order still created):', mqError.message);
-      // No bloqueamos la respuesta - la orden ya fue creada exitosamente
-    }
-
-    // Notification — order created
+    // Notification -- order created
     const userInfo = await getUserEmail(userId);
     sendNotification('order-created', {
       orderNumber: order.orderNumber,
@@ -392,7 +369,7 @@ exports.createOrder = async (req, res) => {
 };
 
 /**
- * Update order status (generic — used by restaurant/admin)
+ * Update order status (generic -- used by restaurant/admin/payment-service)
  */
 exports.updateOrderStatus = async (req, res) => {
   try {
@@ -408,7 +385,7 @@ exports.updateOrderStatus = async (req, res) => {
     const previousStatus = order.status;
     
     if (!order.canTransitionTo(status)) {
-      console.log(`[updateOrderStatus] Invalid status transition attempted: ${order.status} → ${status}`);
+      console.log(`[updateOrderStatus] Invalid status transition attempted: ${order.status} -> ${status}`);
       return res.status(400).json({ 
         error: `Cannot transition from ${order.status} to ${status}` 
       });
@@ -422,11 +399,35 @@ exports.updateOrderStatus = async (req, res) => {
     order.status = status;
     logger.info(`Order ${order.orderNumber} status updated from ${previousStatus} to ${status}`);
 
-    // ── Fetch order items for notification ──────────────────────
+    // Fetch order items
     const [orderItemRows] = await db().query('SELECT * FROM order_items WHERE order_id = ?', [id]);
     const orderItemsList = orderItemRows.map(r => ({ name: r.name, quantity: r.quantity, price: parseFloat(r.price), subtotal: parseFloat(r.subtotal) }));
 
-    // ── Send notifications based on new status ──────────────────────
+    // When order is PAGADO, publish to RabbitMQ so restaurant-service receives it
+    if (status === Order.STATUS.PAGADO) {
+      try {
+        await publishOrderCreated({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          restaurantId: order.restaurantId,
+          restaurantName: order.restaurantName,
+          userId: order.userId,
+          items: orderItemsList.map(item => ({
+            itemId: item.menuItemExternalId || item.menu_item_external_id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          total: order.total,
+          deliveryAddress: order.deliveryAddress
+        });
+        logger.info(`[updateOrderStatus] Order event published to RabbitMQ after PAGADO - orderId=${order.id}`);
+      } catch (mqError) {
+        logger.error('[updateOrderStatus] Failed to publish to RabbitMQ:', mqError.message);
+      }
+    }
+
+    // Send notifications based on new status
     const userInfo = await getUserEmail(order.userId);
     const notifBase = {
       orderNumber: order.orderNumber,
@@ -507,7 +508,8 @@ exports.cancelOrder = async (req, res) => {
 };
 
 /**
- * Reject order — used by the RESTAURANT (RECHAZADA status)
+ * Reject order -- used by the RESTAURANT (RECHAZADA status)
+ * Triggers automatic refund since the order was already paid
  */
 exports.rejectOrder = async (req, res) => {
   try {
@@ -535,11 +537,23 @@ exports.rejectOrder = async (req, res) => {
     order.status = Order.STATUS.RECHAZADA;
     logger.info(`Order ${order.orderNumber} rejected by restaurant. Reason: ${reason || 'N/A'}`);
 
+    // Auto-trigger refund since the order was already PAGADO
+    const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3006';
+    try {
+      await axios.post(`${PAYMENT_SERVICE_URL}/api/payments/refund`, {
+        order_id: order.id,
+        reason: reason || 'Rechazada por el restaurante'
+      }, { timeout: 10000 });
+      logger.info(`[rejectOrder] Auto-refund triggered for order ${order.orderNumber}`);
+    } catch (refundError) {
+      logger.warn(`[rejectOrder] Auto-refund failed for order ${order.orderNumber}: ${refundError.message}`);
+    }
+
     // Fetch order items for notification
     const [rejectItemRows] = await db().query('SELECT * FROM order_items WHERE order_id = ?', [id]);
     const rejectItemsList = rejectItemRows.map(r => ({ name: r.name, quantity: r.quantity, price: parseFloat(r.price), subtotal: parseFloat(r.subtotal) }));
 
-    // Notification — order rejected by restaurant
+    // Notification -- order rejected by restaurant
     const userInfo = await getUserEmail(order.userId);
     sendNotification('order-rejected', {
       orderNumber: order.orderNumber,
@@ -551,7 +565,7 @@ exports.rejectOrder = async (req, res) => {
       items: rejectItemsList
     });
     
-    res.json({ message: 'Orden rechazada', order: order.toJSON() });
+    res.json({ message: 'Orden rechazada y reembolso iniciado', order: order.toJSON() });
   } catch (error) {
     logger.error('Error rejecting order:', error);
     res.status(500).json({ error: 'Error rejecting order' });
