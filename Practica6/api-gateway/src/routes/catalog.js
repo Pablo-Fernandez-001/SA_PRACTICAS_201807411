@@ -21,6 +21,17 @@ router.get('/restaurants', async (req, res) => {
   }
 })
 
+// Advanced search & filtering
+router.get('/search', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${CATALOG_URL}/api/search`, { params: req.query })
+    res.json({ success: true, data })
+  } catch (error) {
+    logger.error('Catalog proxy error (search):', error.message)
+    res.status(error.response?.status || 502).json({ success: false, message: 'Error al buscar en catálogo' })
+  }
+})
+
 // Get restaurant by ID (with menu)
 router.get('/restaurants/:id', async (req, res) => {
   try {

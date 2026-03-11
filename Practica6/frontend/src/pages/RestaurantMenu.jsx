@@ -22,6 +22,8 @@ export default function RestaurantMenu() {
   const [couponError, setCouponError] = useState(null)
   const [restaurantRating, setRestaurantRating] = useState(0)
   const [itemRatings, setItemRatings] = useState({})
+  const [itemSearch, setItemSearch] = useState('')
+  const [itemCategory, setItemCategory] = useState('')
 
   const cartTotal = cart.reduce((sum, c) => sum + c.price * c.quantity, 0)
   const totalDiscount = Math.min(cartTotal, promoDiscount + couponDiscount)
@@ -55,6 +57,11 @@ export default function RestaurantMenu() {
   }, [id])
 
   useEffect(() => {
+    if (!restaurant?.id) return
+    searchMenuItems()
+  }, [itemSearch, itemCategory, restaurant?.id])
+
+  useEffect(() => {
     validatePromotion()
   }, [cartTotal, id])
 
@@ -74,6 +81,23 @@ export default function RestaurantMenu() {
       setError('Error al cargar el menú: ' + (err.response?.data?.message || err.message))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const searchMenuItems = async () => {
+    try {
+      const res = await catalogAPI.searchCatalog({
+        restaurantId: id,
+        q: itemSearch || undefined,
+        foodType: itemCategory || undefined,
+        includeMenu: 'true'
+      })
+      const data = res.data.data || res.data
+      const items = data?.menuItems || []
+      setMenuItems(items)
+      fetchRatings(restaurant?.id || id, items)
+    } catch (err) {
+      console.error('Error searching menu items:', err)
     }
   }
 
@@ -254,6 +278,27 @@ export default function RestaurantMenu() {
         {/* Menu */}
         <div className="lg:col-span-2">
           <h2 className="text-xl font-bold mb-4">Menú</h2>
+          <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={itemSearch}
+                onChange={(e) => setItemSearch(e.target.value)}
+                placeholder="Buscar producto..."
+                className="border border-gray-200 rounded-lg px-3 py-2"
+              />
+              <select
+                value={itemCategory}
+                onChange={(e) => setItemCategory(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2"
+              >
+                <option value="">Categoria de producto</option>
+                {Array.from(new Set(menuItems.map(i => i.category).filter(Boolean))).map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           {menuItems.length === 0 ? (
             <p className="text-gray-400">No hay items disponibles.</p>
           ) : (
