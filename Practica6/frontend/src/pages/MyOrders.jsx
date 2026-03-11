@@ -101,6 +101,17 @@ export default function MyOrders() {
     setTimeout(() => setMessage(null), 3000)
   }
 
+  const getOrderDiscount = (orderId) => {
+    try {
+      const raw = localStorage.getItem('order-discounts')
+      if (!raw) return 0
+      const data = JSON.parse(raw)
+      return data?.[String(orderId)]?.discountAmount || 0
+    } catch {
+      return 0
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
@@ -177,7 +188,11 @@ export default function MyOrders() {
                 <div className="flex items-center gap-3">
                   {canPay(order.status) && (
                     <button
-                      onClick={() => navigate(`/payment?orderId=${order.id}&total=${order.total}`)}
+                      onClick={() => {
+                        const discount = getOrderDiscount(order.id)
+                        const finalTotal = Math.max(0, parseFloat(order.total || 0) - discount)
+                        navigate(`/payment?orderId=${order.id}&total=${finalTotal}`)
+                      }}
                       className="text-sm bg-green-600 text-white px-4 py-1.5 rounded-lg hover:bg-green-700 transition font-medium"
                     >
                       💰 Pagar
@@ -204,7 +219,7 @@ export default function MyOrders() {
                     <span className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full">💰 Reembolsado</span>
                   )}
                   <span className="text-lg font-bold text-orange-600">
-                    Q{parseFloat(order.total || 0).toFixed(2)}
+                    Q{(parseFloat(order.total || 0) - getOrderDiscount(order.id)).toFixed(2)}
                   </span>
                 </div>
               </div>
