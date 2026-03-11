@@ -1,32 +1,32 @@
 # DeliverEats - Práctica 3 - gRPC Validation
 
-## 📋 Requisitos Implementados
+## Requisitos Implementados
 
-### ✅ Restaurant-Catalog-Service (Servidor gRPC)
+### Restaurant-Catalog-Service (Servidor gRPC)
 
 **Lógica de Verificación** implementada en `catalog-service/src/grpc/catalogGrpcServer.js`:
-- ✅ Valida que los productos existan en la base de datos
-- ✅ Valida que los productos pertenezcan al restaurante indicado
-- ✅ Valida que los precios actuales coincidan con los solicitados
-- ✅ Valida que los productos estén disponibles (is_available = true)
-- ✅ Base de datos de catálogo con menús y precios en `db/catalog_db.sql`
+- Valida que los productos existan en la base de datos
+- Valida que los productos pertenezcan al restaurante indicado
+- Valida que los precios actuales coincidan con los solicitados
+- Valida que los productos estén disponibles (is_available = true)
+- Base de datos de catálogo con menús y precios en `db/catalog_db.sql`
 
 **Puerto**: 
 - REST: `3002`
 - gRPC: `50052`
 
-### ✅ Order-Service (Cliente gRPC)
+### Order-Service (Cliente gRPC)
 
 **Flujo de Creación de Orden** implementado en `orders-service/src/controllers/orderController.js`:
-- ✅ Llama al servidor gRPC ANTES de guardar en base de datos
-- ✅ Envía lista de items con precios para validación
-- ✅ Solo persiste la orden si la validación es exitosa
-- ✅ Manejo de estados de error: rechaza orden si validación falla
-- ✅ Notifica al frontend con mensaje descriptivo del error
+- Llama al servidor gRPC ANTES de guardar en base de datos
+- Envía lista de items con precios para validación
+- Solo persiste la orden si la validación es exitosa
+- Manejo de estados de error: rechaza orden si validación falla
+- Notifica al frontend con mensaje descriptivo del error
 
 **Puerto**: `3003`
 
-### ✅ Contrato de Comunicación
+### Contrato de Comunicación
 
 **Archivo**: `protos/catalog.proto`
 
@@ -45,7 +45,7 @@ message ValidationResponse {
 }
 ```
 
-## 🚀 Instrucciones de Inicio
+## Instrucciones de Inicio
 
 ### 1. Levantar los servicios con Docker
 
@@ -82,7 +82,7 @@ Expected output:
 - **Catalog Service**: http://localhost:3002/health
 - **Orders Service**: http://localhost:3003/health
 
-## 🧪 Probar la Validación gRPC
+## Probar la Validación gRPC
 
 ### Flujo Completo
 
@@ -115,7 +115,7 @@ Expected output:
 
 ### Casos de Prueba
 
-#### ✅ Caso 1: Orden Válida
+#### Caso 1: Orden Válida
 ```json
 POST http://localhost:8080/api/orders
 {
@@ -130,9 +130,9 @@ POST http://localhost:8080/api/orders
   "delivery_address": "Zona 10, Guatemala"
 }
 ```
-**Resultado**: Orden creada exitosamente ✅
+**Resultado**: Orden creada exitosamente
 
-#### ❌ Caso 2: Precio Incorrecto
+#### Caso 2: Precio Incorrecto
 ```json
 POST http://localhost:8080/api/orders
 {
@@ -147,9 +147,9 @@ POST http://localhost:8080/api/orders
   "delivery_address": "Zona 10, Guatemala"
 }
 ```
-**Resultado**: Error 400 - "El precio del producto ha cambiado" ❌
+**Resultado**: Error 400 - "El precio del producto ha cambiado"
 
-#### ❌ Caso 3: Item No Pertenece al Restaurante
+#### Caso 3: Item No Pertenece al Restaurante
 ```json
 POST http://localhost:8080/api/orders
 {
@@ -164,9 +164,9 @@ POST http://localhost:8080/api/orders
   "delivery_address": "Zona 10, Guatemala"
 }
 ```
-**Resultado**: Error 400 - "El producto no pertenece al restaurante seleccionado" ❌
+**Resultado**: Error 400 - "El producto no pertenece al restaurante seleccionado"
 
-#### ❌ Caso 4: Item No Disponible
+#### Caso 4: Item No Disponible
 ```json
 POST http://localhost:8080/api/orders
 {
@@ -181,9 +181,9 @@ POST http://localhost:8080/api/orders
   "delivery_address": "Zona 10, Guatemala"
 }
 ```
-**Resultado**: Error 400 - "El producto no está disponible actualmente" ❌
+**Resultado**: Error 400 - "El producto no está disponible actualmente"
 
-## 📊 Estructura de Bases de Datos
+## Estructura de Bases de Datos
 
 ### catalog_db (Puerto 3307)
 ```sql
@@ -203,7 +203,7 @@ SELECT * FROM orders;
 SELECT * FROM order_items;
 ```
 
-## 🔍 Logs de Validación gRPC
+## Logs de Validación gRPC
 
 Para ver los logs de validación en tiempo real:
 
@@ -231,7 +231,7 @@ docker logs -f delivereats-orders-service
 [createOrder] ORDER REJECTED - restaurant=1, reason: Validación fallida
 ```
 
-## 🏗️ Arquitectura gRPC
+## Arquitectura gRPC
 
 ```
 ┌─────────────────────┐      gRPC Call        ┌──────────────────────┐
@@ -250,21 +250,21 @@ docker logs -f delivereats-orders-service
 └─────────────────────┘                       └──────────────────────┘
 ```
 
-## 🛠️ Gestión CRUD
+## Gestión CRUD
 
 ### Frontend - AdminPanel
 
 **Ruta**: http://localhost:3000/admin/panel
 
 **Funcionalidades**:
-- ✅ Restaurantes: Crear, Editar, Eliminar, Activar/Desactivar
-- ✅ Menu Items: Crear, Editar, Eliminar, Disponible/No Disponible
-- ✅ Pedidos: Ver, Cambiar Estado, Cancelar
-- ✅ Entregas: Ver, Iniciar, Completar, Cancelar
+- Restaurantes: Crear, Editar, Eliminar, Activar/Desactivar
+- Menu Items: Crear, Editar, Eliminar, Disponible/No Disponible
+- Pedidos: Ver, Cambiar Estado, Cancelar
+- Entregas: Ver, Iniciar, Completar, Cancelar
 
 Todos los datos son persistidos en MySQL, **sin mockdata**.
 
-## 📝 Notas Importantes
+## Notas Importantes
 
 1. **Validación Pre-Persistencia**: La orden NUNCA se guarda en la base de datos si la validación gRPC falla
 2. **Atomicidad**: La creación de orden + items es transaccional (rollback si hay error)
@@ -272,7 +272,7 @@ Todos los datos son persistidos en MySQL, **sin mockdata**.
 4. **Sin Mockdata**: Todos los datos vienen de MySQL
 5. **Logs Profesionales**: Sin emojis en logs de backend
 
-## ⚠️ Troubleshooting
+## Troubleshooting
 
 ### Error 404 en `/api/catalog/restaurants`
 
@@ -311,7 +311,7 @@ docker ps | findstr catalog-service
 # Debe mostrar: 0.0.0.0:50052->50052/tcp
 ```
 
-## 📚 Archivos Clave
+## Archivos Clave
 
 - `protos/catalog.proto` - Contrato gRPC
 - `catalog-service/src/grpc/catalogGrpcServer.js` - Servidor gRPC

@@ -58,11 +58,11 @@ Sistema completo de gestión de pedidos de comida con autenticación JWT, comuni
 
 ---
 
-## 🆕 Novedades de Práctica 5 (Responsabilidad: Persona 2)
+## Novedades de Práctica 5 (Responsabilidad: Persona 2)
 
 ### Resumen de Cambios (v1.1.0 → v2.0.0)
 
-**✅ FX-Service (Servicio de Conversión de Divisas):**
+**FX-Service (Servicio de Conversión de Divisas):**
 - **Nuevo microservicio** en Python 3.11 + Flask + gRPC
 - API REST y gRPC dual para conversión de divisas en tiempo real
 - Estrategia de **caché Redis de 3 niveles**: Cache principal (TTL 6min) → API externa (ExchangeRate-API) → Fallback de emergencia (TTL 24h)
@@ -71,7 +71,7 @@ Sistema completo de gestión de pedidos de comida con autenticación JWT, comuni
 - gRPC proto: `GetExchangeRate`, `GetMultipleRates`, `ConvertAmount`
 - Tests unitarios (5 tests: cache hit, API call, fallback, error, conversion)
 
-**✅ Payment-Service (Procesamiento de Pagos):**
+**Payment-Service (Procesamiento de Pagos):**
 - **Nuevo microservicio** en Node.js 18 + Express
 - Procesamiento de pagos simulado con conversión FX automática
 - Integración con FX-Service para convertir montos a USD
@@ -79,65 +79,65 @@ Sistema completo de gestión de pedidos de comida con autenticación JWT, comuni
 - Flujo de **reembolso completo** (solo ADMIN): registra motivo, marca pago y orden como REEMBOLSADO
 - Base de datos dedicada: payment_db en MySQL 8.0 (puerto 3310)
 
-**✅ Evidencia Fotográfica de Entrega:**
+**Evidencia Fotográfica de Entrega:**
 - Repartidores **adjuntan foto** al completar una entrega
 - Almacenamiento en Base64 (LONGTEXT en MySQL) con justificación técnica documentada
 - Visualización por **clientes** (en "Mis Pedidos") y **administradores** (en Panel Admin)
 - Nuevo estado de entrega: **FALLIDO** con motivo textual
 
-**✅ Flujo de Pago con Conversión de Divisas (Frontend):**
+**Flujo de Pago con Conversión de Divisas (Frontend):**
 - **PaymentPage.jsx**: Flujo de 4 pasos (selección de moneda → datos de tarjeta → confirmación → resultado)
 - Tipo de cambio en tiempo real mostrado al usuario
 - Resumen de pago con desglose: monto original, tasa, monto en USD
 
-**✅ Panel de Administración Extendido:**
-- Tab **"💳 Pagos"**: Tabla completa de todos los pagos procesados
-- Tab **"💱 FX Cache"**: Estadísticas de caché (hits, misses, fallback hits, total requests)
-- Botón **"💰 Reembolsar"** en pedidos elegibles con modal de confirmación y motivo
-- Botón **"📸 Foto"** para ver evidencia fotográfica de entregas
+**Panel de Administración Extendido:**
+- Tab **"Pagos"**: Tabla completa de todos los pagos procesados
+- Tab **"FX Cache"**: Estadísticas de caché (hits, misses, fallback hits, total requests)
+- Botón **"Reembolsar"** en pedidos elegibles con modal de confirmación y motivo
+- Botón **"Foto"** para ver evidencia fotográfica de entregas
 
-**✅ Dashboard de Repartidor Mejorado:**
+**Dashboard de Repartidor Mejorado:**
 - Modal de **captura/upload de foto** al completar entrega (10MB máx)
-- Botón **"⚠️ Reportar Fallo"** para entregas fallidas con motivo
+- Botón **"Reportar Fallo"** para entregas fallidas con motivo
 - Preview de foto antes de enviar
 
-**✅ Documentación Técnica:**
+**Documentación Técnica:**
 - `docs/FX-SERVICE.md` — Arquitectura, caché 3-niveles, endpoints, gRPC, tests
 - `docs/REFUND-FLOW.md` — Diagrama de flujo, estados, modelo de datos, seguridad
 - `docs/IMAGE-STORAGE-JUSTIFICATION.md` — Comparativa Base64 vs FileSystem vs Cloud
 
-**✅ Nuevos Estados del Sistema:**
+**Nuevos Estados del Sistema:**
 - Órdenes: `PAGADO`, `REEMBOLSADO`
 - Entregas: `FALLIDO` (con `failure_reason`)
 
 ---
 
-## 🆕 Novedades de Práctica 4 (Anteriores)
+## Novedades de Práctica 4 (Anteriores)
 
 ### Resumen de Cambios (v1.0.0 → v1.1.0)
 
-**✅ Sistema de Mensajería Asíncrona Implementado:**
+**Sistema de Mensajería Asíncrona Implementado:**
 - **RabbitMQ** integrado como Message Broker
 - **Producer:** Orders-Service publica eventos cuando se crea una orden
 - **Consumer:** Catalog-Service consume eventos y registra órdenes en consola
 - Demostración completa de comunicación asíncrona entre microservicios
 
-**✅ Cache con Redis:**
+**Cache con Redis:**
 - Redis 7 integrado para cache de restaurantes y menús
 - Mejora de performance en consultas frecuentes al Catalog-Service
 
-**✅ Infraestructura Kubernetes:**
+**Infraestructura Kubernetes:**
 - 18 manifests YAML completos para despliegue en GKE/EKS/AKS
 - StatefulSets para bases de datos persistentes
 - HorizontalPodAutoscaler (HPA) configurado en todos los servicios
 - Ingress con TLS/SSL para routing HTTP/HTTPS
 
-**✅ CI/CD Pipeline con GitHub Actions:**
+**CI/CD Pipeline con GitHub Actions:**
 - Pipeline de 8 etapas: Lint → Test → Security → Build → Deploy
 - Ambientes separados: Development (develop) y Production (main)
 - Rollback automatizado en caso de fallo
 
-**✅ Documentación Completa:**
+**Documentación Completa:**
 - 8 documentos técnicos detallados en carpeta `/docs`:
   - Requerimientos Funcionales (22 RF)
   - Requerimientos No Funcionales (28 RNF)
@@ -259,14 +259,14 @@ docker logs delivereats-catalog-service -f
 
 **Salida esperada en catalog-service:**
 ```
-[RabbitMQ Consumer] ✅ Mensaje de orden recibido de RabbitMQ
-[RabbitMQ Consumer] 📦 ORDEN CREADA - ID: 42
-[RabbitMQ Consumer] 📦 Order Number: ORD-20240223-0042
-[RabbitMQ Consumer] 🏪 Restaurante: La Pizzería (ID: 1)
-[RabbitMQ Consumer] 👤 Usuario ID: 5
-[RabbitMQ Consumer] 📋 Items: [{"itemId":1,"name":"Pizza Margarita","quantity":2,"price":15.00}]
-[RabbitMQ Consumer] 💰 Total: Q30.00
-[RabbitMQ Consumer] 📍 Dirección: Calle Ejemplo 123
+[RabbitMQ Consumer] Mensaje de orden recibido de RabbitMQ
+[RabbitMQ Consumer] ORDEN CREADA - ID: 42
+[RabbitMQ Consumer] Order Number: ORD-20240223-0042
+[RabbitMQ Consumer] Restaurante: La Pizzería (ID: 1)
+[RabbitMQ Consumer] Usuario ID: 5
+[RabbitMQ Consumer] Items: [{"itemId":1,"name":"Pizza Margarita","quantity":2,"price":15.00}]
+[RabbitMQ Consumer] Total: Q30.00
+[RabbitMQ Consumer] Dirección: Calle Ejemplo 123
 ```
 
 4. **Verificar en RabbitMQ Management UI:**
@@ -317,15 +317,15 @@ DeliverEats es una plataforma de delivery que centraliza y coordina el ciclo com
 Implementar un sistema de mensajería asíncrona con RabbitMQ que permita la comunicación event-driven entre microservicios, específicamente un flujo productor-consumidor donde el Order-Service publica eventos de creación de órdenes que el Catalog-Service consume y procesa.
 
 ### 2.2 Objetivos Específicos (Práctica 4)
-- ✅ Integrar RabbitMQ 3.12 como Message Broker en la arquitectura de microservicios
-- ✅ Implementar productor (Orders-Service) que publique eventos `order_created` a RabbitMQ
-- ✅ Implementar consumidor (Catalog-Service) que consuma eventos y registre en consola
-- ✅ Integrar Redis 7 como sistema de cache para Catalog-Service
-- ✅ Crear manifests de Kubernetes completos para despliegue en GKE/EKS/AKS
-- ✅ Implementar pipeline CI/CD con GitHub Actions (8 etapas)
-- ✅ Documentar arquitectura, requerimientos, diagramas, y guías de despliegue
-- ✅ Configurar HorizontalPodAutoscaler (HPA) para escalabilidad automática
-- ✅ Implementar estrategias de Rollout/Rollback en Kubernetes
+- Integrar RabbitMQ 3.12 como Message Broker en la arquitectura de microservicios
+- Implementar productor (Orders-Service) que publique eventos `order_created` a RabbitMQ
+- Implementar consumidor (Catalog-Service) que consuma eventos y registre en consola
+- Integrar Redis 7 como sistema de cache para Catalog-Service
+- Crear manifests de Kubernetes completos para despliegue en GKE/EKS/AKS
+- Implementar pipeline CI/CD con GitHub Actions (8 etapas)
+- Documentar arquitectura, requerimientos, diagramas, y guías de despliegue
+- Configurar HorizontalPodAutoscaler (HPA) para escalabilidad automática
+- Implementar estrategias de Rollout/Rollback en Kubernetes
 
 ### 2.3 Objetivos Históricos (Prácticas 2 y 3)
 - Implementar autenticación basada en JWT con expiración de 24 horas
@@ -2396,23 +2396,23 @@ status ENUM(..., 'FALLIDO')
 
 | Criterio | Puntos | Estado | Evidencia |
 |----------|--------|--------|-----------|
-| **FX-Service funcional** | 10 | ✅ | Python Flask + gRPC, caché Redis 3 niveles |
-| **FX-Service REST + gRPC** | 5 | ✅ | 5 endpoints REST + 3 RPCs gRPC |
-| **FX-Service tests unitarios** | 5 | ✅ | 5 tests (cache, API, fallback, error, convert) |
-| **FX-Service caché Redis** | 5 | ✅ | TTL 6min + fallback 24h + stats endpoint |
-| **Payment-Service** | 5 | ✅ | Node.js Express, pago simulado + FX |
-| **Pago con conversión FX** | 5 | ✅ | Frontend PaymentPage 4 pasos + tasa en tiempo real |
-| **Reembolso (solo admin)** | 5 | ✅ | POST /refund + modal frontend + motivo |
-| **Foto al completar entrega** | 5 | ✅ | RepartidorDashboard con upload modal |
-| **Entrega fallida** | 5 | ✅ | Botón "Reportar Fallo" + motivo + estado FALLIDO |
-| **Ver foto (cliente + admin)** | 5 | ✅ | MyOrders + AdminPanel photo modals |
-| **Panel admin pagos/FX** | 5 | ✅ | Tabs "Pagos" y "FX Cache" en AdminPanel |
-| **Nuevos estados (PAGADO, REEMBOLSADO, FALLIDO)** | 5 | ✅ | Orders + Delivery models actualizados |
-| **Docker Compose completo** | 5 | ✅ | 3 nuevos containers + payment-db + volumes |
-| **Frontend para toda funcionalidad** | 10 | ✅ | PaymentPage + RepartidorDashboard + MyOrders + AdminPanel |
-| **Documentación técnica (3 docs)** | 10 | ✅ | FX-SERVICE.md + REFUND-FLOW.md + IMAGE-STORAGE-JUSTIFICATION.md |
-| **Health endpoints nuevos servicios** | 5 | ✅ | /health en fx-service y payment-service |
-| **TOTAL** | **100** | ✅ | **100/100** |
+| **FX-Service funcional** | 10 | OK | Python Flask + gRPC, caché Redis 3 niveles |
+| **FX-Service REST + gRPC** | 5 | OK | 5 endpoints REST + 3 RPCs gRPC |
+| **FX-Service tests unitarios** | 5 | OK | 5 tests (cache, API, fallback, error, convert) |
+| **FX-Service caché Redis** | 5 | OK | TTL 6min + fallback 24h + stats endpoint |
+| **Payment-Service** | 5 | OK | Node.js Express, pago simulado + FX |
+| **Pago con conversión FX** | 5 | OK | Frontend PaymentPage 4 pasos + tasa en tiempo real |
+| **Reembolso (solo admin)** | 5 | OK | POST /refund + modal frontend + motivo |
+| **Foto al completar entrega** | 5 | OK | RepartidorDashboard con upload modal |
+| **Entrega fallida** | 5 | OK | Botón "Reportar Fallo" + motivo + estado FALLIDO |
+| **Ver foto (cliente + admin)** | 5 | OK | MyOrders + AdminPanel photo modals |
+| **Panel admin pagos/FX** | 5 | OK | Tabs "Pagos" y "FX Cache" en AdminPanel |
+| **Nuevos estados (PAGADO, REEMBOLSADO, FALLIDO)** | 5 | OK | Orders + Delivery models actualizados |
+| **Docker Compose completo** | 5 | OK | 3 nuevos containers + payment-db + volumes |
+| **Frontend para toda funcionalidad** | 10 | OK | PaymentPage + RepartidorDashboard + MyOrders + AdminPanel |
+| **Documentación técnica (3 docs)** | 10 | OK | FX-SERVICE.md + REFUND-FLOW.md + IMAGE-STORAGE-JUSTIFICATION.md |
+| **Health endpoints nuevos servicios** | 5 | OK | /health en fx-service y payment-service |
+| **TOTAL** | **100** | OK | **100/100** |
 
 ---
 

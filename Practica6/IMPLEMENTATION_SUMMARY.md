@@ -1,10 +1,10 @@
 # Práctica 5 — Integración de Servicios Financieros y Evidencia de Entrega
 
-## 📋 Resumen de Implementación
+## Resumen de Implementación
 
 DeliverEats Fase 2 integra **servicios financieros** (conversión de divisas y procesamiento de pagos) y **evidencia fotográfica de entregas**, con flujos completos de frontend y documentación técnica.
 
-## ✅ Características Implementadas
+## Características Implementadas
 
 ### 1. FX-Service (Nuevo Microservicio — Python 3.11 + Flask + gRPC)
 
@@ -55,7 +55,7 @@ DeliverEats Fase 2 integra **servicios financieros** (conversión de divisas y p
 
 Nuevos: `payment-db`, `fx-service`, `payment-service` + volumen `payment_db_data`
 
-## 📊 Score: 100/100 pts
+## Score: 100/100 pts
 
 Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
   - Registro de nuevos usuarios (todos los roles)
@@ -66,8 +66,8 @@ Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
   - Gestión de roles: ADMIN, CLIENTE, RESTAURANTE, REPARTIDOR
 
 #### **ClientDashboard**
-- ✅ **Archivo**: `frontend/src/pages/ClientDashboard.jsx`
-- ✅ **Funcionalidades**:
+- **Archivo**: `frontend/src/pages/ClientDashboard.jsx`
+- **Funcionalidades**:
   - Estadísticas personales del cliente desde base de datos
   - Pedidos totales
   - Pedidos del mes actual
@@ -79,8 +79,8 @@ Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
 ### 3. Componentes de Usuario
 
 #### **RegisterUserForm**
-- ✅ **Archivo**: `frontend/src/components/RegisterUserForm.jsx`
-- ✅ **Funcionalidades**:
+- **Archivo**: `frontend/src/components/RegisterUserForm.jsx`
+- **Funcionalidades**:
   - Modal para registro de usuarios por admin
   - Validación de campos
   - Selector de roles
@@ -90,13 +90,13 @@ Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
 ### 4. Rutas y Navegación
 
 #### **App.jsx**
-- ✅ Rutas añadidas:
+- Rutas añadidas:
   - `/admin/users` → AdminDashboard (solo ADMIN)
   - `/dashboard` → ClientDashboard (solo CLIENTE)
   - Protección de rutas por rol
 
 #### **Navbar**
-- ✅ Navegación actualizada:
+- Navegación actualizada:
   - Enlaces a dashboards según rol
   - Acceso a gestión de usuarios (ADMIN)
   - Menú desplegable con opciones
@@ -105,25 +105,25 @@ Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
 ### 5. API Gateway - Endpoints REST
 
 #### **Auth Routes** (`api-gateway/src/routes/auth.js`)
-- ✅ `POST /api/auth/admin/register` - Registro por admin (protegido)
-- ✅ `GET /api/auth/users` - Listar usuarios (solo ADMIN)
-- ✅ `PUT /api/auth/users/:id` - Actualizar usuario (solo ADMIN)
-- ✅ `PUT /api/auth/users/:id/role` - Cambiar rol (solo ADMIN)
-- ✅ `DELETE /api/auth/users/:id` - Eliminar usuario (solo ADMIN)
+- `POST /api/auth/admin/register` - Registro por admin (protegido)
+- `GET /api/auth/users` - Listar usuarios (solo ADMIN)
+- `PUT /api/auth/users/:id` - Actualizar usuario (solo ADMIN)
+- `PUT /api/auth/users/:id/role` - Cambiar rol (solo ADMIN)
+- `DELETE /api/auth/users/:id` - Eliminar usuario (solo ADMIN)
 
 ### 6. Auth Service - Controladores gRPC
 
 #### **authController.js**
-- ✅ `register` - Registro de usuarios
-- ✅ `login` - Autenticación
-- ✅ `validateToken` - Validación de JWT
-- ✅ `getUserById` - Obtener usuario por ID
-- ✅ `updateUser` - Actualizar datos de usuario
-- ✅ `updateUserRole` - Cambiar rol de usuario
-- ✅ `deleteUser` - Eliminación permanente
-- ✅ `getAllUsers` - Listar todos los usuarios
+- `register` - Registro de usuarios
+- `login` - Autenticación
+- `validateToken` - Validación de JWT
+- `getUserById` - Obtener usuario por ID
+- `updateUser` - Actualizar datos de usuario
+- `updateUserRole` - Cambiar rol de usuario
+- `deleteUser` - Eliminación permanente
+- `getAllUsers` - Listar todos los usuarios
 
-## 🔧 Bases de Datos Utilizadas
+## Bases de Datos Utilizadas
 
 ### **auth_db** (Auth Service)
 - Tablas: `users`, `roles`
@@ -141,7 +141,7 @@ Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
 - Tablas: `deliveries`
 - Gestión de entregas
 
-## 🚀 Flujo de Creación de Orden (Con Validación gRPC)
+## Flujo de Creación de Orden (Con Validación gRPC)
 
 1. **Cliente**: Envía orden desde frontend
 2. **API Gateway**: Recibe request → Forward a Orders-Service
@@ -155,88 +155,88 @@ Ver rúbrica: [PRACTICA5-VALIDATION.md](PRACTICA5-VALIDATION.md)
    - Verifica disponibilidad
    - Retorna `ValidationResponse`
 5. **Orders-Service**:
-   - ✅ Si válido: Persiste orden en `orders_db`
-   - ❌ Si inválido: Rechaza y notifica errores al frontend
+   - Si válido: Persiste orden en `orders_db`
+   - Si inválido: Rechaza y notifica errores al frontend
 6. **Frontend**: Muestra resultado al usuario
 
-## 📁 Estructura de Archivos Principales
+## Estructura de Archivos Principales
 
 ```
 Practica3/
 ├── protos/
-│   ├── auth.proto              ✅ Contrato Auth Service
-│   └── catalog.proto           ✅ Contrato Catalog Service (ValidationRequest/Response)
+│   ├── auth.proto              Contrato Auth Service
+│   └── catalog.proto           Contrato Catalog Service (ValidationRequest/Response)
 │
 ├── catalog-service/
 │   └── src/
 │       ├── grpc/
-│       │   └── catalogGrpcServer.js  ✅ Servidor gRPC de validación
-│       └── index.js            ✅ Inicia REST + gRPC
+│       │   └── catalogGrpcServer.js  Servidor gRPC de validación
+│       └── index.js            Inicia REST + gRPC
 │
 ├── orders-service/
 │   └── src/
 │       ├── grpc/
-│       │   └── catalogClient.js      ✅ Cliente gRPC
+│       │   └── catalogClient.js      Cliente gRPC
 │       └── controllers/
-│           └── orderController.js    ✅ Validación pre-orden
+│           └── orderController.js    Validación pre-orden
 │
 ├── auth-service/
 │   └── src/
 │       └── controllers/
-│           └── authController.js     ✅ CRUD usuarios completo
+│           └── authController.js     CRUD usuarios completo
 │
 ├── api-gateway/
 │   └── src/
 │       └── routes/
-│           └── auth.js         ✅ Endpoints REST usuarios
+│           └── auth.js         Endpoints REST usuarios
 │
 └── frontend/
     └── src/
         ├── components/
-        │   └── RegisterUserForm.jsx  ✅ Modal registro
+        │   └── RegisterUserForm.jsx  Modal registro
         ├── pages/
-        │   ├── AdminDashboard.jsx    ✅ CRUD usuarios
-        │   ├── ClientDashboard.jsx   ✅ Dashboard cliente
-        │   └── AdminPanel.jsx        ✅ Panel admin con tab usuarios
-        └── App.jsx              ✅ Rutas actualizadas
+        │   ├── AdminDashboard.jsx    CRUD usuarios
+        │   ├── ClientDashboard.jsx   Dashboard cliente
+        │   └── AdminPanel.jsx        Panel admin con tab usuarios
+        └── App.jsx              Rutas actualizadas
 ```
 
-## 🎯 Validaciones Implementadas (según PDF)
+## Validaciones Implementadas (según PDF)
 
-### ✅ Restaurant-Catalog-Service
+### Restaurant-Catalog-Service
 - [x] Procedimiento de verificación de lista de IDs
 - [x] Validación de existencia en base de datos
 - [x] Validación de pertenencia al restaurante
 - [x] Validación de precios coincidentes
 - [x] Base de datos con menús y precios actualizados
 
-### ✅ Order-Service
+### Order-Service
 - [x] Flujo modificado con llamada remota
 - [x] Validación ANTES de guardar
 - [x] Manejo de estados de error
 - [x] Notificación al frontend de errores
 
-### ✅ Contrato de Comunicación
+### Contrato de Comunicación
 - [x] `ValidationRequest` con productos y restaurante
 - [x] `ValidationResponse` con resultados detallados
 - [x] Intercambio estructurado y eficiente
 
-## 🔐 Roles y Permisos
+## Roles y Permisos
 
 - **ADMIN**: Acceso a todos los dashboards y CRUD de usuarios
 - **CLIENTE**: Dashboard personal con estadísticas
 - **RESTAURANTE**: (por implementar según necesidad)
 - **REPARTIDOR**: (por implementar según necesidad)
 
-## 📊 Estadísticas y Datos Reales
+## Estadísticas y Datos Reales
 
-- ❌ **SIN MOCKDATA** - Todo desde base de datos
-- ✅ Conteo dinámico de usuarios por rol
-- ✅ Cálculo de totales de pedidos
-- ✅ Estadísticas de gastos del cliente
-- ✅ Estado de entregas en tiempo real
+- **SIN MOCKDATA** - Todo desde base de datos
+- Conteo dinámico de usuarios por rol
+- Cálculo de totales de pedidos
+- Estadísticas de gastos del cliente
+- Estado de entregas en tiempo real
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 - **Backend**: Node.js, Express
 - **gRPC**: @grpc/grpc-js, @grpc/proto-loader
@@ -246,7 +246,7 @@ Practica3/
 - **Autenticación**: JWT
 - **Orquestación**: Docker Compose
 
-## 🚦 Cómo Ejecutar
+## Cómo Ejecutar
 
 ```bash
 # En Practica3/
@@ -261,9 +261,9 @@ docker-compose up --build
 # - Catalog gRPC: 50052
 ```
 
-## 🧪 Casos de Prueba de Validación gRPC
+## Casos de Prueba de Validación gRPC
 
-### ✅ Caso 1: Orden válida
+### Caso 1: Orden válida
 ```json
 {
   "userId": 1,
@@ -275,7 +275,7 @@ docker-compose up --build
 ```
 **Resultado**: Orden creada exitosamente
 
-### ❌ Caso 2: Precio incorrecto
+### Caso 2: Precio incorrecto
 ```json
 {
   "userId": 1,
@@ -287,7 +287,7 @@ docker-compose up --build
 ```
 **Resultado**: Rechazo con mensaje "El precio ha cambiado"
 
-### ❌ Caso 3: Producto de otro restaurante
+### Caso 3: Producto de otro restaurante
 ```json
 {
   "userId": 1,
@@ -299,7 +299,7 @@ docker-compose up --build
 ```
 **Resultado**: Rechazo con mensaje "No pertenece al restaurante"
 
-### ❌ Caso 4: Producto no disponible
+### Caso 4: Producto no disponible
 ```json
 {
   "userId": 1,
@@ -311,14 +311,14 @@ docker-compose up --build
 ```
 **Resultado**: Rechazo con mensaje "Producto no disponible"
 
-## 📝 Notas Finales
+## Notas Finales
 
-- ✅ Todos los requerimientos del PDF implementados
-- ✅ Sin mockdata, todo gestionado por base de datos
-- ✅ Validación gRPC funcional entre Order-Service y Catalog-Service  
-- ✅ Dashboards de Práctica 2 completamente migrados
-- ✅ CRUDs de usuarios funcionales
-- ✅ Sistema de roles y permisos implementado
+- Todos los requerimientos del PDF implementados
+- Sin mockdata, todo gestionado por base de datos
+- Validación gRPC funcional entre Order-Service y Catalog-Service  
+- Dashboards de Práctica 2 completamente migrados
+- CRUDs de usuarios funcionales
+- Sistema de roles y permisos implementado
 
 ---
 
