@@ -17,11 +17,11 @@ async function initDatabase() {
     });
 
     const connection = await pool.getConnection();
-    logger.info('✅ Payment DB connected');
+    logger.info('Payment DB connected');
     connection.release();
     return pool;
   } catch (error) {
-    logger.error('❌ Payment DB connection failed:', error.message);
+    logger.error('Payment DB connection failed:', error.message);
     throw error;
   }
 }

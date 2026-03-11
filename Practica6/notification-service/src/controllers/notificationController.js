@@ -129,7 +129,7 @@ const notificationController = {
 
       const result = await sendEmail(
         clientEmail,
-        `❌ Pedido ${orderNumber} Cancelado - DeliverEats`,
+        `Pedido ${orderNumber} Cancelado - DeliverEats`,
         generateEmailHTML('PEDIDO CANCELADO', content, '#ef4444')
       );
 
@@ -155,7 +155,7 @@ const notificationController = {
       }
 
       const content = `
-        <h2 style="color: #1f2937; margin-top: 0;">¡Tu pedido va en camino! 🚗</h2>
+        <h2 style="color: #1f2937; margin-top: 0;">¡Tu pedido va en camino!</h2>
         <p style="color: #4b5563;">Hola <strong>${clientName || 'Cliente'}</strong>,</p>
         <p style="color: #4b5563;">¡Buenas noticias! Tu pedido ya está siendo entregado.</p>
         <div style="background: #eff6ff; border-radius: 8px; padding: 16px; margin: 16px 0;">
@@ -169,7 +169,7 @@ const notificationController = {
 
       const result = await sendEmail(
         clientEmail,
-        `🚗 Pedido ${orderNumber} En Camino - DeliverEats`,
+        `Pedido ${orderNumber} En Camino - DeliverEats`,
         generateEmailHTML('EN CAMINO', content, '#3b82f6')
       );
 
@@ -212,7 +212,7 @@ const notificationController = {
 
       const result = await sendEmail(
         clientEmail,
-        `❌ Pedido ${orderNumber} Cancelado por ${providerLabel} - DeliverEats`,
+        `Pedido ${orderNumber} Cancelado por ${providerLabel} - DeliverEats`,
         generateEmailHTML('CANCELADO', content, '#ef4444')
       );
 

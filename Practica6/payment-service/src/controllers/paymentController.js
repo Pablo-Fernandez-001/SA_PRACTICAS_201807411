@@ -108,7 +108,7 @@ exports.processPayment = async (req, res) => {
       } : null
     };
 
-    logger.info(`💳 Pago procesado: ${paymentNumber} — Orden #${orderId} — Q${amount} (USD ${amountUSD})`);
+    logger.info(`Pago procesado: ${paymentNumber} — Orden #${orderId} — Q${amount} (USD ${amountUSD})`);
 
     res.status(201).json({
       success: true,

@@ -15,19 +15,19 @@ const ROUTING_KEY = 'orders.created';
  */
 async function startConsumer() {
   try {
-    logger.info('🐰 Connecting to RabbitMQ Consumer...');
+    logger.info('Connecting to RabbitMQ Consumer...');
     
     connection = await amqp.connect(RABBITMQ_URL);
-    logger.info('✅ Consumer connected to RabbitMQ');
+    logger.info('Consumer connected to RabbitMQ');
 
     channel = await connection.createChannel();
-    logger.info('✅ Consumer channel created');
+    logger.info('Consumer channel created');
 
     // Declarar exchange (debe coincidir con el publisher)
     await channel.assertExchange(EXCHANGE_NAME, 'topic', {
       durable: true
     });
-    logger.info(`✅ Exchange '${EXCHANGE_NAME}' declared`);
+    logger.info(`Exchange '${EXCHANGE_NAME}' declared`);
 
     // Declarar cola
     await channel.assertQueue(QUEUE_NAME, {
@@ -37,17 +37,17 @@ async function startConsumer() {
         'x-dead-letter-exchange': 'dlx_orders' // Dead Letter Exchange (opcional)
       }
     });
-    logger.info(`✅ Queue '${QUEUE_NAME}' declared`);
+    logger.info(`Queue '${QUEUE_NAME}' declared`);
 
     // Binding: Conectar queue con exchange usando routing key
     await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, ROUTING_KEY);
-    logger.info(`✅ Queue '${QUEUE_NAME}' bound to '${EXCHANGE_NAME}' with routing key '${ROUTING_KEY}'`);
+    logger.info(`Queue '${QUEUE_NAME}' bound to '${EXCHANGE_NAME}' with routing key '${ROUTING_KEY}'`);
 
     // Configurar prefetch para no sobrecargar el consumidor
     channel.prefetch(1);
 
     // Comenzar a consumir mensajes
-    logger.info('👂 Waiting for order events...');
+    logger.info('Waiting for order events...');
     channel.consume(QUEUE_NAME, async (msg) => {
       if (msg !== null) {
         await handleOrderMessage(msg);
@@ -56,17 +56,17 @@ async function startConsumer() {
 
     // Manejar reconexión en caso de error
     connection.on('error', (err) => {
-      logger.error('❌ RabbitMQ consumer connection error:', err);
+      logger.error('RabbitMQ consumer connection error:', err);
       setTimeout(startConsumer, 5000);
     });
 
     connection.on('close', () => {
-      logger.warn('⚠️ RabbitMQ consumer connection closed. Reconnecting...');
+      logger.warn('RabbitMQ consumer connection closed. Reconnecting...');
       setTimeout(startConsumer, 5000);
     });
 
   } catch (error) {
-    logger.error('❌ Failed to start RabbitMQ consumer:', error.message);
+    logger.error('Failed to start RabbitMQ consumer:', error.message);
     setTimeout(startConsumer, 5000);
   }
 }
@@ -87,7 +87,7 @@ async function persistOrderToDatabase(orderData) {
     connection = await db.getConnection();
     await connection.beginTransaction();
 
-    logger.info('💾 Persisting order to catalog_db...');
+    logger.info('Persisting order to catalog_db...');
 
     // 1. Insertar en received_orders
     const [orderResult] = await connection.query(
@@ -105,7 +105,7 @@ async function persistOrderToDatabase(orderData) {
     );
 
     const receivedOrderId = orderResult.insertId;
-    logger.info(`✅ Received order inserted with DB ID: ${receivedOrderId}`);
+    logger.info(`Received order inserted with DB ID: ${receivedOrderId}`);
 
     // 2. Insertar items de la orden
     for (const item of orderData.items) {
@@ -123,17 +123,17 @@ async function persistOrderToDatabase(orderData) {
 
     // 3. Commit transacción
     await connection.commit();
-    logger.info('✅ Transaction committed successfully');
+    logger.info('Transaction committed successfully');
 
     return { success: true, receivedOrderId };
   } catch (error) {
     // Rollback en caso de error
     if (connection) {
       await connection.rollback();
-      logger.error('🔄 Transaction rolled back due to error');
+      logger.error('Transaction rolled back due to error');
     }
 
-    logger.error('❌ Error persisting order to database:', error.message);
+    logger.error('Error persisting order to database:', error.message);
     return { success: false, error: error.message };
   } finally {
     if (connection) {
@@ -152,11 +152,11 @@ async function handleOrderMessage(msg) {
     const orderEvent = JSON.parse(content);
 
     logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    logger.info('📦 ORDER EVENT RECEIVED FROM RABBITMQ');
-    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    logger.info(`📋 Event Type: ${orderEvent.event}`);
-    logger.info(`🕒 Timestamp: ${orderEvent.timestamp}`);
-    logger.info('📄 Order Details:');
+    logger.info('ORDER EVENT RECEIVED FROM RABBITMQ');
+    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.info(`Event Type: ${orderEvent.event}`);
+    logger.info(`Timestamp: ${orderEvent.timestamp}`);
+    logger.info('Order Details:');
     logger.info(`   - Order ID: ${orderEvent.data.orderId}`);
     logger.info(`   - Restaurant ID: ${orderEvent.data.restaurantId}`);
     logger.info(`   - User ID: ${orderEvent.data.userId}`);
@@ -177,20 +177,20 @@ async function handleOrderMessage(msg) {
 
     if (persistResult.success) {
       logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      logger.info('✅ Order event processed successfully and persisted to catalog_db');
-      logger.info(`📝 Received Order DB ID: ${persistResult.receivedOrderId}`);
-      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      logger.info('Order event processed successfully and persisted to catalog_db');
+      logger.info(`Received Order DB ID: ${persistResult.receivedOrderId}`);
+      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
       // Acknowledge manual del mensaje (confirmar que fue procesado)
       channel.ack(msg);
     } else {
-      logger.error('❌ Failed to persist order to database:', persistResult.error);
+      logger.error('Failed to persist order to database:', persistResult.error);
       // NACK sin requeue si el error es de base de datos (no es transient)
       channel.nack(msg, false, false);
     }
 
   } catch (error) {
-    logger.error('❌ Error processing order message:', error.message);
+    logger.error('Error processing order message:', error.message);
     logger.error(error.stack);
 
     // NACK: Rechazar mensaje y reenviarlo a la cola (o a DLQ si está configurado)
@@ -207,7 +207,7 @@ async function closeConsumer() {
   try {
     if (channel) await channel.close();
     if (connection) await connection.close();
-    logger.info('🐰 RabbitMQ consumer connection closed');
+    logger.info('RabbitMQ consumer connection closed');
   } catch (error) {
     logger.error('Error closing RabbitMQ consumer connection:', error);
   }

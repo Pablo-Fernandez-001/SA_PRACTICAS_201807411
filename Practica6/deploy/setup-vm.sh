@@ -42,7 +42,7 @@ sudo apt-get install -y git
 
 echo ""
 echo "========================================="
-echo "  ✅ VM configurada correctamente"
+echo "  VM configurada correctamente"
 echo "========================================="
 echo ""
 echo "SIGUIENTE PASO:"

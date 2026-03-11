@@ -7,18 +7,18 @@
 
 ---
 
-## ✅ Componentes Implementados
+## Componentes Implementados
 
 ### 1. Configuración de RabbitMQ en Docker Compose
 
 **Archivo:** `docker-compose.yml`
 
-- ✅ Servicio RabbitMQ configurado con imagen `rabbitmq:3.12-management`
-- ✅ Puertos expuestos: 5672 (AMQP) y 15672 (Management UI)
-- ✅ Credenciales: `delivereats:rabbitmq2024`
-- ✅ Volumen persistente: `rabbitmq_data`
-- ✅ Health check configurado
-- ✅ Dependencias configuradas en orders-service y catalog-service
+- Servicio RabbitMQ configurado con imagen `rabbitmq:3.12-management`
+- Puertos expuestos: 5672 (AMQP) y 15672 (Management UI)
+- Credenciales: `delivereats:rabbitmq2024`
+- Volumen persistente: `rabbitmq_data`
+- Health check configurado
+- Dependencias configuradas en orders-service y catalog-service
 
 **Resultado:** RabbitMQ se levanta automáticamente con `docker-compose up`
 
@@ -29,22 +29,22 @@
 **Archivo:** `orders-service/src/messaging/rabbitmqPublisher.js`
 
 **Funcionalidades implementadas:**
-- ✅ Conexión a RabbitMQ con reconexión automática cada 5 segundos
-- ✅ Declaración de exchange `orders_exchange` tipo `topic` durable
-- ✅ Función `publishOrderCreated()` que publica eventos con:
+- Conexión a RabbitMQ con reconexión automática cada 5 segundos
+- Declaración de exchange `orders_exchange` tipo `topic` durable
+- Función `publishOrderCreated()` que publica eventos con:
   - Event type: `order.created`
   - Timestamp ISO 8601
   - Order data (orderId, restaurantId, userId, items, total, deliveryAddress)
-- ✅ Mensajes persistentes (`persistent: true`)
-- ✅ Manejo de errores con logging estructurado
-- ✅ Cierre graceful con SIGINT/SIGTERM
+- Mensajes persistentes (`persistent: true`)
+- Manejo de errores con logging estructurado
+- Cierre graceful con SIGINT/SIGTERM
 
 **Integración:**
-- ✅ `orders-service/src/index.js` llama a `connectRabbitMQ()` al iniciar
-- ✅ `orders-service/src/controllers/orderController.js` llama a `publishOrderCreated()` después de crear orden
+- `orders-service/src/index.js` llama a `connectRabbitMQ()` al iniciar
+- `orders-service/src/controllers/orderController.js` llama a `publishOrderCreated()` después de crear orden
 
 **Variables de entorno:**
-- ✅ `orders-service/.env.docker` contiene `RABBITMQ_URL=amqp://delivereats:rabbitmq2024@rabbitmq:5672`
+- `orders-service/.env.docker` contiene `RABBITMQ_URL=amqp://delivereats:rabbitmq2024@rabbitmq:5672`
 
 ---
 
@@ -53,24 +53,24 @@
 **Archivo:** `catalog-service/src/messaging/rabbitmqConsumer.js`
 
 **Funcionalidades implementadas:**
-- ✅ Conexión a RabbitMQ con reconexión automática
-- ✅ Declaración de cola `orders.created` durable con:
+- Conexión a RabbitMQ con reconexión automática
+- Declaración de cola `orders.created` durable con:
   - Message TTL: 24 horas
   - Dead Letter Exchange: `dlx_orders`
-- ✅ Binding cola → exchange con routing key `orders.created`
-- ✅ Prefetch count = 1 (procesa un mensaje a la vez)
-- ✅ Handler `handleOrderMessage()` que:
+- Binding cola → exchange con routing key `orders.created`
+- Prefetch count = 1 (procesa un mensaje a la vez)
+- Handler `handleOrderMessage()` que:
   - Parsea el evento JSON
   - Loguea detalles de la orden
   - **Persiste la orden en catalog_db** (ver siguiente sección)
   - Confirma con ACK si exitoso, NACK si falla
-- ✅ Cierre graceful con SIGINT/SIGTERM
+- Cierre graceful con SIGINT/SIGTERM
 
 **Integración:**
-- ✅ `catalog-service/src/index.js` llama a `startConsumer()` al iniciar
+- `catalog-service/src/index.js` llama a `startConsumer()` al iniciar
 
 **Variables de entorno:**
-- ✅ `catalog-service/.env.docker` contiene `RABBITMQ_URL=amqp://delivereats:rabbitmq2024@rabbitmq:5672`
+- `catalog-service/.env.docker` contiene `RABBITMQ_URL=amqp://delivereats:rabbitmq2024@rabbitmq:5672`
 
 ---
 
@@ -108,10 +108,10 @@ CREATE TABLE received_order_items (
 ```
 
 **Función de persistencia:** `persistOrderToDatabase()` en `rabbitmqConsumer.js`
-- ✅ Usa transacciones ACID (BEGIN → INSERT → INSERT items → COMMIT)
-- ✅ Rollback automático en caso de error
-- ✅ Connection pool management correcto
-- ✅ Logging detallado de cada paso
+- Usa transacciones ACID (BEGIN → INSERT → INSERT items → COMMIT)
+- Rollback automático en caso de error
+- Connection pool management correcto
+- Logging detallado de cada paso
 
 **Resultado:** Cada orden recibida vía RabbitMQ se guarda en catalog_db para que el restaurante la procese.
 
@@ -122,14 +122,14 @@ CREATE TABLE received_order_items (
 **Archivo:** `docs/DIAGRAMAS_ACTIVIDADES_SECUENCIA.md`
 
 **Cambios realizados:**
-- ✅ Actualizada versión a "1.3.0 - Práctica 6 (Arquitectura Orientada a Eventos)"
-- ✅ Diagrama "Creación de Orden con RabbitMQ" mejorado con:
+- Actualizada versión a "1.3.0 - Práctica 6 (Arquitectura Orientada a Eventos)"
+- Diagrama "Creación de Orden con RabbitMQ" mejorado con:
   - Flujo completo desde publicación hasta persistencia en catalog_db
   - Transacciones explícitas (BEGIN → INSERT → COMMIT)
   - Loop para insertar items
   - ACK/NACK handling
   - Procesamiento paralelo de Notification-Service
-- ✅ Notas explicativas agregadas:
+- Notas explicativas agregadas:
   - Ventajas del patrón event-driven
   - Persistencia dual justificada
   - Diferencia entre comunicación síncrona (gRPC) y asíncrona (RabbitMQ)
@@ -141,24 +141,24 @@ CREATE TABLE received_order_items (
 **Archivo:** `docs/RABBITMQ-INTEGRATION.md` (NUEVO)
 
 **Contenido (12 secciones detalladas):**
-1. ✅ Introducción con contexto y motivación
-2. ✅ Objetivos generales y específicos
-3. ✅ Arquitectura de mensajería (diagrama ASCII + tabla de componentes)
-4. ✅ Configuración de RabbitMQ (Docker Compose + variables de entorno + parámetros)
-5. ✅ Implementación del publicador (código comentado + características)
-6. ✅ Implementación del consumidor (código comentado + características)
-7. ✅ Modelo de datos (tablas SQL + justificación de persistencia dual)
-8. ✅ Flujo de eventos (paso a paso con tiempos estimados)
-9. ✅ Manejo de errores y resiliencia (escenarios de fallo + estrategias)
-10. ✅ Pruebas y validación (comandos CLI + prueba E2E + tests de resiliencia)
-11. ✅ Monitoreo (métricas clave + logs estructurados + health checks)
-12. ✅ Conclusiones (logros + beneficios medibles + próximos pasos)
+1. Introducción con contexto y motivación
+2. Objetivos generales y específicos
+3. Arquitectura de mensajería (diagrama ASCII + tabla de componentes)
+4. Configuración de RabbitMQ (Docker Compose + variables de entorno + parámetros)
+5. Implementación del publicador (código comentado + características)
+6. Implementación del consumidor (código comentado + características)
+7. Modelo de datos (tablas SQL + justificación de persistencia dual)
+8. Flujo de eventos (paso a paso con tiempos estimados)
+9. Manejo de errores y resiliencia (escenarios de fallo + estrategias)
+10. Pruebas y validación (comandos CLI + prueba E2E + tests de resiliencia)
+11. Monitoreo (métricas clave + logs estructurados + health checks)
+12. Conclusiones (logros + beneficios medibles + próximos pasos)
 
 **Beneficios documentados:**
-- ⚡ Tiempo de respuesta: 3s → 500ms (6x más rápido)
-- 🚀 Throughput: 100 → 500+ órdenes/min (5x más capacidad)
-- 🛡️ Disponibilidad: 99.5% → 99.9%
-- 🔌 Desacoplamiento: Alto → Bajo
+- Tiempo de respuesta: 3s → 500ms (6x más rápido)
+- Throughput: 100 → 500+ órdenes/min (5x más capacidad)
+- Disponibilidad: 99.5% → 99.9%
+- Desacoplamiento: Alto → Bajo
 
 ---
 
@@ -167,8 +167,8 @@ CREATE TABLE received_order_items (
 **Archivo:** `README.md`
 
 **Cambios realizados:**
-- ✅ Versión actualizada a "1.3.0 (Práctica 6)"
-- ✅ Nueva sección "🔥 Novedades de Práctica 6" con:
+- Versión actualizada a "1.3.0 (Práctica 6)"
+- Nueva sección "Novedades de Práctica 6" con:
   - Arquitectura Orientada a Eventos (EDA)
   - Publisher/Consumer implementados
   - Persistencia dual justificada
@@ -177,7 +177,7 @@ CREATE TABLE received_order_items (
 
 ---
 
-## 🎯 Verificación de Implementación
+## Verificación de Implementación
 
 ### Checklist de Funcionalidades
 
@@ -209,7 +209,7 @@ Según enunciado de Práctica 6:
 
 ---
 
-## 🔍 Cómo Probar la Implementación
+## Cómo Probar la Implementación
 
 ### 1. Levantar el Sistema
 
@@ -263,7 +263,7 @@ docker logs delivereats-orders-service 2>&1 | grep "Order event published"
 
 Esperado:
 ```
-📤 Order event published: orderId=abc-123-def, restaurantId=1
+Order event published: orderId=abc-123-def, restaurantId=1
 ```
 
 **catalog-service (Consumer):**
@@ -273,12 +273,12 @@ docker logs delivereats-catalog-service 2>&1 | grep "ORDER EVENT RECEIVED"
 
 Esperado:
 ```
-📦 ORDER EVENT RECEIVED FROM RABBITMQ
+ORDER EVENT RECEIVED FROM RABBITMQ
    - Order ID: abc-123-def
    - Restaurant ID: 1
-💾 Persisting order to catalog_db...
-✅ Received order inserted with DB ID: 7
-✅ Transaction committed successfully
+Persisting order to catalog_db...
+Received order inserted with DB ID: 7
+Transaction committed successfully
 ```
 
 ### 5. Verificar Base de Datos
@@ -294,7 +294,7 @@ SELECT * FROM received_order_items WHERE received_order_id = <ULTIMO_ID>;
 
 ---
 
-## 📊 Métricas de Éxito
+## Métricas de Éxito
 
 ### Performance
 
@@ -306,50 +306,50 @@ SELECT * FROM received_order_items WHERE received_order_id = <ULTIMO_ID>;
 
 ### Arquitectura
 
-- ✅ **Desacoplamiento:** Order-Service y Catalog-Service no dependen síncronamente
-- ✅ **Escalabilidad horizontal:** Múltiples consumidores pueden procesar órdenes en paralelo
-- ✅ **Tolerancia a fallos:** Mensajes persisten en RabbitMQ si un servicio cae
-- ✅ **Extensibilidad:** Fácil agregar nuevos consumidores (Analytics, Billing, etc.)
+- **Desacoplamiento:** Order-Service y Catalog-Service no dependen síncronamente
+- **Escalabilidad horizontal:** Múltiples consumidores pueden procesar órdenes en paralelo
+- **Tolerancia a fallos:** Mensajes persisten en RabbitMQ si un servicio cae
+- **Extensibilidad:** Fácil agregar nuevos consumidores (Analytics, Billing, etc.)
 
 ---
 
-## 📁 Archivos Modificados/Creados
+## Archivos Modificados/Creados
 
 ### Archivos Modificados
 
-1. `docker-compose.yml` — RabbitMQ ya estaba configurado ✅
-2. `db/catalog_db.sql` — Agregadas tablas de órdenes recibidas ✅
-3. `orders-service/.env.docker` — Agregada RABBITMQ_URL ✅
-4. `catalog-service/.env.docker` — Agregada RABBITMQ_URL ✅
-5. `catalog-service/src/messaging/rabbitmqConsumer.js` — Implementada persistencia ✅
-6. `docs/DIAGRAMAS_ACTIVIDADES_SECUENCIA.md` — Actualizado diagrama y versión ✅
-7. `README.md` — Agregada sección de Práctica 6 ✅
+1. `docker-compose.yml` — RabbitMQ ya estaba configurado
+2. `db/catalog_db.sql` — Agregadas tablas de órdenes recibidas
+3. `orders-service/.env.docker` — Agregada RABBITMQ_URL
+4. `catalog-service/.env.docker` — Agregada RABBITMQ_URL
+5. `catalog-service/src/messaging/rabbitmqConsumer.js` — Implementada persistencia
+6. `docs/DIAGRAMAS_ACTIVIDADES_SECUENCIA.md` — Actualizado diagrama y versión
+7. `README.md` — Agregada sección de Práctica 6
 
 ### Archivos Creados
 
-1. `docs/RABBITMQ-INTEGRATION.md` — Documentación técnica completa (NUEVO) ✅
-2. `docs/PERSONA1-RESUMEN.md` — Este archivo (NUEVO) ✅
+1. `docs/RABBITMQ-INTEGRATION.md` — Documentación técnica completa (NUEVO)
+2. `docs/PERSONA1-RESUMEN.md` — Este archivo (NUEVO)
 
 ### Archivos Ya Existentes (No modificados)
 
-- `orders-service/src/messaging/rabbitmqPublisher.js` — Ya estaba implementado ✅
-- `catalog-service/src/messaging/rabbitmqConsumer.js` — Ya existía (solo mejorado) ✅
-- `orders-service/src/index.js` — Ya llamaba a connectRabbitMQ() ✅
-- `catalog-service/src/index.js` — Ya llamaba a startConsumer() ✅
-- `orders-service/src/controllers/orderController.js` — Ya llamaba a publishOrderCreated() ✅
+- `orders-service/src/messaging/rabbitmqPublisher.js` — Ya estaba implementado
+- `catalog-service/src/messaging/rabbitmqConsumer.js` — Ya existía (solo mejorado)
+- `orders-service/src/index.js` — Ya llamaba a connectRabbitMQ()
+- `catalog-service/src/index.js` — Ya llamaba a startConsumer()
+- `orders-service/src/controllers/orderController.js` — Ya llamaba a publishOrderCreated()
 
 ---
 
-## 🎓 Conclusión
+## Conclusión
 
 Todas las responsabilidades de la **Persona 1 (Arquitectura de eventos y mensajería)** han sido implementadas completamente:
 
-✅ Arquitectura Orientada a Eventos funcional  
-✅ Publicador y Consumidor robustos con manejo de errores  
-✅ Persistencia de órdenes en catalog_db con transacciones ACID  
-✅ Documentación técnica exhaustiva  
-✅ Diagramas actualizados  
-✅ README con información de Práctica 6  
+Arquitectura Orientada a Eventos funcional  
+Publicador y Consumidor robustos con manejo de errores  
+Persistencia de órdenes en catalog_db con transacciones ACID  
+Documentación técnica exhaustiva  
+Diagramas actualizados  
+README con información de Práctica 6  
 
 El sistema está listo para:
 - Crear órdenes asíncronamente

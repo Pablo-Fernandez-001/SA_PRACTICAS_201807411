@@ -350,9 +350,9 @@ exports.createOrder = async (req, res) => {
         total: order.total,
         deliveryAddress
       });
-      logger.info(`[createOrder] ✅ Order event published to RabbitMQ - orderId=${order.id}`);
+      logger.info(`[createOrder] Order event published to RabbitMQ - orderId=${order.id}`);
     } catch (mqError) {
-      logger.error('[createOrder] ⚠️ Failed to publish to RabbitMQ (order still created):', mqError.message);
+      logger.error('[createOrder] Failed to publish to RabbitMQ (order still created):', mqError.message);
       // No bloqueamos la respuesta - la orden ya fue creada exitosamente
     }
 

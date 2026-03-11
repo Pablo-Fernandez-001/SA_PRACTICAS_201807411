@@ -6,7 +6,7 @@
 
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
 1. [Introducción](#introducción)
 2. [Objetivos](#objetivos)
@@ -31,10 +31,10 @@ Este documento describe la implementación de la **Arquitectura Orientada a Even
 
 En versiones anteriores del sistema, la creación de órdenes utilizaba únicamente comunicación síncrona vía gRPC. Aunque funcional, este enfoque presentaba las siguientes limitaciones:
 
-- 🔗 **Alto acoplamiento** entre servicios
-- ⏱️ **Bloqueo de respuesta** al cliente durante el procesamiento
-- ❌ **Falta de tolerancia a fallos** (si un servicio cae, toda la cadena falla)
-- 📈 **Difícil escalabilidad** de procesamiento independiente
+- **Alto acoplamiento** entre servicios
+- **Bloqueo de respuesta** al cliente durante el procesamiento
+- **Falta de tolerancia a fallos** (si un servicio cae, toda la cadena falla)
+- **Difícil escalabilidad** de procesamiento independiente
 
 Con la integración de RabbitMQ, transformamos el flujo de creación de órdenes a un modelo **event-driven** que resuelve estas limitaciones.
 
@@ -48,13 +48,13 @@ Implementar un sistema de mensajería asíncrona que permita la comunicación de
 
 ### 2.2 Objetivos Específicos
 
-1. ✅ Configurar RabbitMQ como message broker centralizado
-2. ✅ Implementar un **publicador de eventos** en Order-Service
-3. ✅ Implementar un **consumidor de eventos** en Catalog-Service
-4. ✅ Persistir órdenes recibidas en catalog_db para procesamiento del restaurante
-5. ✅ Garantizar entrega confiable de mensajes con ACK/NACK
-6. ✅ Implementar reconexión automática ante fallos
-7. ✅ Documentar el flujo completo de eventos
+1. Configurar RabbitMQ como message broker centralizado
+2. Implementar un **publicador de eventos** en Order-Service
+3. Implementar un **consumidor de eventos** en Catalog-Service
+4. Persistir órdenes recibidas en catalog_db para procesamiento del restaurante
+5. Garantizar entrega confiable de mensajes con ACK/NACK
+6. Implementar reconexión automática ante fallos
+7. Documentar el flujo completo de eventos
 
 ---
 
@@ -88,10 +88,10 @@ Implementar un sistema de mensajería asíncrona que permita la comunicación de
 
 ### 3.3 Ventajas de Topic Exchange
 
-- 🎯 **Enrutamiento flexible** basado en routing keys
-- 📡 **Múltiples consumidores** pueden suscribirse al mismo evento
-- 🔌 **Extensibilidad** fácil para nuevos tipos de eventos (ej. `orders.cancelled`, `orders.updated`)
-- 🛡️ **Aislamiento** entre diferentes flujos de eventos
+- **Enrutamiento flexible** basado en routing keys
+- **Múltiples consumidores** pueden suscribirse al mismo evento
+- **Extensibilidad** fácil para nuevos tipos de eventos (ej. `orders.cancelled`, `orders.updated`)
+- **Aislamiento** entre diferentes flujos de eventos
 
 ---
 
@@ -167,29 +167,29 @@ const ROUTING_KEY = 'orders.created';
 
 async function connectRabbitMQ() {
   try {
-    logger.info('🐰 Connecting to RabbitMQ...');
+    logger.info('Connecting to RabbitMQ...');
     
     connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
     
     await channel.assertExchange(EXCHANGE_NAME, 'topic', { durable: true });
     
-    logger.info(`✅ Connected to RabbitMQ and exchange '${EXCHANGE_NAME}' ready`);
+    logger.info(`Connected to RabbitMQ and exchange '${EXCHANGE_NAME}' ready`);
     
     // Auto-reconexión en caso de cierre
     connection.on('error', (err) => {
-      logger.error('❌ RabbitMQ connection error:', err);
+      logger.error('RabbitMQ connection error:', err);
       setTimeout(connectRabbitMQ, 5000);
     });
     
     connection.on('close', () => {
-      logger.warn('⚠️ RabbitMQ connection closed. Reconnecting...');
+      logger.warn('RabbitMQ connection closed. Reconnecting...');
       setTimeout(connectRabbitMQ, 5000);
     });
     
     return true;
   } catch (error) {
-    logger.error('❌ Failed to connect to RabbitMQ:', error.message);
+    logger.error('Failed to connect to RabbitMQ:', error.message);
     setTimeout(connectRabbitMQ, 5000);
     return false;
   }
@@ -202,7 +202,7 @@ async function connectRabbitMQ() {
 async function publishOrderCreated(orderData) {
   try {
     if (!channel) {
-      logger.warn('⚠️ Channel not available. Reconnecting...');
+      logger.warn('Channel not available. Reconnecting...');
       await connectRabbitMQ();
       if (!channel) throw new Error('Failed to reconnect to RabbitMQ');
     }
@@ -233,13 +233,13 @@ async function publishOrderCreated(orderData) {
     );
 
     if (published) {
-      logger.info(`📤 Order event published: orderId=${orderData.orderId}`);
+      logger.info(`Order event published: orderId=${orderData.orderId}`);
       return true;
     }
     
     return false;
   } catch (error) {
-    logger.error('❌ Error publishing message:', error.message);
+    logger.error('Error publishing message:', error.message);
     return false;
   }
 }
@@ -269,10 +269,10 @@ await publishOrderCreated({
 
 ### 5.2 Características Clave
 
-✅ **Persistencia:** Mensajes sobreviven reinicio de RabbitMQ  
-✅ **Auto-reconexión:** Maneja caídas del broker automáticamente  
-✅ **Fire-and-forget:** No bloquea la respuesta al cliente  
-✅ **Logging estructurado:** Facilita debugging y monitoreo  
+**Persistencia:** Mensajes sobreviven reinicio de RabbitMQ  
+**Auto-reconexión:** Maneja caídas del broker automáticamente  
+**Fire-and-forget:** No bloquea la respuesta al cliente  
+**Logging estructurado:** Facilita debugging y monitoreo  
 
 ---
 
@@ -318,7 +318,7 @@ async function startConsumer() {
     channel.prefetch(1);
 
     // Comenzar a consumir
-    logger.info('👂 Waiting for order events...');
+    logger.info('Waiting for order events...');
     channel.consume(QUEUE_NAME, async (msg) => {
       if (msg !== null) {
         await handleOrderMessage(msg);
@@ -327,12 +327,12 @@ async function startConsumer() {
 
     // Auto-reconexión
     connection.on('error', (err) => {
-      logger.error('❌ Consumer connection error:', err);
+      logger.error('Consumer connection error:', err);
       setTimeout(startConsumer, 5000);
     });
 
   } catch (error) {
-    logger.error('❌ Failed to start consumer:', error.message);
+    logger.error('Failed to start consumer:', error.message);
     setTimeout(startConsumer, 5000);
   }
 }
@@ -347,9 +347,9 @@ async function handleOrderMessage(msg) {
     const orderEvent = JSON.parse(content);
 
     logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    logger.info('📦 ORDER EVENT RECEIVED FROM RABBITMQ');
-    logger.info(`📋 Event Type: ${orderEvent.event}`);
-    logger.info(`🕒 Timestamp: ${orderEvent.timestamp}`);
+    logger.info('ORDER EVENT RECEIVED FROM RABBITMQ');
+    logger.info(`Event Type: ${orderEvent.event}`);
+    logger.info(`Timestamp: ${orderEvent.timestamp}`);
     logger.info(`   - Order ID: ${orderEvent.data.orderId}`);
     logger.info(`   - Restaurant ID: ${orderEvent.data.restaurantId}`);
     logger.info(`   - Total: $${orderEvent.data.total}`);
@@ -359,15 +359,15 @@ async function handleOrderMessage(msg) {
     const persistResult = await persistOrderToDatabase(orderEvent.data);
 
     if (persistResult.success) {
-      logger.info(`✅ Order persisted to catalog_db with ID: ${persistResult.receivedOrderId}`);
+      logger.info(`Order persisted to catalog_db with ID: ${persistResult.receivedOrderId}`);
       channel.ack(msg);  // Confirmar procesamiento exitoso
     } else {
-      logger.error('❌ Failed to persist order:', persistResult.error);
+      logger.error('Failed to persist order:', persistResult.error);
       channel.nack(msg, false, false);  // Rechazar (no requeue)
     }
 
   } catch (error) {
-    logger.error('❌ Error processing message:', error.message);
+    logger.error('Error processing message:', error.message);
     channel.nack(msg, false, false);
   }
 }
@@ -414,12 +414,12 @@ async function persistOrderToDatabase(orderData) {
     }
 
     await connection.commit();
-    logger.info('✅ Transaction committed successfully');
+    logger.info('Transaction committed successfully');
 
     return { success: true, receivedOrderId };
   } catch (error) {
     if (connection) await connection.rollback();
-    logger.error('❌ Database error:', error.message);
+    logger.error('Database error:', error.message);
     return { success: false, error: error.message };
   } finally {
     if (connection) connection.release();
@@ -429,11 +429,11 @@ async function persistOrderToDatabase(orderData) {
 
 ### 6.2 Características Clave
 
-✅ **Transacciones ACID:** Garantiza consistencia en la persistencia  
-✅ **Manual ACK:** Control explícito sobre cuándo confirmar el mensaje  
-✅ **Prefetch:** Evita sobrecarga procesando 1 mensaje a la vez  
-✅ **Error handling robusto:** NACK sin requeue para errores permanentes  
-✅ **Dead Letter Queue:** Mensajes fallidos van a DLQ para análisis  
+**Transacciones ACID:** Garantiza consistencia en la persistencia  
+**Manual ACK:** Control explícito sobre cuándo confirmar el mensaje  
+**Prefetch:** Evita sobrecarga procesando 1 mensaje a la vez  
+**Error handling robusto:** NACK sin requeue para errores permanentes  
+**Dead Letter Queue:** Mensajes fallidos van a DLQ para análisis  
 
 ---
 
@@ -487,10 +487,10 @@ CREATE TABLE received_order_items (
 
 **¿Por qué duplicar?**
 
-1. 🔒 **Autonomía de microservicios:** Cada servicio tiene su propia BD (Database per Service pattern)
-2. 📊 **Agregación independiente:** El restaurante puede generar estadísticas sin consultar orders_db
-3. 🚀 **Performance:** Queries locales en lugar de llamadas entre servicios
-4. 🛡️ **Resiliencia:** Si orders_db cae, catalog_db sigue funcionando
+1. **Autonomía de microservicios:** Cada servicio tiene su propia BD (Database per Service pattern)
+2. **Agregación independiente:** El restaurante puede generar estadísticas sin consultar orders_db
+3. **Performance:** Queries locales en lugar de llamadas entre servicios
+4. **Resiliencia:** Si orders_db cae, catalog_db sigue funcionando
 
 ---
 
@@ -526,7 +526,7 @@ CREATE TABLE received_order_items (
 |------|-----------|-----------------|
 | 1-4 | Validación + Persistencia en orders_db | ~200-500 ms (síncrono) |
 | 5 | Publicación en RabbitMQ | ~5-10 ms (async) |
-| **Respuesta al Cliente** | **Total hasta aquí** | **~210-510 ms** ✅ |
+| **Respuesta al Cliente** | **Total hasta aquí** | **~210-510 ms** |
 | 6-9 | Consumo y persistencia en catalog_db | ~100-300 ms (asíncrono) |
 | 10 | Envío de emails | ~1-3 segundos (asíncrono) |
 
@@ -541,13 +541,13 @@ CREATE TABLE received_order_items (
 #### 9.1.1 RabbitMQ No Disponible
 
 **Comportamiento:**
-- ❌ `publishOrderCreated()` falla pero **NO bloquea** la creación de la orden
-- ⚠️ Se loguea el error
-- 🔄 Auto-reconexión cada 5 segundos
+- `publishOrderCreated()` falla pero **NO bloquea** la creación de la orden
+- Se loguea el error
+- Auto-reconexión cada 5 segundos
 
 **Impacto:**
-- Orden creada en `orders_db` ✅
-- Evento NO publicado temporalmente ⚠️
+- Orden creada en `orders_db`
+- Evento NO publicado temporalmente
 - Catalog-Service NO recibe la orden hasta que RabbitMQ se recupere
 
 **Mejora futura:** Implementar **Outbox Pattern** para garantizar eventual consistency.
@@ -555,29 +555,29 @@ CREATE TABLE received_order_items (
 #### 9.1.2 Catalog-Service No Disponible
 
 **Comportamiento:**
-- 📬 RabbitMQ almacena mensajes en cola
-- ⏳ Cuando Catalog-Service vuelve, consume mensajes pendientes
-- ✅ No se pierden eventos
+- RabbitMQ almacena mensajes en cola
+- Cuando Catalog-Service vuelve, consume mensajes pendientes
+- No se pierden eventos
 
 #### 9.1.3 Error de Persistencia en catalog_db
 
 **Comportamiento:**
-- 🔄 Rollback de transacción
-- ❌ `channel.nack(msg, false, false)` → Mensaje va a Dead Letter Queue
-- 📊 Permite análisis posterior del error
+- Rollback de transacción
+- `channel.nack(msg, false, false)` → Mensaje va a Dead Letter Queue
+- Permite análisis posterior del error
 
 ### 9.2 Estrategias de Resiliencia
 
 | Estrategia | Descripción | Implementado |
 |------------|-------------|--------------|
-| **Auto-reconexión** | Reintenta conexión cada 5s si se pierde | ✅ |
-| **Mensajes Persistentes** | Sobreviven reinicio de RabbitMQ | ✅ |
-| **Manual ACK** | Control explícito de confirmación | ✅ |
-| **Prefetch=1** | Evita sobrecarga del consumidor | ✅ |
-| **Dead Letter Queue** | Almacena mensajes fallidos | ✅ |
-| **Transacciones DB** | Atomicidad en persistencia | ✅ |
-| **Circuit Breaker** | Evita cascada de fallos | ⏳ Futuro |
-| **Outbox Pattern** | Garantía de eventual consistency | ⏳ Futuro |
+| **Auto-reconexión** | Reintenta conexión cada 5s si se pierde | Sí |
+| **Mensajes Persistentes** | Sobreviven reinicio de RabbitMQ | Sí |
+| **Manual ACK** | Control explícito de confirmación | Sí |
+| **Prefetch=1** | Evita sobrecarga del consumidor | Sí |
+| **Dead Letter Queue** | Almacena mensajes fallidos | Sí |
+| **Transacciones DB** | Atomicidad en persistencia | Sí |
+| **Circuit Breaker** | Evita cascada de fallos | Futuro |
+| **Outbox Pattern** | Garantía de eventual consistency | Futuro |
 
 ---
 
@@ -636,19 +636,19 @@ Content-Type: application/json
 
 **orders-service:**
 ```
-✅ Order created with ID: abc-123-def
-📤 Order event published: orderId=abc-123-def, restaurantId=1
+Order created with ID: abc-123-def
+Order event published: orderId=abc-123-def, restaurantId=1
 ```
 
 **catalog-service:**
 ```
-📦 ORDER EVENT RECEIVED FROM RABBITMQ
+ORDER EVENT RECEIVED FROM RABBITMQ
    - Order ID: abc-123-def
    - Restaurant ID: 1
    - Total: $110.00
-💾 Persisting order to catalog_db...
-✅ Received order inserted with DB ID: 7
-✅ Transaction committed successfully
+Persisting order to catalog_db...
+Received order inserted with DB ID: 7
+Transaction committed successfully
 ```
 
 #### 4. Verificar base de datos
@@ -739,12 +739,12 @@ curl http://localhost:3002/health
 
 ### 12.1 Logros Implementados
 
-✅ **Desacoplamiento:** Order-Service y Catalog-Service son independientes  
-✅ **Asincronía:** Cliente no espera procesamiento completo (~500ms vs ~3s)  
-✅ **Escalabilidad:** Múltiples consumidores pueden procesar órdenes en paralelo  
-✅ **Resiliencia:** Mensajes persisten y reconexión automática  
-✅ **Extensibilidad:** Fácil agregar nuevos consumidores (ej. Analytics-Service)  
-✅ **Trazabilidad:** Logs estructurados facilitan debugging  
+**Desacoplamiento:** Order-Service y Catalog-Service son independientes  
+**Asincronía:** Cliente no espera procesamiento completo (~500ms vs ~3s)  
+**Escalabilidad:** Múltiples consumidores pueden procesar órdenes en paralelo  
+**Resiliencia:** Mensajes persisten y reconexión automática  
+**Extensibilidad:** Fácil agregar nuevos consumidores (ej. Analytics-Service)  
+**Trazabilidad:** Logs estructurados facilitan debugging  
 
 ### 12.2 Beneficios Medibles
 
@@ -757,15 +757,15 @@ curl http://localhost:3002/health
 
 ### 12.3 Próximos Pasos (Opcional)
 
-🔹 **Outbox Pattern:** Garantizar que eventos se publiquen incluso si RabbitMQ falla  
-🔹 **Saga Pattern:** Orquestar transacciones distribuidas con compensaciones  
-🔹 **Event Sourcing:** Almacenar eventos como fuente de verdad  
-🔹 **CQRS:** Separar lectura y escritura en Catalog-Service  
-🔹 **Kafka:** Migrar a Kafka para mayor throughput y particionamiento  
+**Outbox Pattern:** Garantizar que eventos se publiquen incluso si RabbitMQ falla  
+**Saga Pattern:** Orquestar transacciones distribuidas con compensaciones  
+**Event Sourcing:** Almacenar eventos como fuente de verdad  
+**CQRS:** Separar lectura y escritura en Catalog-Service  
+**Kafka:** Migrar a Kafka para mayor throughput y particionamiento  
 
 ---
 
-## 📚 Referencias
+## Referencias
 
 1. [RabbitMQ Tutorials](https://www.rabbitmq.com/getstarted.html)
 2. [amqplib Documentation](https://amqp-node.github.io/amqplib/)

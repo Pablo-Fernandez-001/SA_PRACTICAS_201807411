@@ -8,31 +8,31 @@ Sistema completo de gestión de pedidos de comida con autenticación JWT, comuni
 
 ---
 
-## 🔥 Novedades de Práctica 6 (Responsabilidad: Arquitectura de Eventos)
+## Novedades de Práctica 6 (Responsabilidad: Arquitectura de Eventos)
 
 ### Resumen de Cambios (v2.0.0 → v1.3.0)
 
-**✅ Arquitectura Orientada a Eventos (EDA) con RabbitMQ:**
+**Arquitectura Orientada a Eventos (EDA) con RabbitMQ:**
 - **Comunicación asíncrona completa** entre Order-Service y Catalog-Service
 - **Publisher implementado** en Order-Service: publica evento `orders.created` tras crear orden
 - **Consumer implementado** en Catalog-Service: consume eventos y persiste órdenes en `catalog_db`
 - Exchange tipo `topic` (`orders_exchange`) con routing key `orders.created`
 - Mensajes persistentes con reconexión automática y manejo de errores robusto
 
-**✅ Persistencia Dual de Órdenes:**
+**Persistencia Dual de Órdenes:**
 - **orders_db**: Orden original creada por Order-Service
 - **catalog_db**: Copia de orden recibida vía RabbitMQ para procesamiento del restaurante
 - Nuevas tablas: `received_orders` y `received_order_items` en catalog_db
 - Transacciones ACID garantizan consistencia en persistencia
 
-**✅ Beneficios Implementados:**
-- ⚡ **Reducción de latencia**: Cliente recibe respuesta en ~500ms (antes ~3s)
-- 🔌 **Desacoplamiento**: Servicios independientes, menor impacto de cambios
-- 🚀 **Escalabilidad**: Throughput aumentado 5x (100→500 órdenes/min)
-- 🛡️ **Resiliencia**: Mensajes persisten en RabbitMQ, auto-reconexión ante fallos
-- 📊 **Extensibilidad**: Fácil agregar nuevos consumidores (Analytics, Billing, etc.)
+**Beneficios Implementados:**
+- **Reducción de latencia**: Cliente recibe respuesta en ~500ms (antes ~3s)
+- **Desacoplamiento**: Servicios independientes, menor impacto de cambios
+- **Escalabilidad**: Throughput aumentado 5x (100→500 órdenes/min)
+- **Resiliencia**: Mensajes persisten en RabbitMQ, auto-reconexión ante fallos
+- **Extensibilidad**: Fácil agregar nuevos consumidores (Analytics, Billing, etc.)
 
-**✅ Documentación Técnica Completa:**
+**Documentación Técnica Completa:**
 - `docs/RABBITMQ-INTEGRATION.md` — 12 secciones detalladas:
   - Arquitectura de mensajería (Publisher/Consumer)
   - Configuración de RabbitMQ (Docker, variables, parámetros)
@@ -44,14 +44,14 @@ Sistema completo de gestión de pedidos de comida con autenticación JWT, comuni
   - Métricas y monitoreo
   - Comparativa antes/después con mejoras medibles
 
-**✅ Diagrama de Secuencia Actualizado:**
+**Diagrama de Secuencia Actualizado:**
 - `docs/DIAGRAMAS_ACTIVIDADES_SECUENCIA.md` actualizado con:
   - Flujo completo de creación de orden con RabbitMQ
   - Persistencia en catalog_db con transacciones
   - Procesamiento asíncrono paralelo (Consumer + Notification-Service)
   - Notas explicativas sobre ventajas del patrón
 
-**✅ Mejoras en Base de Datos:**
+**Mejoras en Base de Datos:**
 - `db/catalog_db.sql` extendido con esquema de órdenes recibidas
 - Índices optimizados para consultas frecuentes
 - Foreign keys con `ON DELETE CASCADE` para integridad referencial

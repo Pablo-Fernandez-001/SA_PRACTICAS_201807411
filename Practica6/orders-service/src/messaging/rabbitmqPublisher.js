@@ -14,34 +14,34 @@ const ROUTING_KEY = 'orders.created';
  */
 async function connectRabbitMQ() {
   try {
-    logger.info('🐰 Connecting to RabbitMQ...');
+    logger.info('Connecting to RabbitMQ...');
     
     connection = await amqp.connect(RABBITMQ_URL);
-    logger.info('✅ Connected to RabbitMQ');
+    logger.info('Connected to RabbitMQ');
 
     channel = await connection.createChannel();
-    logger.info('✅ Channel created');
+    logger.info('Channel created');
 
     // Declarar exchange de tipo 'topic'
     await channel.assertExchange(EXCHANGE_NAME, 'topic', {
       durable: true
     });
-    logger.info(`✅ Exchange '${EXCHANGE_NAME}' declared`);
+    logger.info(`Exchange '${EXCHANGE_NAME}' declared`);
 
     // Manejar reconexión en caso de error
     connection.on('error', (err) => {
-      logger.error('❌ RabbitMQ connection error:', err);
+      logger.error('RabbitMQ connection error:', err);
       setTimeout(connectRabbitMQ, 5000);
     });
 
     connection.on('close', () => {
-      logger.warn('⚠️ RabbitMQ connection closed. Reconnecting...');
+      logger.warn('RabbitMQ connection closed. Reconnecting...');
       setTimeout(connectRabbitMQ, 5000);
     });
 
     return true;
   } catch (error) {
-    logger.error('❌ Failed to connect to RabbitMQ:', error.message);
+    logger.error('Failed to connect to RabbitMQ:', error.message);
     setTimeout(connectRabbitMQ, 5000);
     return false;
   }
@@ -55,7 +55,7 @@ async function connectRabbitMQ() {
 async function publishOrderCreated(orderData) {
   try {
     if (!channel) {
-      logger.warn('⚠️ Channel not available. Reconnecting...');
+      logger.warn('Channel not available. Reconnecting...');
       await connectRabbitMQ();
       if (!channel) {
         throw new Error('Failed to reconnect to RabbitMQ');
@@ -89,15 +89,15 @@ async function publishOrderCreated(orderData) {
     );
 
     if (published) {
-      logger.info(`📤 Order event published: orderId=${orderData.orderId}, restaurantId=${orderData.restaurantId}`);
-      logger.debug(`📝 Message: ${JSON.stringify(message, null, 2)}`);
+      logger.info(`Order event published: orderId=${orderData.orderId}, restaurantId=${orderData.restaurantId}`);
+      logger.debug(`Message: ${JSON.stringify(message, null, 2)}`);
       return true;
     } else {
-      logger.error('❌ Failed to publish message to RabbitMQ');
+      logger.error('Failed to publish message to RabbitMQ');
       return false;
     }
   } catch (error) {
-    logger.error('❌ Error publishing message to RabbitMQ:', error.message);
+    logger.error('Error publishing message to RabbitMQ:', error.message);
     return false;
   }
 }
@@ -109,7 +109,7 @@ async function closeRabbitMQ() {
   try {
     if (channel) await channel.close();
     if (connection) await connection.close();
-    logger.info('🐰 RabbitMQ connection closed');
+    logger.info('RabbitMQ connection closed');
   } catch (error) {
     logger.error('Error closing RabbitMQ connection:', error);
   }
