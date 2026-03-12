@@ -1,5 +1,6 @@
 const { getPool } = require('../config/database')
 const logger = require('../utils/logger')
+const { isFeaturedRestaurant } = require('../utils/ratingUtils')
 
 const db = () => getPool()
 
@@ -73,7 +74,11 @@ exports.searchCatalog = async (req, res) => {
 
     sql += ' ORDER BY r.is_active DESC, r.name'
 
-    const [restaurants] = await db().query(sql, params)
+    const [restaurantsRaw] = await db().query(sql, params)
+    const restaurants = restaurantsRaw.map((restaurant) => ({
+      ...restaurant,
+      is_featured: isFeaturedRestaurant(Number(restaurant.avg_rating || 0), !!restaurant.has_promo)
+    }))
 
     let menuItems = []
     if (includeMenu === 'true') {

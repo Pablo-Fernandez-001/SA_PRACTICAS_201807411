@@ -8,6 +8,12 @@ const router = express.Router()
 const ORDERS_URL = `http://${process.env.ORDERS_SERVICE_URL || 'orders-service:3003'}`
   .replace(':50053', ':3003')
 
+const isValidOrderPayload = (payload) => {
+  if (!payload || !payload.restaurantId) return false
+  if (!Array.isArray(payload.items) || payload.items.length === 0) return false
+  return payload.items.every((item) => item && item.menuItemId && Number(item.quantity || 0) > 0)
+}
+
 // Get all orders (admin) or user orders
 router.get('/', authMiddleware, async (req, res) => {
   try {
@@ -44,6 +50,13 @@ router.get('/restaurant/:restaurantId', authMiddleware, async (req, res) => {
 // Create order — triggers gRPC validation in orders-service
 router.post('/', authMiddleware, authorize(['CLIENTE', 'ADMIN']), async (req, res) => {
   try {
+    if (!isValidOrderPayload(req.body)) {
+      return res.status(400).json({
+        success: false,
+        message: 'El carrito o payload de la orden es inválido'
+      })
+    }
+
     const orderData = {
       ...req.body,
       userId: req.user.id // inject authenticated user ID

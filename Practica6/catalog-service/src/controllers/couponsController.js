@@ -1,17 +1,10 @@
 const { getPool } = require('../config/database')
 const logger = require('../utils/logger')
+const { computeDiscountAmount } = require('../utils/discountUtils')
 
 const db = () => getPool()
 
 const nowSql = () => new Date().toISOString().slice(0, 19).replace('T', ' ')
-
-const computeDiscountAmount = (type, value, subtotal) => {
-  if (!subtotal || subtotal <= 0) return 0
-  if (type === 'PERCENT') {
-    return (subtotal * value) / 100
-  }
-  return value
-}
 
 exports.getCoupons = async (req, res) => {
   try {
