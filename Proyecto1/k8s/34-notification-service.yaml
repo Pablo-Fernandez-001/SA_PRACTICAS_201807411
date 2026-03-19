@@ -17,8 +17,9 @@ spec:
       - name: notification-service
         image: gcr.io/PROJECT_ID/notification-service:v1.1.0
         ports:
-        - containerPort: 50055
-          name: grpc
+        - containerPort: 3005
+          name: http
+        imagePullPolicy: IfNotPresent
         env:
         - name: NODE_ENV
           valueFrom:
@@ -30,6 +31,11 @@ spec:
             configMapKeyRef:
               name: notification-service-config
               key: PORT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: LOG_LEVEL
         - name: SMTP_HOST
           valueFrom:
             configMapKeyRef:
@@ -50,6 +56,21 @@ spec:
             configMapKeyRef:
               name: notification-service-config
               key: SMTP_FROM
+        - name: SMTP_FROM_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: SMTP_FROM_NAME
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: smtp-credentials
+              key: SMTP_USER
+        - name: SMTP_PASS
+          valueFrom:
+            secretKeyRef:
+              name: smtp-credentials
+              key: SMTP_PASS
         resources:
           requests:
             memory: "128Mi"
@@ -58,13 +79,15 @@ spec:
             memory: "256Mi"
             cpu: "300m"
         livenessProbe:
-          tcpSocket:
-            port: 50055
+          httpGet:
+            path: /health
+            port: 3005
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
-          tcpSocket:
-            port: 50055
+          httpGet:
+            path: /health
+            port: 3005
           initialDelaySeconds: 10
           periodSeconds: 5
 ---
@@ -78,8 +101,8 @@ spec:
     app: notification-service
   ports:
   - protocol: TCP
-    port: 50055
-    targetPort: 50055
+    port: 3005
+    targetPort: 3005
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2

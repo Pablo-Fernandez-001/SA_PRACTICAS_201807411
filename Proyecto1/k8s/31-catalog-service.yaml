@@ -17,8 +17,11 @@ spec:
       - name: catalog-service
         image: gcr.io/PROJECT_ID/catalog-service:v1.1.0
         ports:
+        - containerPort: 3002
+          name: http
         - containerPort: 50052
           name: grpc
+        imagePullPolicy: IfNotPresent
         env:
         - name: NODE_ENV
           valueFrom:
@@ -30,6 +33,11 @@ spec:
             configMapKeyRef:
               name: catalog-service-config
               key: PORT
+        - name: GRPC_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-service-config
+              key: GRPC_PORT
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
@@ -45,6 +53,11 @@ spec:
             configMapKeyRef:
               name: catalog-service-config
               key: DB_NAME
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: catalog-service-config
+              key: LOG_LEVEL
         - name: DB_USER
           valueFrom:
             secretKeyRef:
@@ -98,13 +111,15 @@ spec:
             memory: "1Gi"
             cpu: "700m"
         livenessProbe:
-          tcpSocket:
-            port: 50052
+          httpGet:
+            path: /health
+            port: 3002
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
-          tcpSocket:
-            port: 50052
+          httpGet:
+            path: /health
+            port: 3002
           initialDelaySeconds: 10
           periodSeconds: 5
 ---
@@ -118,6 +133,11 @@ spec:
     app: catalog-service
   ports:
   - protocol: TCP
+    name: http
+    port: 3002
+    targetPort: 3002
+  - protocol: TCP
+    name: grpc
     port: 50052
     targetPort: 50052
   type: ClusterIP

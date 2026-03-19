@@ -17,8 +17,9 @@ spec:
       - name: api-gateway
         image: gcr.io/PROJECT_ID/api-gateway:v1.1.0
         ports:
-        - containerPort: 3000
+        - containerPort: 8080
           name: http
+        imagePullPolicy: IfNotPresent
         env:
         - name: NODE_ENV
           valueFrom:
@@ -30,6 +31,16 @@ spec:
             configMapKeyRef:
               name: api-gateway-config
               key: PORT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: LOG_LEVEL
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: FRONTEND_URL
         - name: AUTH_SERVICE_URL
           valueFrom:
             configMapKeyRef:
@@ -50,6 +61,11 @@ spec:
             configMapKeyRef:
               name: api-gateway-config
               key: DELIVERY_SERVICE_URL
+        - name: NOTIFICATION_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: NOTIFICATION_SERVICE_URL
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -65,13 +81,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 8080
           initialDelaySeconds: 10
           periodSeconds: 5
 ---
@@ -86,7 +102,7 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 3000
+    targetPort: 8080
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2

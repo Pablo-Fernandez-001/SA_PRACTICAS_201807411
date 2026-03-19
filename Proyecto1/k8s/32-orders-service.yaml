@@ -17,8 +17,9 @@ spec:
       - name: orders-service
         image: gcr.io/PROJECT_ID/orders-service:v1.1.0
         ports:
-        - containerPort: 50053
-          name: grpc
+        - containerPort: 3003
+          name: http
+        imagePullPolicy: IfNotPresent
         env:
         - name: NODE_ENV
           valueFrom:
@@ -45,6 +46,11 @@ spec:
             configMapKeyRef:
               name: orders-service-config
               key: DB_NAME
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: orders-service-config
+              key: LOG_LEVEL
         - name: DB_USER
           valueFrom:
             secretKeyRef:
@@ -80,16 +86,16 @@ spec:
             configMapKeyRef:
               name: orders-service-config
               key: RABBITMQ_QUEUE
-        - name: CATALOG_SERVICE_URL
+        - name: CATALOG_GRPC_URL
           valueFrom:
             configMapKeyRef:
               name: orders-service-config
-              key: CATALOG_SERVICE_URL
-        - name: AUTH_SERVICE_URL
+              key: CATALOG_GRPC_URL
+        - name: AUTH_GRPC_URL
           valueFrom:
             configMapKeyRef:
               name: orders-service-config
-              key: AUTH_SERVICE_URL
+              key: AUTH_GRPC_URL
         - name: NOTIFICATION_SERVICE_URL
           valueFrom:
             configMapKeyRef:
@@ -103,13 +109,15 @@ spec:
             memory: "1Gi"
             cpu: "700m"
         livenessProbe:
-          tcpSocket:
-            port: 50053
+          httpGet:
+            path: /health
+            port: 3003
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
-          tcpSocket:
-            port: 50053
+          httpGet:
+            path: /health
+            port: 3003
           initialDelaySeconds: 10
           periodSeconds: 5
 ---
@@ -123,8 +131,8 @@ spec:
     app: orders-service
   ports:
   - protocol: TCP
-    port: 50053
-    targetPort: 50053
+    port: 3003
+    targetPort: 3003
   type: ClusterIP
 ---
 apiVersion: autoscaling/v2
