@@ -976,8 +976,8 @@ const RestaurantDashboard = () => {
                                 <p className="text-xs text-gray-400 mt-1">Restricciones: {promo.restrictions}</p>
                               )}
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded-full ${promo.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                              {promo.active ? 'Activa' : 'Inactiva'}
+                            <span className={`text-xs px-2 py-1 rounded-full ${promo.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {promo.is_active ? 'Activa' : 'Inactiva'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between mt-3 text-sm">
@@ -995,7 +995,7 @@ const RestaurantDashboard = () => {
                               onClick={() => togglePromotion(promo.id)}
                               className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
                             >
-                              {promo.active ? 'Inhabilitar' : 'Habilitar'}
+                              {promo.is_active ? 'Inhabilitar' : 'Habilitar'}
                             </button>
                             <button
                               onClick={() => deletePromotion(promo.id)}
@@ -1025,8 +1025,8 @@ const RestaurantDashboard = () => {
                                 <p className="text-xs text-gray-400 mt-1">Restricciones: {coupon.restrictions}</p>
                               )}
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded-full ${coupon.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                              {coupon.active ? 'Activo' : 'Inactivo'}
+                            <span className={`text-xs px-2 py-1 rounded-full ${coupon.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                              {coupon.is_active ? 'Activo' : 'Inactivo'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between mt-3 text-sm">
@@ -1044,7 +1044,7 @@ const RestaurantDashboard = () => {
                               onClick={() => toggleCoupon(coupon.id)}
                               className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
                             >
-                              {coupon.active ? 'Inhabilitar' : 'Habilitar'}
+                              {coupon.is_active ? 'Inhabilitar' : 'Habilitar'}
                             </button>
                             <button
                               onClick={() => deleteCoupon(coupon.id)}
