@@ -3,7 +3,20 @@ const logger = require('../utils/logger')
 
 const db = () => getPool()
 
-const nowSql = () => new Date().toISOString().slice(0, 19).replace('T', ' ')
+const pad2 = (n) => String(n).padStart(2, '0')
+const nowSql = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
+}
+
+const normalizeDateInput = (value, mode = 'start') => {
+  if (!value) return null
+  const str = String(value).trim()
+  if (str.length === 10) {
+    return mode === 'end' ? `${str} 23:59:59` : `${str} 00:00:00`
+  }
+  return str
+}
 
 const computeDiscountAmount = (type, value, subtotal) => {
   if (!subtotal || subtotal <= 0) return 0
@@ -64,14 +77,14 @@ exports.createCoupon = async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       , [
         restaurantId,
-        String(code).toUpperCase(),
+        String(code).trim().toUpperCase(),
         discountType,
         discountValue,
         minOrder || null,
         maxUses || null,
         restrictions || null,
-        startsAt || null,
-        expiresAt || null,
+        normalizeDateInput(startsAt, 'start'),
+        normalizeDateInput(expiresAt, 'end'),
         isActive !== undefined ? !!isActive : true
       ])
 
@@ -126,10 +139,14 @@ exports.validateCoupon = async (req, res) => {
          AND code = ?
          AND is_active = true
          AND (starts_at IS NULL OR starts_at <= ?)
-         AND (expires_at IS NULL OR expires_at >= ?)
+         AND (
+           expires_at IS NULL
+           OR expires_at >= ?
+           OR (TIME(expires_at) = '00:00:00' AND DATE(expires_at) >= DATE(?))
+         )
          AND (max_uses IS NULL OR used_count < max_uses)
          AND (min_order IS NULL OR min_order <= ?)`
-      , [restaurantId, String(code).toUpperCase(), now, now, subtotal]
+      , [restaurantId, String(code).trim().toUpperCase(), now, now, now, subtotal]
     )
 
     if (!rows.length) {
