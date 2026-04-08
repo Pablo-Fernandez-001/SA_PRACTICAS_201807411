@@ -50,13 +50,21 @@ if ($assignmentCheck.ticket_id -ne $ticket.id) {
 }
 
 Write-Host "[7/7] Verifying audit event ingestion..."
-$events = Invoke-RestMethod -Method Get -Uri "http://localhost:3104/api/events?limit=100"
-if (-not $events.items) {
-  throw "Audit service has no events."
-}
+ $foundTicketCreated = $null
+ $foundTicketAssigned = $null
 
-$foundTicketCreated = $events.items | Where-Object { $_.routing_key -eq "ticket.created" } | Select-Object -First 1
-$foundTicketAssigned = $events.items | Where-Object { $_.routing_key -eq "ticket.assigned" } | Select-Object -First 1
+for ($i = 0; $i -lt 10; $i++) {
+  $events = Invoke-RestMethod -Method Get -Uri "http://localhost:3104/api/events?limit=300"
+  $items = @($events.items)
+  $foundTicketCreated = $items | Where-Object { $_.routing_key -eq "ticket.created" } | Select-Object -First 1
+  $foundTicketAssigned = $items | Where-Object { $_.routing_key -eq "ticket.assigned" } | Select-Object -First 1
+
+  if ($foundTicketCreated -and $foundTicketAssigned) {
+    break
+  }
+
+  Start-Sleep -Seconds 1
+}
 
 if (-not $foundTicketCreated -or -not $foundTicketAssigned) {
   throw "Expected ticket.created and ticket.assigned events in audit buffer."

@@ -69,21 +69,41 @@ describe("Helpdesk API - End to End", () => {
       assignmentId = assignmentResponse.body.id;
     });
 
-    cy.request("GET", `${ticketsBase}/tickets/${ticketId}`).then((updatedTicketResponse) => {
+    cy.then(() => {
+      return cy.request("GET", `${ticketsBase}/tickets/${ticketId}`);
+    }).then((updatedTicketResponse) => {
       expect(updatedTicketResponse.status).to.eq(200);
       expect(updatedTicketResponse.body.status).to.eq("ASSIGNED");
     });
 
-    cy.request("GET", `${assignmentsBase}/assignments/${assignmentId}`).then((assignmentDetailResponse) => {
+    cy.then(() => {
+      return cy.request("GET", `${assignmentsBase}/assignments/${assignmentId}`);
+    }).then((assignmentDetailResponse) => {
       expect(assignmentDetailResponse.status).to.eq(200);
       expect(assignmentDetailResponse.body.ticket_id).to.eq(ticketId);
     });
 
-    cy.request("GET", `${auditBase}/events?limit=300`).then((eventsResponse) => {
-      expect(eventsResponse.status).to.eq(200);
-      const routingKeys = (eventsResponse.body.items || []).map((e) => e.routing_key);
-      expect(routingKeys).to.include("ticket.created");
-      expect(routingKeys).to.include("ticket.assigned");
+    cy.wrap(null).then(() => {
+      const maxTries = 8;
+
+      const check = (attempt = 1) => {
+        return cy.request("GET", `${auditBase}/events?limit=300`).then((eventsResponse) => {
+          expect(eventsResponse.status).to.eq(200);
+          const routingKeys = (eventsResponse.body.items || []).map((e) => e.routing_key);
+
+          if (routingKeys.includes("ticket.created") && routingKeys.includes("ticket.assigned")) {
+            return;
+          }
+
+          if (attempt >= maxTries) {
+            throw new Error("Expected ticket.created and ticket.assigned events in audit buffer");
+          }
+
+          return cy.wait(1000).then(() => check(attempt + 1));
+        });
+      };
+
+      return check();
     });
   });
 });

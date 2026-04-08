@@ -87,6 +87,15 @@ Comandos auxiliares en Windows PowerShell:
 .\scripts\dev-down.ps1
 ```
 
+Pruebas automatizadas (incluye Cypress):
+
+```bash
+npm install
+npm run test:smoke:ps
+npm run test:api:cypress
+npm run test:all
+```
+
 ## 4. Endpoints CRUD
 
 ### 4.1 users-service
@@ -274,3 +283,5 @@ Adicionalmente:
 - CRUD completo para Usuarios, Tickets y Asignaciones.
 - Publicacion de eventos lista para consumidores.
 - Compose listo para ejecutar `docker-compose up --build`.
+- Smoke test E2E automatizado aprobado.
+- Cypress E2E API aprobado.

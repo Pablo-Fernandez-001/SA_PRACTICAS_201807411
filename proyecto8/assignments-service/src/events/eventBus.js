@@ -15,14 +15,27 @@ class EventBus {
       return;
     }
 
-    try {
-      const conn = await amqp.connect(this.url);
-      this.channel = await conn.createChannel();
-      await this.channel.assertExchange(this.exchange, "topic", { durable: true });
-      this.logger.info("Connected to RabbitMQ (assignments-service)");
-    } catch (error) {
-      this.logger.error({ error: error.message }, "RabbitMQ connection failed (assignments-service)");
+    for (let attempt = 1; attempt <= 10; attempt += 1) {
+      try {
+        const conn = await amqp.connect(this.url);
+        conn.on("close", () => {
+          this.logger.warn("RabbitMQ connection closed (assignments-service)");
+          this.channel = null;
+        });
+        this.channel = await conn.createChannel();
+        await this.channel.assertExchange(this.exchange, "topic", { durable: true });
+        this.logger.info({ attempt }, "Connected to RabbitMQ (assignments-service)");
+        return;
+      } catch (error) {
+        this.logger.error(
+          { attempt, error: error.message },
+          "RabbitMQ connection failed (assignments-service)"
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
     }
+
+    this.logger.error("RabbitMQ unavailable after retries (assignments-service)");
   }
 
   async publish(routingKey, payload) {
