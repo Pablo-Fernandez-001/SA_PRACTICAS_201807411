@@ -20,7 +20,7 @@ const PREDEFINED_USERS = [
   { email: "requester@helpdesk.local", password: "user123!", role: "requester", name: "Solicitante" },
 ];
 
-const initialUser = { name: "", email: "", role: "requester" };
+const initialUser = { name: "", email: "", password: "", role: "requester" };
 const initialTicket = {
   requester_id: "",
   title: "",
@@ -565,6 +565,14 @@ function App() {
               placeholder="Correo"
               value={userForm.email}
               onChange={(event) => setUserForm({ ...userForm, email: event.target.value })}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Contraseña (mínimo 6 caracteres)"
+              value={userForm.password}
+              onChange={(event) => setUserForm({ ...userForm, password: event.target.value })}
+              minLength={6}
               required
             />
             <select
