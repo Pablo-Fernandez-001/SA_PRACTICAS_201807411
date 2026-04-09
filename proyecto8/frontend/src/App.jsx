@@ -14,6 +14,14 @@ import {
 
 const ticketStatuses = ["OPEN", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 
+const PREDEFINED_USERS = [
+  { email: "admin@helpdesk.local", password: "admin123!", role: "admin", name: "Administrador" },
+  { email: "agent1@helpdesk.local", password: "agent123!", role: "agent", name: "Agente 1" },
+  { email: "requester@helpdesk.local", password: "user123!", role: "requester", name: "Solicitante" },
+  { email: "agent@helpdesk.local", password: "agent123!", role: "agent", name: "Agente (legacy)" },
+  { email: "user@helpdesk.local", password: "user123!", role: "requester", name: "Usuario (legacy)" },
+];
+
 const initialUser = { name: "", email: "", role: "requester" };
 const initialTicket = {
   requester_id: "",
@@ -175,6 +183,22 @@ function App() {
     setUsers([]);
     setTickets([]);
     setAssignments([]);
+  }
+
+  async function quickLogin(email, password) {
+    setLoginEmail(email);
+    setLoginPassword(password);
+    try {
+      const loggedUser = await loginUser({ email, password });
+      localStorage.setItem("currentUser", JSON.stringify(loggedUser));
+      setCurrentUser(loggedUser);
+      setIsLoggedIn(true);
+      setLoginEmail("");
+      setLoginPassword("");
+      setLoginMessage("");
+    } catch (error) {
+      setLoginMessage(`❌ ${error.message || "No se pudo iniciar sesión"}`);
+    }
   }
 
   async function loadAll() {
@@ -342,7 +366,7 @@ function App() {
               <button type="submit">Entrar</button>
             </form>
 
-            <div className="divider">Usa tu usuario registrado en el sistema.</div>
+            <div className="divider">O usa un usuario de prueba:</div>
           </article>
 
           <article className="card credentials-card">
@@ -362,16 +386,33 @@ function App() {
               </button>
             </div>
 
-            {/* TAB: INFO LOGIN */}
+            {/* TAB: USUARIOS DE PRUEBA */}
             {authTab === "login" && (
               <div>
-                <h2>👤 Acceso por credenciales reales</h2>
+                <h2>👥 Usuarios de Prueba</h2>
+                <div className="credentials-list">
+                  {PREDEFINED_USERS.map((user) => (
+                    <div key={user.email} className="credential-item">
+                      <div className="cred-header">
+                        <strong>{user.name}</strong>
+                        <span className={`tag tag-${user.role}`}>{user.role}</span>
+                      </div>
+                      <div className="cred-body">
+                        <p>📧 {user.email}</p>
+                        <p>🔑 {user.password}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => quickLogin(user.email, user.password)}
+                        className="quick-login-btn"
+                      >
+                        Entrar como {user.name}
+                      </button>
+                    </div>
+                  ))}
+                </div>
                 <p>
-                  El inicio de sesión ahora valida contra la base de datos. Debes usar correo y contraseña
-                  exactamente como fueron registrados en el formulario.
-                </p>
-                <p>
-                  Si un usuario se creó antes de esta corrección, solicita cambio de contraseña o vuelve a registrarlo.
+                  También puedes iniciar sesión con cualquier usuario nuevo registrado en el sistema.
                 </p>
               </div>
             )}
@@ -431,7 +472,7 @@ function App() {
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3101/api/health/deep, "_blank")}
+              onClick={() => window.open("http://localhost:3101/api/health/deep", "_blank")}
               style={{ background: "linear-gradient(135deg, #3498DB, #2980B9)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               💚 Users Service Health
