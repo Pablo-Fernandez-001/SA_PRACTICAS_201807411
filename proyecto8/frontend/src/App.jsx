@@ -385,21 +385,21 @@ function App() {
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3101/health", "_blank")}
+              onClick={() => window.open("http://localhost:3101/api/health/deep, "_blank")}
               style={{ background: "linear-gradient(135deg, #3498DB, #2980B9)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               💚 Users Service Health
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3102/health", "_blank")}
+              onClick={() => window.open("http://localhost:3102/api/health/deep", "_blank")}
               style={{ background: "linear-gradient(135deg, #3498DB, #2980B9)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               🎫 Tickets Service Health
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3103/health", "_blank")}
+              onClick={() => window.open("http://localhost:3103/api/health/deep", "_blank")}
               style={{ background: "linear-gradient(135deg, #3498DB, #2980B9)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               👥 Assignments Service Health
