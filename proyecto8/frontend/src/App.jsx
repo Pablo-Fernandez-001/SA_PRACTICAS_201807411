@@ -18,8 +18,6 @@ const PREDEFINED_USERS = [
   { email: "admin@helpdesk.local", password: "admin123!", role: "admin", name: "Administrador" },
   { email: "agent1@helpdesk.local", password: "agent123!", role: "agent", name: "Agente 1" },
   { email: "requester@helpdesk.local", password: "user123!", role: "requester", name: "Solicitante" },
-  { email: "agent@helpdesk.local", password: "agent123!", role: "agent", name: "Agente (legacy)" },
-  { email: "user@helpdesk.local", password: "user123!", role: "requester", name: "Usuario (legacy)" },
 ];
 
 const initialUser = { name: "", email: "", role: "requester" };
