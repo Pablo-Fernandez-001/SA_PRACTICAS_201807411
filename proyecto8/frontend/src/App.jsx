@@ -7,18 +7,12 @@ import {
   getTicketHistory,
   getTickets,
   getUsers,
+  loginUser,
+  releaseAssignmentsByTicket,
   updateTicket,
 } from "./api";
 
 const ticketStatuses = ["OPEN", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"];
-
-const PREDEFINED_USERS = [
-  { email: "admin@helpdesk.local", password: "admin123!", role: "admin", name: "Administrador" },
-  { email: "agent@helpdesk.local", password: "agent123!", role: "agent", name: "Agente 1" },
-  { email: "agent2@helpdesk.local", password: "agent123!", role: "agent", name: "Agente 2" },
-  { email: "user@helpdesk.local", password: "user123!", role: "requester", name: "Usuario" },
-  { email: "customer@helpdesk.local", password: "customer123!", role: "requester", name: "Cliente" },
-];
 
 const initialUser = { name: "", email: "", role: "requester" };
 const initialTicket = {
@@ -63,6 +57,47 @@ function App() {
     () => users.filter((user) => ["requester", "admin"].includes(user.role) && user.is_active),
     [users]
   );
+  const currentUserRecord = useMemo(() => {
+    if (!currentUser?.email) return null;
+    return users.find((user) => user.email?.toLowerCase() === currentUser.email.toLowerCase()) || null;
+  }, [users, currentUser]);
+  const effectiveRole = currentUserRecord?.role || currentUser?.role || "requester";
+  const canManageUsers = effectiveRole === "admin";
+  const canCreateTickets = ["admin", "requester"].includes(effectiveRole);
+  const canAssignTickets = ["admin", "agent"].includes(effectiveRole);
+
+  const visibleUsers = useMemo(() => {
+    if (canManageUsers) return users;
+    if (!currentUser?.email) return [];
+    return users.filter((user) => user.email?.toLowerCase() === currentUser.email.toLowerCase());
+  }, [users, canManageUsers, currentUser]);
+
+  const visibleTickets = useMemo(() => {
+    if (canManageUsers) return tickets;
+    if (!currentUserRecord) return [];
+
+    if (effectiveRole === "agent") {
+      const assignedTicketIds = new Set(
+        assignments
+          .filter((assignment) => assignment.agent_id === currentUserRecord.id)
+          .map((assignment) => assignment.ticket_id)
+      );
+      return tickets.filter((ticket) => assignedTicketIds.has(ticket.id));
+    }
+
+    return tickets.filter((ticket) => ticket.requester_id === currentUserRecord.id);
+  }, [tickets, assignments, canManageUsers, currentUserRecord, effectiveRole]);
+
+  const visibleAssignments = useMemo(() => {
+    if (canManageUsers) return assignments;
+    if (!currentUserRecord) return [];
+    if (effectiveRole === "agent") {
+      return assignments.filter((assignment) => assignment.agent_id === currentUserRecord.id);
+    }
+
+    const ownTicketIds = new Set(tickets.filter((ticket) => ticket.requester_id === currentUserRecord.id).map((ticket) => ticket.id));
+    return assignments.filter((assignment) => ownTicketIds.has(assignment.ticket_id));
+  }, [assignments, tickets, canManageUsers, currentUserRecord, effectiveRole]);
 
   // Cargar usuario del localStorage al iniciar
   useEffect(() => {
@@ -81,26 +116,18 @@ function App() {
     }
   }, [isLoggedIn]);
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
-    const user = PREDEFINED_USERS.find(
-      (u) => u.email === loginEmail && u.password === loginPassword
-    );
-
-    if (user) {
-      const loggedUser = {
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      };
+    try {
+      const loggedUser = await loginUser({ email: loginEmail, password: loginPassword });
       localStorage.setItem("currentUser", JSON.stringify(loggedUser));
       setCurrentUser(loggedUser);
       setIsLoggedIn(true);
       setLoginEmail("");
       setLoginPassword("");
       setLoginMessage("");
-    } else {
-      setLoginMessage("❌ Email o contraseña incorrectos");
+    } catch (error) {
+      setLoginMessage(`❌ ${error.message || "Email o contraseña incorrectos"}`);
     }
   }
 
@@ -117,6 +144,7 @@ function App() {
         name: registerName,
         email: registerEmail,
         role: registerRole,
+        password: registerPassword,
       });
       
       setRegisterMessage("✅ Usuario registrado. Ahora puedes iniciar sesión.");
@@ -149,35 +177,42 @@ function App() {
     setAssignments([]);
   }
 
-  function quickLogin(email, password) {
-    setLoginEmail(email);
-    setLoginPassword(password);
-    const user = PREDEFINED_USERS.find((u) => u.email === email && u.password === password);
-    if (user) {
-      const loggedUser = { email: user.email, name: user.name, role: user.role };
-      localStorage.setItem("currentUser", JSON.stringify(loggedUser));
-      setCurrentUser(loggedUser);
-      setIsLoggedIn(true);
-      setLoginEmail("");
-      setLoginPassword("");
-      setLoginMessage("");
-    }
-  }
-
   async function loadAll() {
     try {
       setLoading(true);
-      const [usersData, ticketsData, assignmentsData] = await Promise.all([
+      const [usersResult, ticketsResult, assignmentsResult] = await Promise.allSettled([
         getUsers(),
         getTickets(),
         getAssignments(),
       ]);
-      setUsers(usersData);
-      setTickets(ticketsData);
-      setAssignments(assignmentsData);
-      setMessage("");
+
+      const errors = [];
+
+      if (usersResult.status === "fulfilled") {
+        setUsers(usersResult.value);
+      } else {
+        errors.push("Users API (3101)");
+      }
+
+      if (ticketsResult.status === "fulfilled") {
+        setTickets(ticketsResult.value);
+      } else {
+        errors.push("Tickets API (3102)");
+      }
+
+      if (assignmentsResult.status === "fulfilled") {
+        setAssignments(assignmentsResult.value);
+      } else {
+        errors.push("Assignments API (3103)");
+      }
+
+      if (errors.length > 0) {
+        setMessage(`No se pudo cargar: ${errors.join(", ")}. Verifica contenedores y CORS.`);
+      } else {
+        setMessage("");
+      }
     } catch (error) {
-      setMessage(error.message);
+      setMessage(`Error inesperado: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -198,9 +233,19 @@ function App() {
   async function handleCreateTicket(event) {
     event.preventDefault();
     try {
+      const requesterId =
+        effectiveRole === "requester"
+          ? currentUserRecord?.id
+          : Number(ticketForm.requester_id);
+
+      if (!requesterId) {
+        setMessage("No se pudo determinar requester_id. Inicia sesión con un usuario existente.");
+        return;
+      }
+
       await createTicket({
         ...ticketForm,
-        requester_id: Number(ticketForm.requester_id),
+        requester_id: requesterId,
       });
       setTicketForm(initialTicket);
       await loadAll();
@@ -230,8 +275,23 @@ function App() {
   async function handleStatusChange(ticketId, status) {
     try {
       await updateTicket(ticketId, { status });
+
+      if (["RESOLVED", "CLOSED"].includes(status)) {
+        await releaseAssignmentsByTicket(ticketId);
+      }
+
       await loadAll();
       setMessage(`Ticket ${ticketId} actualizado a ${status}`);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function handleReleaseAssignment(ticketId) {
+    try {
+      const result = await releaseAssignmentsByTicket(ticketId);
+      await loadAll();
+      setMessage(`Ticket ${ticketId}: ${result.message}`);
     } catch (error) {
       setMessage(error.message);
     }
@@ -282,7 +342,7 @@ function App() {
               <button type="submit">Entrar</button>
             </form>
 
-            <div className="divider">O usa un usuario predefinido:</div>
+            <div className="divider">Usa tu usuario registrado en el sistema.</div>
           </article>
 
           <article className="card credentials-card">
@@ -302,32 +362,18 @@ function App() {
               </button>
             </div>
 
-            {/* TAB: USUARIOS DE PRUEBA */}
+            {/* TAB: INFO LOGIN */}
             {authTab === "login" && (
               <div>
-                <h2>👥 Usuarios de Prueba</h2>
-            <div className="credentials-list">
-              {PREDEFINED_USERS.map((user) => (
-                <div key={user.email} className="credential-item">
-                  <div className="cred-header">
-                    <strong>{user.name}</strong>
-                    <span className={`tag tag-${user.role}`}>{user.role}</span>
-                  </div>
-                  <div className="cred-body">
-                    <p>📧 {user.email}</p>
-                    <p>🔑 {user.password}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => quickLogin(user.email, user.password)}
-                    className="quick-login-btn"
-                  >
-                    Entrar como {user.name}
-                  </button>
-                </div>
-              ))}
-            </div>
-                </div>
+                <h2>👤 Acceso por credenciales reales</h2>
+                <p>
+                  El inicio de sesión ahora valida contra la base de datos. Debes usar correo y contraseña
+                  exactamente como fueron registrados en el formulario.
+                </p>
+                <p>
+                  Si un usuario se creó antes de esta corrección, solicita cambio de contraseña o vuelve a registrarlo.
+                </p>
+              </div>
             )}
 
             {/* TAB: REGISTRO */}
@@ -439,7 +485,7 @@ function App() {
             con persistencia en MySQL y eventos en RabbitMQ.
           </p>
           <p style={{ fontSize: "0.9em", color: "#666", marginTop: "8px" }}>
-            👤 Conectado como: <strong>{currentUser.name}</strong> ({currentUser.role})
+            👤 Conectado como: <strong>{currentUser.name}</strong> ({effectiveRole})
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
@@ -454,7 +500,18 @@ function App() {
 
       {message ? <div className="banner">{message}</div> : null}
 
+      {!currentUserRecord ? (
+        <section className="card">
+          <h2>Perfil no sincronizado</h2>
+          <p>
+            Este usuario no existe en la tabla de users-service. Para evitar errores de datos,
+            usa una cuenta existente o registra primero el usuario en backend.
+          </p>
+        </section>
+      ) : null}
+
       <section className="grid">
+        {canManageUsers ? (
         <article className="card">
           <h2>Crear Usuario</h2>
           <form onSubmit={handleCreateUser} className="form">
@@ -482,22 +539,28 @@ function App() {
             <button type="submit">Guardar usuario</button>
           </form>
         </article>
+        ) : null}
 
+        {canCreateTickets ? (
         <article className="card">
           <h2>Crear Ticket</h2>
           <form onSubmit={handleCreateTicket} className="form">
-            <select
-              value={ticketForm.requester_id}
-              onChange={(event) => setTicketForm({ ...ticketForm, requester_id: event.target.value })}
-              required
-            >
-              <option value="">Requester</option>
-              {requesters.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.id})
-                </option>
-              ))}
-            </select>
+            {effectiveRole === "requester" && currentUserRecord ? (
+              <div className="tag">Requester fijo: {currentUserRecord.name} ({currentUserRecord.id})</div>
+            ) : (
+              <select
+                value={ticketForm.requester_id}
+                onChange={(event) => setTicketForm({ ...ticketForm, requester_id: event.target.value })}
+                required
+              >
+                <option value="">Requester</option>
+                {requesters.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.id})
+                  </option>
+                ))}
+              </select>
+            )}
             <input
               placeholder="Titulo"
               value={ticketForm.title}
@@ -530,7 +593,9 @@ function App() {
             <button type="submit">Guardar ticket</button>
           </form>
         </article>
+        ) : null}
 
+        {canAssignTickets ? (
         <article className="card">
           <h2>Asignar Ticket</h2>
           <form onSubmit={handleCreateAssignment} className="form">
@@ -580,13 +645,14 @@ function App() {
             <button type="submit">Crear asignacion</button>
           </form>
         </article>
+        ) : null}
       </section>
 
       <section className="grid grid-wide">
         <article className="card">
-          <h2>Usuarios ({users.length})</h2>
+          <h2>Usuarios ({visibleUsers.length})</h2>
           <ul className="list">
-            {users.map((user) => (
+            {visibleUsers.map((user) => (
               <li key={user.id}>
                 <strong>{user.name}</strong>
                 <span>{user.email}</span>
@@ -598,9 +664,9 @@ function App() {
         </article>
 
         <article className="card">
-          <h2>Tickets ({tickets.length})</h2>
+          <h2>Tickets ({visibleTickets.length})</h2>
           <ul className="list">
-            {tickets.map((ticket) => (
+            {visibleTickets.map((ticket) => (
               <li key={ticket.id}>
                 <strong>{ticket.title}</strong>
                 <span>#{ticket.id} · {ticket.code}</span>
@@ -610,16 +676,23 @@ function App() {
                   <button type="button" onClick={() => handleHistoryLoad(ticket.id)}>
                     Historial
                   </button>
-                  <select
-                    value={ticket.status}
-                    onChange={(event) => handleStatusChange(ticket.id, event.target.value)}
-                  >
-                    {ticketStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
+                  {canAssignTickets ? (
+                    <button type="button" onClick={() => handleReleaseAssignment(ticket.id)}>
+                      Liberar agente
+                    </button>
+                  ) : null}
+                  {canAssignTickets ? (
+                    <select
+                      value={ticket.status}
+                      onChange={(event) => handleStatusChange(ticket.id, event.target.value)}
+                    >
+                      {ticketStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
                 </div>
               </li>
             ))}
@@ -627,9 +700,9 @@ function App() {
         </article>
 
         <article className="card">
-          <h2>Asignaciones ({assignments.length})</h2>
+          <h2>Asignaciones ({visibleAssignments.length})</h2>
           <ul className="list">
-            {assignments.map((assignment) => (
+            {visibleAssignments.map((assignment) => (
               <li key={assignment.id}>
                 <strong>Asignacion #{assignment.id}</strong>
                 <span>ticket_id: {assignment.ticket_id}</span>

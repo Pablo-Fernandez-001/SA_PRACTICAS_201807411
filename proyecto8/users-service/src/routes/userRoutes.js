@@ -4,6 +4,7 @@ function userRoutes(controller) {
   const router = express.Router();
 
   router.get("/health", (req, res) => res.status(200).json({ service: "users-service", status: "ok" }));
+  router.post("/auth/login", controller.login);
   router.post("/users", controller.create);
   router.get("/users", controller.list);
   router.get("/users/:id", controller.getById);

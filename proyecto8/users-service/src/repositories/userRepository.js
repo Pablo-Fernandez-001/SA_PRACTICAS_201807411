@@ -5,19 +5,29 @@ class UserRepository {
 
   async create(user) {
     const [result] = await this.db.execute(
-      `INSERT INTO users (name, email, role, is_active) VALUES (?, ?, ?, ?)` ,
-      [user.name, user.email, user.role, user.is_active ?? true]
+      `INSERT INTO users (name, email, role, password, is_active) VALUES (?, ?, ?, ?, ?)` ,
+      [user.name, user.email, user.role, user.password, user.is_active ?? true]
     );
     return this.findById(result.insertId);
   }
 
   async findAll() {
-    const [rows] = await this.db.execute("SELECT * FROM users ORDER BY id DESC");
+    const [rows] = await this.db.execute(
+      "SELECT id, name, email, role, is_active, created_at, updated_at FROM users ORDER BY id DESC"
+    );
     return rows;
   }
 
   async findById(id) {
-    const [rows] = await this.db.execute("SELECT * FROM users WHERE id = ?", [id]);
+    const [rows] = await this.db.execute(
+      "SELECT id, name, email, role, is_active, created_at, updated_at FROM users WHERE id = ?",
+      [id]
+    );
+    return rows[0] || null;
+  }
+
+  async findByEmailWithPassword(email) {
+    const [rows] = await this.db.execute("SELECT * FROM users WHERE email = ? LIMIT 1", [email]);
     return rows[0] || null;
   }
 

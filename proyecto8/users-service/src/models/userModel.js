@@ -22,6 +22,12 @@ function validateUserPayload(payload, { partial = false } = {}) {
     }
   }
 
+  if (!partial || payload.password !== undefined) {
+    if (!payload.password || typeof payload.password !== "string" || payload.password.trim().length < 6) {
+      errors.push("password must be a string with at least 6 characters");
+    }
+  }
+
   if (payload.is_active !== undefined && typeof payload.is_active !== "boolean") {
     errors.push("is_active must be boolean");
   }

@@ -125,6 +125,27 @@ class AssignmentService {
 
     return { status: 204, body: null };
   }
+
+  async releaseByTicket(ticketId) {
+    if (!Number.isInteger(ticketId) || ticketId <= 0) {
+      throw new AppError(400, "invalid ticket id");
+    }
+
+    const before = await this.assignmentRepository.findAll({ ticket_id: ticketId, is_active: true });
+    if (!before.length) {
+      return { status: 200, body: { message: "no active assignments to release", ticket_id: ticketId, released: 0 } };
+    }
+
+    await this.assignmentRepository.deactivateByTicket(ticketId);
+
+    await this.eventBus.publish("assignment.released", {
+      type: "assignment.released",
+      occurred_at: new Date().toISOString(),
+      data: { ticket_id: ticketId, released: before.length },
+    });
+
+    return { status: 200, body: { message: "assignment released", ticket_id: ticketId, released: before.length } };
+  }
 }
 
 module.exports = AssignmentService;

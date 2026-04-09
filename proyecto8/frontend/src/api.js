@@ -28,6 +28,15 @@ export async function createUser(payload) {
   return parseJson(response);
 }
 
+export async function loginUser(payload) {
+  const response = await fetch(`${USERS_API}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJson(response);
+}
+
 export async function getTickets() {
   const response = await fetch(`${TICKETS_API}/tickets`);
   return parseJson(response);
@@ -61,6 +70,13 @@ export async function createAssignment(payload) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+  return parseJson(response);
+}
+
+export async function releaseAssignmentsByTicket(ticketId) {
+  const response = await fetch(`${ASSIGNMENTS_API}/assignments/release/${ticketId}`, {
+    method: "POST",
   });
   return parseJson(response);
 }

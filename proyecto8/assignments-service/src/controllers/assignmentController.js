@@ -61,6 +61,15 @@ class AssignmentController {
       return next(error);
     }
   };
+
+  releaseByTicket = async (req, res, next) => {
+    try {
+      const result = await this.assignmentService.releaseByTicket(Number(req.params.ticketId));
+      return res.status(result.status).json(result.body);
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
 
 module.exports = AssignmentController;

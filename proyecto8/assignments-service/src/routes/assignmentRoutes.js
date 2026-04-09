@@ -5,6 +5,7 @@ function assignmentRoutes(controller) {
 
   router.get("/health", (req, res) => res.status(200).json({ service: "assignments-service", status: "ok" }));
   router.post("/assignments", controller.create);
+  router.post("/assignments/release/:ticketId", controller.releaseByTicket);
   router.get("/assignments", controller.list);
   router.get("/assignments/:id", controller.getById);
   router.put("/assignments/:id", controller.update);

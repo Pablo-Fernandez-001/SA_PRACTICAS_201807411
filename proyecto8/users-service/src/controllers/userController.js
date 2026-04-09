@@ -12,6 +12,15 @@ class UserController {
     }
   };
 
+  login = async (req, res, next) => {
+    try {
+      const result = await this.userService.login(req.body);
+      return res.status(result.status).json(result.body);
+    } catch (error) {
+      return next(error);
+    }
+  };
+
   list = async (req, res, next) => {
     try {
       const data = await this.userService.getUsers();
