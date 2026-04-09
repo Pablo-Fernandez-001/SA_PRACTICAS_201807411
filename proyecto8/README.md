@@ -1,287 +1,446 @@
-# Practica 8 - Desarrollo Core (Mesa de Ayuda Orientada a Eventos)
+# Practica 8 - Desarrollo Core
 
-## 1. Resumen
+Sistema de soporte tecnico (mesa de ayuda) orientado a eventos, implementado como microservicios desacoplados y listo para demostracion local con Docker Compose.
 
-Implementacion core de tres microservicios independientes para un sistema de soporte tecnico:
+## 1) Alcance implementado
 
-- `users-service`
-- `tickets-service`
-- `assignments-service`
-- `audit-service` (consumidor de eventos para trazabilidad)
+Este proyecto cumple el objetivo de Practica 8:
 
-Arquitectura aplicada:
+1. Logica de negocio core para Usuarios, Tickets y Asignaciones.
+2. Arquitectura modular con separacion por capas.
+3. Contenerizacion por servicio y orquestacion local completa.
+4. Preparacion para EDA con publicacion/consumo de eventos.
+5. Evidencia de trabajo agil y evidencia SOLID.
+6. Frontend funcional conectado a APIs reales para la demo.
 
-- REST para comunicacion sincrona entre servicios.
-- RabbitMQ para eventos de dominio asincronos.
-- MySQL aislado por microservicio.
-- Dockerfiles multi-stage y orquestacion con `docker-compose`.
+## 2) Arquitectura general
 
-## 2. Estructura
+- users-service: CRUD de usuarios y validacion de roles.
+- tickets-service: CRUD de tickets, estados, prioridad, categoria e historial de estado.
+- assignments-service: asignacion de tickets a agentes, validaciones cruzadas y reasignacion segura.
+- audit-service: consumidor de eventos para trazabilidad operativa.
+- RabbitMQ: bus de eventos topic exchange helpdesk.events.
+- MySQL aislado por microservicio (3 BD independientes).
+- frontend: panel web para operar el flujo completo sin usar mocks.
 
-```text
+## 3) Estructura de carpetas
+
 proyecto8/
-  db/
-    users_db.sql
-    tickets_db.sql
-    assignments_db.sql
-  users-service/
-    Dockerfile
-    package.json
-    src/
-      config/
-      controllers/
-      services/
-      repositories/
-      models/
-      routes/
-      events/
-      index.js
-  tickets-service/
-    Dockerfile
-    package.json
-    src/...
   assignments-service/
-    Dockerfile
-    package.json
-    src/...
   audit-service/
-    Dockerfile
-    package.json
-    src/
-      index.js
+  db/
+  docs/
+  frontend/
   scripts/
-    dev-up.ps1
-    dev-down.ps1
-    smoke-test.ps1
-    smoke-test.sh
+  tickets-service/
+  users-service/
+  cypress/
   docker-compose.yml
   README.md
-```
+  API_REFERENCE.md
+  SOLID_EVIDENCE.md
+  EXECUTION_GUIDE.md
+  .env.example
 
-## 3. Ejecucion local
+## 4) Tecnologias usadas
 
-### 3.1 Requisitos
+- Runtime backend: Node.js 20
+- Framework API: Express
+- BD: MySQL 8.0
+- Mensajeria: RabbitMQ 3.13 (management)
+- Frontend: React + Vite
+- Tests E2E API: Cypress
+- Contenedores: Docker + Docker Compose
 
-1. Docker y Docker Compose instalados.
-2. Puerto libre: `3101`, `3102`, `3103`, `3401`, `3402`, `3403`, `5672`, `15672`.
+## 5) Variables de entorno
 
-### 3.2 Levantar el ecosistema
+Copiar .env.example a .env en la raiz y ajustar si deseas.
 
-```bash
-docker-compose up --build
-```
+Variables clave:
 
-Servicios expuestos:
+- MYSQL_ROOT_PASSWORD
+- RABBITMQ_DEFAULT_USER
+- RABBITMQ_DEFAULT_PASS
 
-- Users API: `http://localhost:3101/api`
-- Tickets API: `http://localhost:3102/api`
-- Assignments API: `http://localhost:3103/api`
-- Audit API: `http://localhost:3104/api`
-- RabbitMQ UI: `http://localhost:15672` (user: `helpdesk`, pass: `helpdesk123`)
+Los servicios consumen estas variables desde docker-compose.yml.
 
-Comandos auxiliares en Windows PowerShell:
+## 6) Ejecucion con Docker Compose
 
-```powershell
-.\scripts\dev-up.ps1
-.\scripts\smoke-test.ps1
-.\scripts\dev-down.ps1
-```
+### 6.1 Levantar todo
 
-Pruebas automatizadas (incluye Cypress):
+docker compose up --build -d
 
-```bash
-npm install
-npm run test:smoke:ps
-npm run test:api:cypress
-npm run test:all
-```
+### 6.2 Verificar estado
 
-## 4. Endpoints CRUD
+docker compose ps
 
-### 4.1 users-service
+### 6.3 Smoke test automatico
 
-- `POST /api/users`
-- `GET /api/users`
-- `GET /api/users/:id`
-- `PUT /api/users/:id`
-- `DELETE /api/users/:id`
-- `GET /api/health`
+PowerShell:
 
-### 4.2 tickets-service
+./scripts/smoke-test.ps1
 
-- `POST /api/tickets`
-- `GET /api/tickets`
-- `GET /api/tickets/:id`
-- `PUT /api/tickets/:id`
-- `DELETE /api/tickets/:id`
-- `GET /api/health`
+Bash:
 
-Filtros:
+./scripts/smoke-test.sh
 
-- `GET /api/tickets?status=OPEN`
-- `GET /api/tickets?requester_id=1`
+### 6.4 Apagar entorno
 
-### 4.3 assignments-service
+docker compose down -v
 
-- `POST /api/assignments`
-- `GET /api/assignments`
-- `GET /api/assignments/:id`
-- `PUT /api/assignments/:id`
-- `DELETE /api/assignments/:id`
-- `GET /api/health`
+## 7) Ejecucion sin Docker (opcional)
 
-Filtros:
+1. Levantar solo infraestructura (MySQLs + RabbitMQ) con compose parcial, o instalarla localmente.
+2. En cada servicio ejecutar:
+   npm install
+   npm start
+3. En frontend ejecutar:
+   npm install
+   npm run dev
 
-- `GET /api/assignments?agent_id=2`
-- `GET /api/assignments?ticket_id=1`
-- `GET /api/assignments?is_active=true`
+Requiere configurar DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME y EVENT_BUS_URL por servicio.
 
-## 5. Flujo funcional recomendado para prueba manual
+## 8) URLs locales
 
-1. Listar usuarios y tomar un `requester` y un `agent`.
-2. Crear ticket con `requester_id` valido.
-3. Crear asignacion con `ticket_id`, `agent_id` y `assigned_by`.
-4. Verificar que el ticket cambio a estado `ASSIGNED`.
-5. Consultar listas y detalle de asignaciones.
+- Frontend: http://localhost:3000
+- Users API: http://localhost:3101/api
+- Tickets API: http://localhost:3102/api
+- Assignments API: http://localhost:3103/api
+- Audit API: http://localhost:3104/api
+- RabbitMQ UI: http://localhost:15672
 
-Ejemplo rapido:
+Credenciales base RabbitMQ:
 
-```bash
-curl -X POST http://localhost:3102/api/tickets \
-  -H "Content-Type: application/json" \
-  -d '{
-    "requester_id": 3,
-    "title": "No puedo acceder al VPN",
-    "description": "El cliente de VPN muestra error de autenticacion intermitente",
-    "priority": "HIGH",
-    "category": "Network"
-  }'
-```
+- usuario: helpdesk
+- password: helpdesk123
 
-## 6. Eventos de dominio publicados
+Usuarios seed en users_db:
 
-- `users-service`:
-  - `user.created`
-  - `user.updated`
-  - `user.deleted`
-- `tickets-service`:
-  - `ticket.created`
-  - `ticket.updated`
-  - `ticket.status.changed`
-  - `ticket.deleted`
-- `assignments-service`:
-  - `ticket.assigned`
-  - `assignment.updated`
-  - `assignment.deleted`
-- `audit-service`:
-  - consume `#` (todos los routing keys) y expone buffer en `GET /api/events`
+- admin@helpdesk.local (admin)
+- agent1@helpdesk.local (agent)
+- requester@helpdesk.local (requester)
 
-Exchange RabbitMQ: `helpdesk.events` (`topic`).
+### 8.1 Mapa rapido localhost por puerto
 
-## 7. Evidencia de principios SOLID
-
-### 7.1 Single Responsibility Principle (SRP)
-
-- Controladores solo gestionan HTTP.
-- Servicios solo ejecutan reglas de negocio.
-- Repositorios solo hacen acceso a datos.
-- Clientes externos encapsulan llamadas entre servicios.
-
-Archivos ejemplo:
-
-- `users-service/src/controllers/userController.js`
-- `users-service/src/services/userService.js`
-- `users-service/src/repositories/userRepository.js`
-- `assignments-service/src/services/externalClients.js`
-
-### 7.2 Open/Closed Principle (OCP)
-
-- Las reglas de validacion y logica de negocio se extienden agregando nuevas clases o metodos sin modificar la capa HTTP.
-- Los clientes externos permiten agregar otra fuente sin cambiar el servicio principal (adaptadores).
-
-### 7.3 Liskov Substitution Principle (LSP)
-
-- El codigo depende de contratos de metodos (`findById`, `create`, `update`) y no de implementaciones concretas, permitiendo reemplazar repositorios con otra tecnologia.
-
-### 7.4 Interface Segregation Principle (ISP)
-
-- Los servicios dependen de interfaces pequenas de infraestructura (clientes y repositorios), evitando dependencias monoliticas.
-
-### 7.5 Dependency Inversion Principle (DIP)
-
-- En cada `index.js` se realiza composicion de dependencias e inyeccion hacia servicios.
-- Las clases de negocio no construyen directamente conexiones o librerias externas.
-
-## 8. Gestion agil (Sprint 2)
-
-### 8.1 Tablero Kanban (estado final)
-
-| To Do | In Progress | Review | Done |
+| Puerto | Base URL | Servicio | Uso |
 |---|---|---|---|
-| Hardening de auth | - | - | Arquitectura base de servicios |
-| Integrar notificaciones | - | - | CRUD users-service |
-| Observabilidad avanzada | - | - | CRUD tickets-service |
-| Pruebas E2E extendidas | - | - | CRUD assignments-service |
-| Despliegue K3s | - | - | Dockerfiles multi-stage |
-| - | - | - | Compose completo + DB aisladas |
-| - | - | - | Validacion de flujo ticket -> asignacion |
+| 3000 | http://localhost:3000 | Frontend (React) | UI para crear usuarios, tickets, asignaciones e historial |
+| 3101 | http://localhost:3101/api | users-service | CRUD de usuarios |
+| 3102 | http://localhost:3102/api | tickets-service | CRUD de tickets + cambio de estado + historial |
+| 3103 | http://localhost:3103/api | assignments-service | CRUD de asignaciones y validaciones cruzadas |
+| 3104 | http://localhost:3104/api | audit-service | Consulta de eventos ingeridos |
+| 15672 | http://localhost:15672 | RabbitMQ Management | Monitoreo de colas, exchanges, bindings |
+| 5672 | amqp://localhost:5672 | RabbitMQ AMQP | Conexion interna de microservicios al bus |
 
-### 8.2 Dailys del sprint
+### 8.2 Que enviar y que recibes (request/response)
 
-#### Daily 1
-- Ayer: Definimos contratos de API y eventos para users, tickets y assignments.
-- Hoy: Implementar repositorios y validaciones de users/tickets.
-- Bloqueo: Validar requester remoto desde tickets-service.
-- Accion: Implementar cliente HTTP resiliente con timeout y manejo de 404.
+#### users-service (http://localhost:3101/api)
 
-#### Daily 2
-- Ayer: Se completaron CRUD de users y tickets con publicacion de eventos.
-- Hoy: Implementar assignments con validacion de ticket/agente y cambio de estado.
-- Bloqueo: Evitar multiples asignaciones activas por ticket.
-- Accion: Desactivar asignaciones activas previas antes de crear una nueva.
+POST /users
 
-#### Daily 3
-- Ayer: Se completo assignments-service y compose general.
-- Hoy: Integracion final, pruebas manuales y documentacion de SOLID/Kanban.
-- Bloqueo: Ninguno critico.
-- Accion: Validacion end-to-end y cierre de entregable.
+Enviar JSON:
 
-## 9. Justificacion de REST vs gRPC para esta fase
+{
+   "name": "Juan Perez",
+   "email": "juan@example.com",
+   "role": "requester"
+}
 
-Se eligio REST para comunicacion interna en el core por:
+Recibes:
+- 201 con usuario creado (id, name, email, role, is_active, created_at)
+- 409 si el email ya existe
+- 400 si faltan campos o role invalido
 
-1. Menor friccion de desarrollo inicial y debugging rapido.
-2. Coherencia con CRUD y herramientas de prueba manual.
-3. Preparacion gradual del dominio antes de optimizar transporte.
+GET /users
 
-El diseno queda preparado para evolucion a gRPC en fases posteriores porque:
+Enviar: sin body
 
-1. Las dependencias estan encapsuladas en clientes (`externalClients.js`, `userClient.js`).
-2. La logica de negocio no depende del protocolo.
-3. Los eventos de dominio ya desacoplan componentes para cargas asincronas.
+Recibes:
+- 200 con arreglo de usuarios
 
-## 10. Seguridad y datos sensibles
+GET /users/:id
 
-1. No se exponen secretos en Dockerfiles.
-2. Variables sensibles se inyectan por entorno en compose.
-3. Bases de datos aisladas por servicio para menor impacto de seguridad.
+Enviar: id en path
 
-## 11. Endpoints de operabilidad
+Recibes:
+- 200 con usuario
+- 404 si no existe
 
-Cada servicio backend expone:
+PUT /users/:id
 
-1. `GET /api/health` (liveness)
-2. `GET /api/health/deep` (verifica conectividad real con MySQL)
+Enviar JSON (campos a actualizar):
 
-Adicionalmente:
+{
+   "name": "Juan Actualizado",
+   "role": "agent",
+   "is_active": true
+}
 
-1. `GET /api/events` en audit-service para visualizar eventos de dominio procesados.
+Recibes:
+- 200 con usuario actualizado
+- 404 si no existe
 
-## 12. Estado final
+DELETE /users/:id
 
-- Microservicios implementados y funcionales.
-- CRUD completo para Usuarios, Tickets y Asignaciones.
-- Publicacion de eventos lista para consumidores.
-- Compose listo para ejecutar `docker-compose up --build`.
-- Smoke test E2E automatizado aprobado.
-- Cypress E2E API aprobado.
+Enviar: id en path
+
+Recibes:
+- 200 confirmacion de borrado
+- 404 si no existe
+
+Health:
+- GET /health
+- GET /health/deep
+
+#### tickets-service (http://localhost:3102/api)
+
+POST /tickets
+
+Enviar JSON:
+
+{
+   "requester_id": 3,
+   "title": "No funciona el login",
+   "description": "Error al iniciar sesion",
+   "priority": "HIGH",
+   "category": "Auth"
+}
+
+Recibes:
+- 201 con ticket creado (id, code, status=OPEN, etc)
+- 400 por validacion
+- 503 si users-service no disponible para validar requester
+
+GET /tickets
+
+Enviar: sin body
+
+Recibes:
+- 200 con arreglo de tickets
+
+GET /tickets/:id
+
+Recibes:
+- 200 con ticket
+- 404 si no existe
+
+PUT /tickets/:id
+
+Enviar JSON para cambio de estado u otros campos:
+
+{
+   "status": "IN_PROGRESS"
+}
+
+Recibes:
+- 200 con ticket actualizado
+- 400 si transicion de estado invalida
+
+DELETE /tickets/:id
+
+Recibes:
+- 200 confirmacion de borrado
+- 404 si no existe
+
+GET /tickets/:id/history
+
+Enviar: id en path
+
+Recibes:
+- 200 con historial de estado del ticket (status, message, created_at)
+
+Health:
+- GET /health
+- GET /health/deep
+
+#### assignments-service (http://localhost:3103/api)
+
+POST /assignments
+
+Enviar JSON:
+
+{
+   "ticket_id": 10,
+   "agent_id": 2,
+   "assigned_by": 1,
+   "reason": "Escalamiento"
+}
+
+Recibes:
+- 201 con asignacion creada
+- 400 por payload invalido
+- 404 si ticket o agente no existe
+- 409 si ticket cerrado o agente invalido
+- 503 si tickets-service o users-service no disponible
+
+GET /assignments
+
+Recibes:
+- 200 con arreglo de asignaciones
+
+GET /assignments/:id
+
+Recibes:
+- 200 con asignacion
+- 404 si no existe
+
+PUT /assignments/:id
+
+Enviar JSON (por ejemplo reasignacion):
+
+{
+   "agent_id": 4,
+   "reason": "Cambio de turno"
+}
+
+Recibes:
+- 200 con asignacion actualizada
+- 404 si no existe
+
+DELETE /assignments/:id
+
+Recibes:
+- 200 confirmacion de borrado logico/fisico segun regla
+- 404 si no existe
+
+Health:
+- GET /health
+- GET /health/deep
+
+#### audit-service (http://localhost:3104/api)
+
+GET /events?limit=200
+
+Enviar: sin body (query param opcional limit)
+
+Recibes:
+- 200 con eventos ingeridos desde RabbitMQ
+- Ejemplo de eventos: ticket.created, ticket.assigned, ticket.status.changed
+
+Health:
+- GET /health
+
+### 8.3 RabbitMQ: que enviar y que recibes
+
+UI de administracion:
+- URL: http://localhost:15672
+- Usuario: helpdesk
+- Password: helpdesk123
+
+Los microservicios publican eventos y audit-service consume:
+
+- Exchange: helpdesk.events (topic)
+- Routing keys comunes:
+   - user.created
+   - ticket.created
+   - ticket.status.changed
+   - ticket.assigned
+
+Que "envias" a RabbitMQ:
+- Mensajes JSON de eventos desde users/tickets/assignments services.
+
+Que "recibes" desde RabbitMQ:
+- audit-service recibe eventos y los expone por GET /api/events.
+
+## 9) Flujo funcional de punta a punta
+
+1. Crear o reutilizar usuario requester.
+2. Crear ticket con requester_id valido.
+3. Crear asignacion con ticket_id, agent_id y assigned_by.
+4. assignments-service cambia el ticket a ASSIGNED via tickets-service.
+5. Consultar historial del ticket para evidenciar trazabilidad.
+6. Validar eventos en audit-service (ticket.created, ticket.assigned, etc).
+
+## 10) Frontend
+
+El panel web permite:
+
+1. Crear usuarios.
+2. Crear tickets.
+3. Asignar tickets.
+4. Cambiar estado de ticket.
+5. Consultar historial de ticket.
+6. Ver listas de usuarios, tickets y asignaciones.
+
+Todo conectado a las APIs reales.
+
+## 11) Endpoints
+
+Resumen rapido (detalle completo en API_REFERENCE.md):
+
+- users-service: POST/GET/GET:id/PUT:id/DELETE:id en /api/users
+- tickets-service: POST/GET/GET:id/PUT:id/DELETE:id en /api/tickets
+- tickets-service: GET /api/tickets/:id/history
+- assignments-service: POST/GET/GET:id/PUT:id/DELETE:id en /api/assignments
+- health checks en /api/health y deep checks en /api/health/deep
+
+## 12) Logica de asignacion
+
+Reglas implementadas:
+
+1. ticket_id debe existir.
+2. No se asignan tickets en estado RESOLVED o CLOSED.
+3. agent_id debe pertenecer a usuario activo con rol agent.
+4. assigned_by debe ser admin o agent.
+5. Se desactivan asignaciones activas previas del ticket antes de crear una nueva.
+6. Se actualiza estado del ticket a ASSIGNED.
+
+## 13) SOLID y arquitectura limpia
+
+Se documenta en detalle en SOLID_EVIDENCE.md.
+
+Puntos clave:
+
+1. SRP: controllers, services, repositories y clients separados.
+2. DIP: composicion de dependencias en cada index.js.
+3. OCP: validadores y servicios extensibles.
+
+## 14) Puntos preparados para eventos futuros
+
+Publicaciones actuales:
+
+- user.created, user.updated, user.deleted
+- ticket.created, ticket.updated, ticket.status.changed, ticket.deleted
+- ticket.assigned, assignment.updated, assignment.deleted
+
+Puntos de extension recomendados:
+
+1. Consumidor en tickets-service para reglas automatas (SLA, escalamiento).
+2. Consumidor en notifications-service futuro (correo/chat).
+3. Proyecciones read-model para reportes sin cargar servicios transaccionales.
+
+## 15) Cambios grandes aplicados
+
+1. Se agrego frontend funcional integrado al ecosistema Docker.
+2. Se agrego historial persistente de tickets con endpoint dedicado.
+3. Se robustecio manejo de errores (400/409/503) en lugar de solo 500.
+4. Se mejoro validacion cruzada en asignaciones y tickets.
+5. Se parametrizaron secretos en docker-compose usando variables.
+
+## 16) Evidencia agil
+
+- docs/kanban.md
+- docs/dailys.md
+
+## 17) Pruebas
+
+1. Smoke test script para flujo completo.
+2. Prueba E2E Cypress en cypress/e2e/api-helpdesk.cy.js.
+
+Para ejecutar pruebas:
+
+npm install
+npm run test:all
+
+
+#### TEST:
+OK http://localhost:3101/api/health
+OK http://localhost:3101/api/health/deep
+OK http://localhost:3102/api/health
+OK http://localhost:3102/api/health/deep
+OK http://localhost:3103/api/health
+OK http://localhost:3103/api/health/deep
+OK http://localhost:3104/health
+OK http://localhost:3104/api/health
+OK http://localhost:3104/api/events
+OK http://localhost:15672

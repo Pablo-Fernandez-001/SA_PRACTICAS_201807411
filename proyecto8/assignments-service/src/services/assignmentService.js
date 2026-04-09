@@ -1,4 +1,5 @@
 const { validateAssignmentPayload } = require("../models/assignmentModel");
+const AppError = require("../shared/appError");
 
 class AssignmentService {
   constructor(assignmentRepository, usersClient, ticketsClient, eventBus) {
@@ -52,10 +53,18 @@ class AssignmentService {
   }
 
   async getAssignmentById(id) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid assignment id");
+    }
+
     return this.assignmentRepository.findById(id);
   }
 
   async updateAssignment(id, payload) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid assignment id");
+    }
+
     const errors = validateAssignmentPayload(payload, { partial: true });
     if (errors.length) {
       return { status: 400, body: { errors } };
@@ -64,6 +73,27 @@ class AssignmentService {
     const exists = await this.assignmentRepository.findById(id);
     if (!exists) {
       return { status: 404, body: { message: "assignment not found" } };
+    }
+
+    if (payload.ticket_id !== undefined) {
+      const ticket = await this.ticketsClient.getTicket(payload.ticket_id);
+      if (!ticket) {
+        return { status: 404, body: { message: "ticket not found" } };
+      }
+    }
+
+    if (payload.agent_id !== undefined) {
+      const agent = await this.usersClient.getUser(payload.agent_id);
+      if (!agent || agent.role !== "agent" || !agent.is_active) {
+        return { status: 400, body: { message: "agent_id must belong to an active agent user" } };
+      }
+    }
+
+    if (payload.assigned_by !== undefined) {
+      const assigner = await this.usersClient.getUser(payload.assigned_by);
+      if (!assigner || !["admin", "agent"].includes(assigner.role)) {
+        return { status: 400, body: { message: "assigned_by must be admin or agent" } };
+      }
     }
 
     const updated = await this.assignmentRepository.update(id, payload);
@@ -77,6 +107,10 @@ class AssignmentService {
   }
 
   async deleteAssignment(id) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid assignment id");
+    }
+
     const exists = await this.assignmentRepository.findById(id);
     if (!exists) {
       return { status: 404, body: { message: "assignment not found" } };

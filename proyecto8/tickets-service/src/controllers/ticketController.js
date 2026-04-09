@@ -37,6 +37,15 @@ class TicketController {
     }
   };
 
+  history = async (req, res, next) => {
+    try {
+      const result = await this.ticketService.getTicketHistory(Number(req.params.id));
+      return res.status(result.status).json(result.body);
+    } catch (error) {
+      return next(error);
+    }
+  };
+
   update = async (req, res, next) => {
     try {
       const result = await this.ticketService.updateTicket(Number(req.params.id), req.body);

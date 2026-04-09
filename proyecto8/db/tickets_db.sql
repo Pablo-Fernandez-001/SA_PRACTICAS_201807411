@@ -12,3 +12,16 @@ CREATE TABLE IF NOT EXISTS tickets (
   INDEX idx_requester_id (requester_id),
   INDEX idx_status (status)
 );
+
+CREATE TABLE IF NOT EXISTS ticket_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  status ENUM('OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED') NOT NULL,
+  message VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ticket_history_ticket_id (ticket_id),
+  CONSTRAINT fk_ticket_history_ticket
+    FOREIGN KEY (ticket_id)
+    REFERENCES tickets(id)
+    ON DELETE CASCADE
+);

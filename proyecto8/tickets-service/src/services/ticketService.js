@@ -1,4 +1,5 @@
 const { validateTicketPayload, STATUS_VALUES } = require("../models/ticketModel");
+const AppError = require("../shared/appError");
 
 class TicketService {
   constructor(ticketRepository, userClient, eventBus) {
@@ -8,8 +9,9 @@ class TicketService {
   }
 
   generateCode() {
-    const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-    return `TCK-${Date.now()}-${random}`;
+    const timestampPart = Date.now().toString(36).toUpperCase();
+    const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `TCK-${timestampPart}-${randomPart}`;
   }
 
   async createTicket(payload) {
@@ -30,6 +32,7 @@ class TicketService {
     };
 
     const created = await this.ticketRepository.create(toCreate);
+    await this.ticketRepository.addHistory(created.id, "OPEN", "Ticket created");
     await this.eventBus.publish("ticket.created", {
       type: "ticket.created",
       occurred_at: new Date().toISOString(),
@@ -44,7 +47,24 @@ class TicketService {
   }
 
   async getTicketById(id) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid ticket id");
+    }
     return this.ticketRepository.findById(id);
+  }
+
+  async getTicketHistory(id) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid ticket id");
+    }
+
+    const exists = await this.ticketRepository.findById(id);
+    if (!exists) {
+      return { status: 404, body: { message: "ticket not found" } };
+    }
+
+    const history = await this.ticketRepository.findHistoryByTicketId(id);
+    return { status: 200, body: history };
   }
 
   async updateTicket(id, payload) {
@@ -58,11 +78,22 @@ class TicketService {
       return { status: 404, body: { message: "ticket not found" } };
     }
 
+    if (payload.requester_id !== undefined) {
+      const requesterExists = await this.userClient.userExists(payload.requester_id);
+      if (!requesterExists) {
+        return { status: 400, body: { message: "requester_id does not exist" } };
+      }
+    }
+
     if (payload.status && !STATUS_VALUES.includes(payload.status)) {
       return { status: 400, body: { message: "invalid status" } };
     }
 
     const updated = await this.ticketRepository.update(id, payload);
+    const historyMessage = payload.status
+      ? `Status changed to ${payload.status}`
+      : "Ticket updated";
+    await this.ticketRepository.addHistory(id, updated.status, historyMessage);
 
     if (payload.status) {
       await this.eventBus.publish("ticket.status.changed", {
@@ -85,6 +116,10 @@ class TicketService {
   }
 
   async deleteTicket(id) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid ticket id");
+    }
+
     const exists = await this.ticketRepository.findById(id);
     if (!exists) {
       return { status: 404, body: { message: "ticket not found" } };

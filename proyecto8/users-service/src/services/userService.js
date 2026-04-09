@@ -1,9 +1,17 @@
 const { validateUserPayload } = require("../models/userModel");
+const AppError = require("../shared/appError");
 
 class UserService {
   constructor(userRepository, eventBus) {
     this.userRepository = userRepository;
     this.eventBus = eventBus;
+  }
+
+  mapDbError(error) {
+    if (error && error.code === "ER_DUP_ENTRY") {
+      return { status: 409, body: { message: "email already exists" } };
+    }
+    throw error;
   }
 
   async createUser(payload) {
@@ -12,7 +20,13 @@ class UserService {
       return { status: 400, body: { errors } };
     }
 
-    const created = await this.userRepository.create(payload);
+    let created;
+    try {
+      created = await this.userRepository.create(payload);
+    } catch (error) {
+      return this.mapDbError(error);
+    }
+
     await this.eventBus.publish("user.created", {
       type: "user.created",
       occurred_at: new Date().toISOString(),
@@ -27,6 +41,9 @@ class UserService {
   }
 
   async getUserById(id) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid user id");
+    }
     return this.userRepository.findById(id);
   }
 
@@ -36,12 +53,22 @@ class UserService {
       return { status: 400, body: { errors } };
     }
 
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid user id");
+    }
+
     const exists = await this.userRepository.findById(id);
     if (!exists) {
       return { status: 404, body: { message: "user not found" } };
     }
 
-    const updated = await this.userRepository.update(id, payload);
+    let updated;
+    try {
+      updated = await this.userRepository.update(id, payload);
+    } catch (error) {
+      return this.mapDbError(error);
+    }
+
     await this.eventBus.publish("user.updated", {
       type: "user.updated",
       occurred_at: new Date().toISOString(),
@@ -52,6 +79,10 @@ class UserService {
   }
 
   async deleteUser(id) {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new AppError(400, "invalid user id");
+    }
+
     const exists = await this.userRepository.findById(id);
     if (!exists) {
       return { status: 404, body: { message: "user not found" } };

@@ -1,4 +1,5 @@
 const axios = require("axios");
+const AppError = require("../shared/appError");
 
 class UsersClient {
   constructor(baseURL) {
@@ -11,7 +12,7 @@ class UsersClient {
       return response.data;
     } catch (error) {
       if (error.response && error.response.status === 404) return null;
-      throw new Error("users-service unavailable");
+      throw new AppError(503, "users-service unavailable");
     }
   }
 }
@@ -27,12 +28,16 @@ class TicketsClient {
       return response.data;
     } catch (error) {
       if (error.response && error.response.status === 404) return null;
-      throw new Error("tickets-service unavailable");
+      throw new AppError(503, "tickets-service unavailable");
     }
   }
 
   async updateTicket(ticketId, payload) {
-    await this.client.put(`/api/tickets/${ticketId}`, payload);
+    try {
+      await this.client.put(`/api/tickets/${ticketId}`, payload);
+    } catch (error) {
+      throw new AppError(503, "tickets-service unavailable");
+    }
   }
 }
 

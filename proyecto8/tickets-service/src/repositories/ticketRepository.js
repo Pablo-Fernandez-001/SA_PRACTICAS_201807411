@@ -45,6 +45,24 @@ class TicketRepository {
     return rows[0] || null;
   }
 
+  async addHistory(ticketId, status, message) {
+    await this.db.execute(
+      `INSERT INTO ticket_history (ticket_id, status, message) VALUES (?, ?, ?)`,
+      [ticketId, status, message]
+    );
+  }
+
+  async findHistoryByTicketId(ticketId) {
+    const [rows] = await this.db.execute(
+      `SELECT id, ticket_id, status, message, created_at
+       FROM ticket_history
+       WHERE ticket_id = ?
+       ORDER BY id ASC`,
+      [ticketId]
+    );
+    return rows;
+  }
+
   async update(id, updates) {
     const fields = [];
     const params = [];

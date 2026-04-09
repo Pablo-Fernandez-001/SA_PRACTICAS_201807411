@@ -47,8 +47,9 @@ async function start() {
   app.use("/api", userRoutes(userController));
 
   app.use((err, req, res, next) => {
-    logger.error({ err: err.message }, "Unhandled error");
-    res.status(500).json({ message: "internal server error" });
+    const status = err.status || 500;
+    logger.error({ err: err.message, status, requestId: req.requestId }, "Unhandled error");
+    res.status(status).json({ message: err.message || "internal server error" });
   });
 
   const server = app.listen(port, () => {

@@ -1,4 +1,5 @@
 const axios = require("axios");
+const AppError = require("../shared/appError");
 
 class UserClient {
   constructor(baseURL) {
@@ -16,7 +17,7 @@ class UserClient {
       if (error.response && error.response.status === 404) {
         return false;
       }
-      throw new Error("users-service unavailable");
+      throw new AppError(503, "users-service unavailable");
     }
   }
 }

@@ -348,3 +348,86 @@ erDiagram
 2. Coherencia de nombres entre diagramas y entidades.
 3. Arquitectura compatible con crecimiento y alta concurrencia.
 4. Base para implementacion en la practica de desarrollo core.
+
+## 11. Credenciales de prueba (ambiente de desarrollo)
+
+> **⚠️ NOTA IMPORTANTE:** Las siguientes credenciales son **únicamente para ambiente de desarrollo/testing**. En producción, nunca hardcodear contraseñas ni mostrarlas en login. Usar JWT, OAuth2 o gestores de secretos como HashiCorp Vault o AWS Secrets Manager.
+
+### 11.1 Usuarios predefinidos
+
+| Rol | Email | Contraseña | Descripción |
+|---|---|---|---|
+| `admin` | admin@helpdesk.local | admin123! | Administrador del sistema. Acceso total a usuarios, tickets y asignaciones. |
+| `agent` | agent@helpdesk.local | agent123! | Agente de soporte. Puede asignar tickets y actualizar estados. |
+| `agent2` | agent2@helpdesk.local | agent123! | Segundo agente. Disponible para balanceo de carga y cobertura. |
+| `requester` | user@helpdesk.local | user123! | Usuario solicitante. Solo puede crear tickets y consultar sus propios casos. |
+| `requester2` | customer@helpdesk.local | customer123! | Segundo usuario solicitante para testing de multi-usuario. |
+
+### 11.2 Cómo usar en testing
+
+#### Via curl (endpoint POST /auth/login)
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@helpdesk.local",
+    "password": "admin123!"
+  }'
+```
+
+#### Via frontend (React dashboard)
+1. Navegar a `http://localhost:3000`
+2. En la sección de login, ingresar email y contraseña de la tabla anterior
+3. El token JWT se almacenará en localStorage
+4. El usuario tendrá acceso según su rol
+
+#### Via Postman/Insomnia
+1. Importar collection con endpoints `/api/users`, `/api/tickets`, `/api/assignments`
+2. Usar credencial correspondiente en header `Authorization: Bearer <token>`
+3. El servidor validará JWT contra tokens activos en Redis/memoria
+
+### 11.3 Roles y permisos (para testing)
+
+| Rol | Ver Usuarios | Crear Tickets | Asignar Tickets | Cerrar Tickets | Admin Panel |
+|---|---|---|---|---|---|
+| `admin` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `agent` | ❌ | ❌ | ✅ | ✅ | ❌ |
+| `requester` | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+### 11.4 Flujo de testing recomendado
+
+**Paso 1: Autenticación**
+- Login como `admin@helpdesk.local` / `admin123!`
+- Verificar que token JWT es generado
+
+**Paso 2: Gestión de usuarios**
+- Como admin, crear 2-3 usuarios de prueba adicionales
+- Verificar que solo admin ve la lista de usuarios
+
+**Paso 3: Creación de tickets**
+- Login como `user@helpdesk.local` / `user123!`
+- Crear ticket con título "Test incident" y descripción
+- Verificar que evento `ticket.created` se publica en RabbitMQ
+
+**Paso 4: Asignación de tickets**
+- Login como `agent@helpdesk.local` / `agent123!`
+- Asignar ticket creado en Paso 3 a sí mismo
+- Verificar que evento `ticket.assigned` se publica
+- Verificar que notificación se envía
+
+**Paso 5: Cierre de tickets**
+- Como agente, cambiar estado a `RESOLVED` → `CLOSED`
+- Verificar que evento `ticket.status.changed` se publica
+- Verificar auditoría registra cambio
+
+### 11.5 Variables de ambiente para seeding inicial
+
+En `docker-compose.yml`, inyectar en users-service:
+```yaml
+environment:
+  SEED_USERS: "true"
+  ADMIN_EMAIL: "admin@helpdesk.local"
+  ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin123!}"
+```
+
+El servicio, al iniciar con `SEED_USERS=true`, verificará si usuarios existen; si no, creará automáticamente los 5 perfiles de prueba en la tabla `users`.

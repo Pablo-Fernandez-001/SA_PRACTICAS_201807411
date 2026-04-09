@@ -18,8 +18,16 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
+function healthPayload() {
+  return { service: "audit-service", status: "ok", events_buffered: eventsBuffer.length };
+}
+
+app.get("/health", (req, res) => {
+  res.status(200).json(healthPayload());
+});
+
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ service: "audit-service", status: "ok", events_buffered: eventsBuffer.length });
+  res.status(200).json(healthPayload());
 });
 
 app.get("/api/events", (req, res) => {
