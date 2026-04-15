@@ -1,0 +1,130 @@
+name: ci-cd
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - practica9/backend/tickets-service
+          - practica9/backend/processor-service
+          - practica9/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: npm install
+
+      - name: Lint
+        working-directory: ${{ matrix.service }}
+        run: npm run lint
+
+      - name: Test
+        working-directory: ${{ matrix.service }}
+        run: npm run test
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    strategy:
+      matrix:
+        include:
+          - name: practica9-tickets-service
+            context: practica9/backend/tickets-service
+          - name: practica9-processor-service
+            context: practica9/backend/processor-service
+          - name: practica9-frontend
+            context: practica9/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR (optional)
+        if: ${{ secrets.GHCR_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.name }}:${{ github.sha }}
+
+      - name: Push image (if token available)
+        if: ${{ secrets.GHCR_TOKEN != '' && github.ref == 'refs/heads/main' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.name }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.name }}:latest
+
+  deploy-k3s:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: ${{ github.ref == 'refs/heads/main' && secrets.KUBECONFIG_B64 != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy practica9
+        run: |
+          kubectl apply -f practica9/k8s/00-namespace.yaml
+          kubectl apply -f practica9/k8s/10-rabbitmq.yaml
+          kubectl apply -f practica9/k8s/20-tickets-service.yaml
+          kubectl apply -f practica9/k8s/21-processor-service.yaml
+          kubectl apply -f practica9/k8s/22-frontend.yaml
+          kubectl apply -f practica9/k8s/30-ingress.yaml
+
+      - name: Deploy practica10 monitoring
+        run: |
+          kubectl apply -f practica10/k8s/00-namespace.yaml
+          kubectl apply -f practica10/k8s/10-prometheus.yaml
+          kubectl apply -f practica10/k8s/11-grafana.yaml
+          kubectl apply -f practica10/k8s/12-logging.yaml
+          kubectl apply -f practica10/k8s/30-monitoring-ingress.yaml
+
+      - name: Verify rollout
+        run: |
+          kubectl -n practica9 rollout status deploy/tickets-service --timeout=180s
+          kubectl -n practica9 rollout status deploy/processor-service --timeout=180s
+          kubectl -n practica9 rollout status deploy/frontend --timeout=180s
+          kubectl -n monitoring rollout status deploy/prometheus --timeout=180s
+          kubectl -n monitoring rollout status deploy/grafana --timeout=180s
+          kubectl -n monitoring rollout status deploy/kibana --timeout=180s

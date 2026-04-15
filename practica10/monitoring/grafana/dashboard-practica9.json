@@ -1,0 +1,33 @@
+{
+  "id": null,
+  "uid": "practica9-overview",
+  "title": "Practica9 - EDA Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Tickets Totales",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "tickets_total",
+          "legendFormat": "tickets"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Eventos Procesados Totales",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "processed_events_total",
+          "legendFormat": "processed"
+        }
+      ]
+    }
+  ]
+}
