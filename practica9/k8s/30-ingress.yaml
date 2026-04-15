@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: practica9-ingress
+  namespace: practica9
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: practica9.local
+      http:
+        paths:
+          - path: /api/processed-events
+            pathType: Prefix
+            backend:
+              service:
+                name: processor-service
+                port:
+                  number: 3103
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: tickets-service
+                port:
+                  number: 3102
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

@@ -1,0 +1,41 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  tickets-service:
+    build:
+      context: ./practica9/backend/tickets-service
+    environment:
+      PORT: 3102
+      EVENT_BUS_URL: amqp://guest:guest@rabbitmq:5672
+      EVENT_EXCHANGE: helpdesk.events
+    ports:
+      - "3102:3102"
+    depends_on:
+      - rabbitmq
+
+  processor-service:
+    build:
+      context: ./practica9/backend/processor-service
+    environment:
+      PORT: 3103
+      EVENT_BUS_URL: amqp://guest:guest@rabbitmq:5672
+      EVENT_EXCHANGE: helpdesk.events
+      EVENT_QUEUE: practica9.ticket.processor
+      EVENT_ROUTING_KEY: ticket.created
+    ports:
+      - "3103:3103"
+    depends_on:
+      - rabbitmq
+
+  frontend:
+    build:
+      context: ./practica9/frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - tickets-service
+      - processor-service
