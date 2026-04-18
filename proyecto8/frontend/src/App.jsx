@@ -36,10 +36,10 @@ function getServiceLinks() {
 
   return {
     rabbitmq: `http://${host}:31672`,
-    prometheus: `http://${host}:32090`,
-    grafana: `http://${host}:32300`,
-    kibana: `http://${host}:32601`,
-    kafka: `http://${host}:30880`,
+    prometheus: `${origin}/api/prometheus/`,
+    grafana: `${origin}/api/grafana/`,
+    kibana: `${origin}/api/kibana/`,
+    kafka: `${origin}/api/kafka/`,
     terraform: "https://github.com/Pablo-Fernandez-001/SA_PRACTICAS_201807411/tree/main/practica9/terraform",
     usersHealth: `${origin}/api/users`,
     ticketsHealth: `${origin}/api/tickets`,
