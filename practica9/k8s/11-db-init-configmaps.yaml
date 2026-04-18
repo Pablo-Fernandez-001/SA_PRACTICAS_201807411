@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: users-db-init
+  namespace: practica9
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      email VARCHAR(160) NOT NULL UNIQUE,
+      role ENUM('requester', 'agent', 'admin') NOT NULL DEFAULT 'requester',
+      password VARCHAR(120) NOT NULL,
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+
+    INSERT INTO users (name, email, role, password) VALUES
+    ('Admin Helpdesk', 'admin@helpdesk.local', 'admin', 'admin123!'),
+    ('Agente Nivel 1', 'agent1@helpdesk.local', 'agent', 'agent123!'),
+    ('Usuario Solicitante', 'requester@helpdesk.local', 'requester', 'user123!')
+    ON DUPLICATE KEY UPDATE email = VALUES(email);
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tickets-db-init
+  namespace: practica9
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS tickets (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      code VARCHAR(32) NOT NULL UNIQUE,
+      requester_id INT NOT NULL,
+      title VARCHAR(180) NOT NULL,
+      description TEXT NOT NULL,
+      priority ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') NOT NULL DEFAULT 'MEDIUM',
+      category VARCHAR(80) NOT NULL,
+      status ENUM('OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED') NOT NULL DEFAULT 'OPEN',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_requester_id (requester_id),
+      INDEX idx_status (status)
+    );
+
+    CREATE TABLE IF NOT EXISTS ticket_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      status ENUM('OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED') NOT NULL,
+      message VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_ticket_history_ticket_id (ticket_id),
+      CONSTRAINT fk_ticket_history_ticket
+        FOREIGN KEY (ticket_id)
+        REFERENCES tickets(id)
+        ON DELETE CASCADE
+    );
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: assignments-db-init
+  namespace: practica9
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS assignments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      agent_id INT NOT NULL,
+      assigned_by INT NOT NULL,
+      reason VARCHAR(255) NULL,
+      is_active BOOLEAN NOT NULL DEFAULT TRUE,
+      assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_ticket_id (ticket_id),
+      INDEX idx_agent_id (agent_id),
+      INDEX idx_active (is_active)
+    );

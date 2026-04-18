@@ -1,0 +1,146 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-db
+  namespace: practica9
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-db
+  template:
+    metadata:
+      labels:
+        app: users-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: password
+            - name: MYSQL_DATABASE
+              value: users_db
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: users-db-data
+              mountPath: /var/lib/mysql
+            - name: users-db-init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: users-db-data
+          emptyDir: {}
+        - name: users-db-init
+          configMap:
+            name: users-db-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-db
+  namespace: practica9
+spec:
+  selector:
+    app: users-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tickets-db
+  namespace: practica9
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tickets-db
+  template:
+    metadata:
+      labels:
+        app: tickets-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: password
+            - name: MYSQL_DATABASE
+              value: tickets_db
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: tickets-db-data
+              mountPath: /var/lib/mysql
+            - name: tickets-db-init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: tickets-db-data
+          emptyDir: {}
+        - name: tickets-db-init
+          configMap:
+            name: tickets-db-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tickets-db
+  namespace: practica9
+spec:
+  selector:
+    app: tickets-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: assignments-db
+  namespace: practica9
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: assignments-db
+  template:
+    metadata:
+      labels:
+        app: assignments-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: password
+            - name: MYSQL_DATABASE
+              value: assignments_db
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: assignments-db-data
+              mountPath: /var/lib/mysql
+            - name: assignments-db-init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: assignments-db-data
+          emptyDir: {}
+        - name: assignments-db-init
+          configMap:
+            name: assignments-db-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: assignments-db
+  namespace: practica9
+spec:
+  selector:
+    app: assignments-db
+  ports:
+    - port: 3306
+      targetPort: 3306

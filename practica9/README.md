@@ -1,76 +1,62 @@
-# Practica 9 - EDA + K3s
+# Practica 9 - Secuencia de Practica 8 sobre K3s
 
-Practica 9 reutiliza el enfoque de `proyecto8` (microservicios Node + RabbitMQ + frontend React), pero en una estructura separada y orientada a despliegue en K3s.
+Practica 9 ahora es continuidad directa de `proyecto8`:
 
-## Estructura
+- `users-service`
+- `tickets-service`
+- `assignments-service`
+- `audit-service`
+- `rabbitmq`
+- 3 bases MySQL aisladas (`users_db`, `tickets_db`, `assignments_db`)
+- `frontend` de proyecto8 adaptado para consumir rutas por Ingress
 
-- `backend/tickets-service`: API para crear/listar tickets y publicar `ticket.created`
-- `backend/processor-service`: consumidor RabbitMQ y API de eventos procesados
-- `frontend`: SPA React
-- `k8s`: manifiestos de namespace, deployments, services e ingress
-- `terraform`: VM y red base para nodo K3s
+## Adaptaciones aplicadas
 
-## Ejecutar local (Docker)
+1. La arquitectura de `proyecto8` se despliega en Kubernetes (`practica9/k8s`).
+2. El frontend usa `/api` por Ingress (sin `localhost:310x`).
+3. El Ingress permite acceso por IP de la VM y también por hostname local.
 
-```bash
-cd practica9/backend
-docker compose up --build -d
-```
+## Manifiestos principales
 
-```bash
-cd ../frontend
-npm install
-npm run dev
-```
+- `00-namespace.yaml`
+- `10-rabbitmq.yaml`
+- `11-db-init-configmaps.yaml`
+- `12-databases.yaml`
+- `20-tickets-service.yaml` (users-service)
+- `21-processor-service.yaml` (tickets-service)
+- `22-frontend.yaml` (assignments-service)
+- `23-audit-service.yaml`
+- `24-frontend.yaml`
+- `30-ingress.yaml`
 
-## Endpoints
-
-- `POST /api/tickets` (tickets-service)
-- `GET /api/tickets` (tickets-service)
-- `GET /api/processed-events` (processor-service)
-- `GET /health` (ambos servicios)
-- `GET /metrics` (ambos servicios)
-
-Payload para crear ticket:
-
-```json
-{
-  "title": "Error login",
-  "description": "No puedo entrar",
-  "requester": "user@helpdesk.local"
-}
-```
-
-## Despliegue K3s
+## Despliegue en K3s
 
 ```bash
 kubectl apply -f practica9/k8s/00-namespace.yaml
 kubectl apply -f practica9/k8s/10-rabbitmq.yaml
+kubectl apply -f practica9/k8s/11-db-init-configmaps.yaml
+kubectl apply -f practica9/k8s/12-databases.yaml
 kubectl apply -f practica9/k8s/20-tickets-service.yaml
 kubectl apply -f practica9/k8s/21-processor-service.yaml
 kubectl apply -f practica9/k8s/22-frontend.yaml
+kubectl apply -f practica9/k8s/23-audit-service.yaml
+kubectl apply -f practica9/k8s/24-frontend.yaml
 kubectl apply -f practica9/k8s/30-ingress.yaml
 ```
 
-Agregar hosts local para pruebas:
+## Endpoints esperados
 
-```text
-<IP_INGRESS> practica9.local
-```
+- `GET /api/users`
+- `POST /api/auth/login`
+- `GET /api/tickets`
+- `POST /api/tickets`
+- `GET /api/assignments`
+- `GET /api/events`
 
-## Terraform
+## Flujo funcional
 
-```bash
-cd practica9/terraform
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform plan
-terraform apply
-```
-
-## Flujo completo
-
-1. Usuario crea ticket desde frontend.
-2. `tickets-service` persiste en memoria y publica `ticket.created` a RabbitMQ.
-3. `processor-service` consume evento y lo registra en memoria.
-4. Frontend refresca y muestra ticket + evento procesado.
+1. Crear usuario / login en `users-service`.
+2. Crear ticket en `tickets-service`.
+3. Asignar ticket en `assignments-service`.
+4. Ver eventos en `audit-service` consumidos desde RabbitMQ.
+5. Operar todo desde frontend de `proyecto8`.

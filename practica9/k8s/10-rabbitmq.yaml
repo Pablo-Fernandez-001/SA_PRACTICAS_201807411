@@ -16,6 +16,11 @@ spec:
       containers:
         - name: rabbitmq
           image: rabbitmq:3.13-management
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: helpdesk
+            - name: RABBITMQ_DEFAULT_PASS
+              value: helpdesk123
           ports:
             - containerPort: 5672
             - containerPort: 15672

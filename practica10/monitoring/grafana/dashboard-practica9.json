@@ -9,23 +9,23 @@
   "panels": [
     {
       "type": "timeseries",
-      "title": "Tickets Totales",
+      "title": "Tickets Service UP",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "tickets_total",
-          "legendFormat": "tickets"
+          "expr": "up{job=\"tickets-service\"}",
+          "legendFormat": "tickets-service"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Eventos Procesados Totales",
+      "title": "Assignments Service UP",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
-          "expr": "processed_events_total",
-          "legendFormat": "processed"
+          "expr": "up{job=\"assignments-service\"}",
+          "legendFormat": "assignments-service"
         }
       ]
     }

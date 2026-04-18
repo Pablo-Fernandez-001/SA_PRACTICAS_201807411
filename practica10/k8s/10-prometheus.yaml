@@ -13,15 +13,25 @@ data:
         static_configs:
           - targets: ["localhost:9090"]
 
+      - job_name: users-service
+        metrics_path: /api/health
+        static_configs:
+          - targets: ["users-service.practica9.svc.cluster.local:3101"]
+
       - job_name: tickets-service
-        metrics_path: /metrics
+        metrics_path: /api/health
         static_configs:
           - targets: ["tickets-service.practica9.svc.cluster.local:3102"]
 
-      - job_name: processor-service
-        metrics_path: /metrics
+      - job_name: assignments-service
+        metrics_path: /api/health
         static_configs:
-          - targets: ["processor-service.practica9.svc.cluster.local:3103"]
+          - targets: ["assignments-service.practica9.svc.cluster.local:3103"]
+
+      - job_name: audit-service
+        metrics_path: /health
+        static_configs:
+          - targets: ["audit-service.practica9.svc.cluster.local:3104"]
 ---
 apiVersion: apps/v1
 kind: Deployment

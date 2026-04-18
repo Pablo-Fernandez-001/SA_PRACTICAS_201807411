@@ -9,44 +9,41 @@ spec:
   rules:
     - http:
         paths:
-          - path: /api/processed-events
+          - path: /api/auth
             pathType: Prefix
             backend:
               service:
-                name: processor-service
+                name: users-service
                 port:
-                  number: 3103
-          - path: /api
+                  number: 3101
+          - path: /api/users
             pathType: Prefix
             backend:
               service:
-                name: tickets-service
+                name: users-service
                 port:
-                  number: 3102
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80
-    - host: practica9.local
-      http:
-        paths:
-          - path: /api/processed-events
-            pathType: Prefix
-            backend:
-              service:
-                name: processor-service
-                port:
-                  number: 3103
-          - path: /api
+                  number: 3101
+          - path: /api/tickets
             pathType: Prefix
             backend:
               service:
                 name: tickets-service
                 port:
                   number: 3102
+          - path: /api/assignments
+            pathType: Prefix
+            backend:
+              service:
+                name: assignments-service
+                port:
+                  number: 3103
+          - path: /api/events
+            pathType: Prefix
+            backend:
+              service:
+                name: audit-service
+                port:
+                  number: 3104
           - path: /
             pathType: Prefix
             backend:

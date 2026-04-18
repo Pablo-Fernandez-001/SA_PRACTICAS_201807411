@@ -1,0 +1,15 @@
+{
+  "name": "helpdesk-platform-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test runner for proyecto8",
+  "scripts": {
+    "test:smoke": "node ./scripts/run-smoke.js",
+    "test:smoke:ps": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-test.ps1",
+    "test:api:cypress": "cypress run --config-file cypress.config.js",
+    "test:all": "npm run test:smoke && npm run test:api:cypress"
+  },
+  "devDependencies": {
+    "cypress": "^14.4.1"
+  }
+}

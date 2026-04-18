@@ -1,33 +1,54 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
+  name: assignments-service
   namespace: practica9
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: frontend
+      app: assignments-service
   template:
     metadata:
       labels:
-        app: frontend
+        app: assignments-service
     spec:
       containers:
-        - name: frontend
-          image: us-central1-docker.pkg.dev/saproject201807411/delivereats/practica9-frontend:latest
+        - name: assignments-service
+          image: us-central1-docker.pkg.dev/saproject201807411/delivereats/p8-assignments-service:latest
           imagePullPolicy: Always
+          env:
+            - name: PORT
+              value: "3103"
+            - name: DB_HOST
+              value: assignments-db
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USER
+              value: root
+            - name: DB_PASSWORD
+              value: password
+            - name: DB_NAME
+              value: assignments_db
+            - name: USERS_SERVICE_URL
+              value: http://users-service:3101
+            - name: TICKETS_SERVICE_URL
+              value: http://tickets-service:3102
+            - name: EVENT_BUS_URL
+              value: amqp://helpdesk:helpdesk123@rabbitmq:5672
+            - name: EVENT_BUS_ENABLED
+              value: "true"
           ports:
-            - containerPort: 80
+            - containerPort: 3103
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
+  name: assignments-service
   namespace: practica9
 spec:
   selector:
-    app: frontend
+    app: assignments-service
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 3103
+      targetPort: 3103

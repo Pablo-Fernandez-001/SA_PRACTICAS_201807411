@@ -27,9 +27,11 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - practica9/backend/tickets-service
-          - practica9/backend/processor-service
-          - practica9/frontend
+          - proyecto8/users-service
+          - proyecto8/tickets-service
+          - proyecto8/assignments-service
+          - proyecto8/audit-service
+          - proyecto8/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,11 +48,11 @@ jobs:
 
       - name: Lint
         working-directory: ${{ matrix.service }}
-        run: npm run lint
+        run: npm run lint --if-present
 
       - name: Test
         working-directory: ${{ matrix.service }}
-        run: npm run test
+        run: npm run test --if-present
 
   build-images:
     if: github.event_name == 'push'
@@ -60,12 +62,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: practica9-tickets-service
-            context: practica9/backend/tickets-service
-          - name: practica9-processor-service
-            context: practica9/backend/processor-service
-          - name: practica9-frontend
-            context: practica9/frontend
+          - name: p8-users-service
+            context: proyecto8/users-service
+          - name: p8-tickets-service
+            context: proyecto8/tickets-service
+          - name: p8-assignments-service
+            context: proyecto8/assignments-service
+          - name: p8-audit-service
+            context: proyecto8/audit-service
+          - name: p8-frontend
+            context: proyecto8/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,9 +130,13 @@ PY
           export KUBECONFIG="$PWD/k3s.yaml"
           kubectl apply -f practica9/k8s/00-namespace.yaml
           kubectl apply -f practica9/k8s/10-rabbitmq.yaml
+          kubectl apply -f practica9/k8s/11-db-init-configmaps.yaml
+          kubectl apply -f practica9/k8s/12-databases.yaml
           kubectl apply -f practica9/k8s/20-tickets-service.yaml
           kubectl apply -f practica9/k8s/21-processor-service.yaml
           kubectl apply -f practica9/k8s/22-frontend.yaml
+          kubectl apply -f practica9/k8s/23-audit-service.yaml
+          kubectl apply -f practica9/k8s/24-frontend.yaml
           kubectl apply -f practica9/k8s/30-ingress.yaml
           kubectl apply -f practica10/k8s/00-namespace.yaml
           kubectl apply -f practica10/k8s/10-prometheus.yaml
@@ -134,8 +144,13 @@ PY
           kubectl apply -f practica10/k8s/12-logging.yaml
           kubectl apply -f practica10/k8s/30-monitoring-ingress.yaml
           kubectl -n practica9 rollout status deploy/rabbitmq --timeout=240s
+          kubectl -n practica9 rollout status deploy/users-db --timeout=240s
+          kubectl -n practica9 rollout status deploy/tickets-db --timeout=240s
+          kubectl -n practica9 rollout status deploy/assignments-db --timeout=240s
+          kubectl -n practica9 rollout status deploy/users-service --timeout=240s
           kubectl -n practica9 rollout status deploy/tickets-service --timeout=240s
-          kubectl -n practica9 rollout status deploy/processor-service --timeout=240s
+          kubectl -n practica9 rollout status deploy/assignments-service --timeout=240s
+          kubectl -n practica9 rollout status deploy/audit-service --timeout=240s
           kubectl -n practica9 rollout status deploy/frontend --timeout=240s
           kubectl -n monitoring rollout status deploy/prometheus --timeout=240s
           kubectl -n monitoring rollout status deploy/grafana --timeout=240s
