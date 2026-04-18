@@ -29,14 +29,16 @@ kubectl -n monitoring get svc
 Agregar hosts:
 
 ```text
-<IP_INGRESS> monitoring.local
+<IP_INGRESS> prometheus.local
+<IP_INGRESS> grafana.local
+<IP_INGRESS> kibana.local
 ```
 
 Accesos:
 
-- `http://monitoring.local/prometheus`
-- `http://monitoring.local/grafana` (admin/admin123)
-- `http://monitoring.local/kibana`
+- `http://prometheus.local`
+- `http://grafana.local` (admin/admin123)
+- `http://kibana.local`
 
 ## Flujo de logs
 

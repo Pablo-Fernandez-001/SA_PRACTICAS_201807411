@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: processor-service
-          image: ghcr.io/your-org/practica9-processor-service:latest
-          imagePullPolicy: IfNotPresent
+          image: us-central1-docker.pkg.dev/saproject201807411/delivereats/practica9-processor-service:latest
+          imagePullPolicy: Always
           env:
             - name: PORT
               value: "3103"
