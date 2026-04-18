@@ -40,7 +40,6 @@ function getServiceLinks() {
     grafana: `${origin}/api/grafana/`,
     kibana: `${origin}/api/kibana/`,
     kafka: `${origin}/api/kafka/`,
-    terraform: "https://github.com/Pablo-Fernandez-001/SA_PRACTICAS_201807411/tree/main/practica9/terraform",
     usersHealth: `${origin}/api/users`,
     ticketsHealth: `${origin}/api/tickets`,
     assignmentsHealth: `${origin}/api/assignments`,
@@ -546,10 +545,10 @@ function App() {
             </button>
             <button
               type="button"
-              onClick={() => window.open(serviceLinks.terraform, "_blank")}
+              onClick={() => window.location.hash = "terraform-info"}
               style={{ background: "linear-gradient(135deg, #566573, #34495e)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
-              🏗️ Terraform
+              🏗️ Terraform Info
             </button>
           </div>
         </section>
@@ -559,9 +558,27 @@ function App() {
             <li><strong>Backend:</strong> 4 microservicios (Node.js/Express) publicados por Ingress en /api</li>
             <li><strong>Base de datos:</strong> MySQL 8.0 - 3 bases de datos (users, tickets, assignments)</li>
             <li><strong>Eventos:</strong> RabbitMQ 3.13 para comunicación asincrónica</li>
+            <li><strong>Observabilidad:</strong> Prometheus (métricas), Grafana (dashboards), Kibana (logs) y Kafka UI (mensajes)</li>
             <li><strong>Frontend:</strong> React 18 + Vite desplegado en producción sobre Kubernetes</li>
             <li><strong>Auditoría:</strong> Todos los eventos registrados en audit-service</li>
+            <li><strong>Terraform:</strong> Infraestructura como código para levantar red, VM y base del clúster K3s</li>
+            <li><strong>Credenciales app:</strong> admin@helpdesk.local / admin123!, agent1@helpdesk.local / agent123!, requester@helpdesk.local / user123!</li>
+            <li><strong>Credenciales herramientas:</strong> RabbitMQ helpdesk / helpdesk123, Grafana admin / admin123, MySQL root / password</li>
+            <li><strong>Sin login:</strong> Prometheus, Kibana y Kafka UI no usan usuario/contraseña</li>
           </ul>
+        </section>
+        <section className="card" id="terraform-info" style={{ maxWidth: "900px", margin: "40px auto" }}>
+          <h3>🏗️ Terraform</h3>
+          <p style={{ lineHeight: "1.8", color: "#666" }}>
+            Terraform se usa para crear y mantener infraestructura de forma declarativa. En este
+            proyecto sirve para automatizar recursos base como red, VM y soporte del clúster K3s,
+            en lugar de crearlos a mano.
+          </p>
+          <p style={{ lineHeight: "1.8", color: "#666" }}>
+            No es una API ni un servicio con login. Por eso antes el botón te llevaba al repositorio:
+            era un acceso a la definición de infraestructura. Ahora el botón te lleva a esta
+            explicación dentro de la misma aplicación.
+          </p>
         </section>
       </main>
     );
