@@ -36,6 +36,11 @@ function getServiceLinks() {
 
   return {
     rabbitmq: `http://${host}:31672`,
+    prometheus: `http://${host}:32090`,
+    grafana: `http://${host}:32300`,
+    kibana: `http://${host}:32601`,
+    kafka: `http://${host}:30880`,
+    terraform: "https://github.com/Pablo-Fernandez-001/SA_PRACTICAS_201807411/tree/main/practica9/terraform",
     usersHealth: `${origin}/api/users`,
     ticketsHealth: `${origin}/api/tickets`,
     assignmentsHealth: `${origin}/api/assignments`,
@@ -510,6 +515,41 @@ function App() {
               style={{ background: "linear-gradient(135deg, #9B59B6, #8E44AD)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               📋 Audit Events
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open(serviceLinks.grafana, "_blank")}
+              style={{ background: "linear-gradient(135deg, #f39c12, #d68910)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
+            >
+              📈 Grafana
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open(serviceLinks.prometheus, "_blank")}
+              style={{ background: "linear-gradient(135deg, #16a085, #117864)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
+            >
+              🔎 Prometheus
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open(serviceLinks.kibana, "_blank")}
+              style={{ background: "linear-gradient(135deg, #2e86c1, #1f618d)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
+            >
+              🧾 Kibana
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open(serviceLinks.kafka, "_blank")}
+              style={{ background: "linear-gradient(135deg, #7d3c98, #5b2c6f)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
+            >
+              📨 Kafka UI
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open(serviceLinks.terraform, "_blank")}
+              style={{ background: "linear-gradient(135deg, #566573, #34495e)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
+            >
+              🏗️ Terraform
             </button>
           </div>
         </section>
