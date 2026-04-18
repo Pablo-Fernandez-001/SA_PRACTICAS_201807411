@@ -34,5 +34,5 @@ spec:
   selector:
     app: audit-service
   ports:
-    - port: 3104
+    - port: 80
       targetPort: 3104

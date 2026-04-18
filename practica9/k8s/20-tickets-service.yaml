@@ -48,5 +48,5 @@ spec:
   selector:
     app: users-service
   ports:
-    - port: 3101
+    - port: 80
       targetPort: 3101

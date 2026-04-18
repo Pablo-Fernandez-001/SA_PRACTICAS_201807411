@@ -31,9 +31,9 @@ spec:
             - name: DB_NAME
               value: assignments_db
             - name: USERS_SERVICE_URL
-              value: http://users-service:3101
+              value: http://users-service
             - name: TICKETS_SERVICE_URL
-              value: http://tickets-service:3102
+              value: http://tickets-service
             - name: EVENT_BUS_URL
               value: amqp://helpdesk:helpdesk123@rabbitmq:5672
             - name: EVENT_BUS_ENABLED
@@ -50,5 +50,5 @@ spec:
   selector:
     app: assignments-service
   ports:
-    - port: 3103
+    - port: 80
       targetPort: 3103

@@ -15,35 +15,35 @@ spec:
               service:
                 name: users-service
                 port:
-                  number: 3101
+                  number: 80
           - path: /api/users
             pathType: Prefix
             backend:
               service:
                 name: users-service
                 port:
-                  number: 3101
+                  number: 80
           - path: /api/tickets
             pathType: Prefix
             backend:
               service:
                 name: tickets-service
                 port:
-                  number: 3102
+                  number: 80
           - path: /api/assignments
             pathType: Prefix
             backend:
               service:
                 name: assignments-service
                 port:
-                  number: 3103
+                  number: 80
           - path: /api/events
             pathType: Prefix
             backend:
               service:
                 name: audit-service
                 port:
-                  number: 3104
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

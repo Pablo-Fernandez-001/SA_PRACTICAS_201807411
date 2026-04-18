@@ -30,6 +30,19 @@ const initialTicket = {
 };
 const initialAssignment = { ticket_id: "", agent_id: "", assigned_by: "", reason: "" };
 
+function getServiceLinks() {
+  const origin = window.location.origin;
+  const host = window.location.hostname;
+
+  return {
+    rabbitmq: `http://${host}:31672`,
+    usersHealth: `${origin}/api/users`,
+    ticketsHealth: `${origin}/api/tickets`,
+    assignmentsHealth: `${origin}/api/assignments`,
+    auditEvents: `${origin}/api/events`,
+  };
+}
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -213,19 +226,19 @@ function App() {
       if (usersResult.status === "fulfilled") {
         setUsers(usersResult.value);
       } else {
-        errors.push("Users API (3101)");
+        errors.push("Users API");
       }
 
       if (ticketsResult.status === "fulfilled") {
         setTickets(ticketsResult.value);
       } else {
-        errors.push("Tickets API (3102)");
+        errors.push("Tickets API");
       }
 
       if (assignmentsResult.status === "fulfilled") {
         setAssignments(assignmentsResult.value);
       } else {
-        errors.push("Assignments API (3103)");
+        errors.push("Assignments API");
       }
 
       if (errors.length > 0) {
@@ -331,6 +344,8 @@ function App() {
 
   // PANTALLA DE LOGIN
   if (!isLoggedIn) {
+    const serviceLinks = getServiceLinks();
+
     return (
       <main className="page">
         <header className="hero">
@@ -463,35 +478,35 @@ function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:15672", "_blank")}
+              onClick={() => window.open(serviceLinks.rabbitmq, "_blank")}
               style={{ background: "linear-gradient(135deg, #FF6B35, #E74C3C)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               🐰 RabbitMQ Management
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3101/api/health/deep", "_blank")}
+              onClick={() => window.open(serviceLinks.usersHealth, "_blank")}
               style={{ background: "linear-gradient(135deg, #3498DB, #2980B9)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               💚 Users Service Health
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3102/api/health/deep", "_blank")}
+              onClick={() => window.open(serviceLinks.ticketsHealth, "_blank")}
               style={{ background: "linear-gradient(135deg, #3498DB, #2980B9)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               🎫 Tickets Service Health
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3103/api/health/deep", "_blank")}
+              onClick={() => window.open(serviceLinks.assignmentsHealth, "_blank")}
               style={{ background: "linear-gradient(135deg, #3498DB, #2980B9)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               👥 Assignments Service Health
             </button>
             <button
               type="button"
-              onClick={() => window.open("http://localhost:3104/api/events", "_blank")}
+              onClick={() => window.open(serviceLinks.auditEvents, "_blank")}
               style={{ background: "linear-gradient(135deg, #9B59B6, #8E44AD)", padding: "12px", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
             >
               📋 Audit Events
@@ -501,10 +516,10 @@ function App() {
         <section className="card" style={{ maxWidth: "900px", margin: "40px auto" }}>
           <h3>ℹ️ Información</h3>
           <ul style={{ lineHeight: "1.8", color: "#666" }}>
-            <li><strong>Backend:</strong> 4 microservicios (Node.js/Express) en puertos 3101-3104</li>
+            <li><strong>Backend:</strong> 4 microservicios (Node.js/Express) publicados por Ingress en /api</li>
             <li><strong>Base de datos:</strong> MySQL 8.0 - 3 bases de datos (users, tickets, assignments)</li>
             <li><strong>Eventos:</strong> RabbitMQ 3.13 para comunicación asincrónica</li>
-            <li><strong>Frontend:</strong> React 18 + Vite - Sin autenticación JWT (para desarrollo)</li>
+            <li><strong>Frontend:</strong> React 18 + Vite desplegado en producción sobre Kubernetes</li>
             <li><strong>Auditoría:</strong> Todos los eventos registrados en audit-service</li>
           </ul>
         </section>

@@ -31,7 +31,7 @@ spec:
             - name: DB_NAME
               value: tickets_db
             - name: USERS_SERVICE_URL
-              value: http://users-service:3101
+              value: http://users-service
             - name: EVENT_BUS_URL
               value: amqp://helpdesk:helpdesk123@rabbitmq:5672
             - name: EVENT_EXCHANGE
@@ -50,5 +50,5 @@ spec:
   selector:
     app: tickets-service
   ports:
-    - port: 3102
+    - port: 80
       targetPort: 3102
