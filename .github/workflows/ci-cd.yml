@@ -121,12 +121,12 @@ jobs:
             --ssh-flag="-o UserKnownHostsFile=/dev/null" \
             --command "sudo cat /etc/rancher/k3s/k3s.yaml" > k3s.yaml
           python3 - <<'PY'
-from pathlib import Path
-import os
-path = Path('k3s.yaml')
-data = path.read_text()
-path.write_text(data.replace('127.0.0.1', os.environ['VM_IP']))
-PY
+          from pathlib import Path
+          import os
+          path = Path('k3s.yaml')
+          data = path.read_text()
+          path.write_text(data.replace('127.0.0.1', os.environ['VM_IP']))
+          PY
           export KUBECONFIG="$PWD/k3s.yaml"
           kubectl apply -f practica9/k8s/00-namespace.yaml
           kubectl apply -f practica9/k8s/10-rabbitmq.yaml
