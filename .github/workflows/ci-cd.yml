@@ -92,6 +92,7 @@ jobs:
           gcloud --quiet config set project "$PROJECT_ID"
           gcloud --version
           gcloud builds submit "${{ matrix.context }}" \
+            --service-account="projects/$PROJECT_ID/serviceAccounts/$SERVICE_ACCOUNT" \
             --tag "us-central1-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/${{ matrix.name }}:latest"
 
   deploy-k3s:
