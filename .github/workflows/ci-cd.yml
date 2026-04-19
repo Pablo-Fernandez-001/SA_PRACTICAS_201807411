@@ -17,6 +17,7 @@ env:
   ZONE: us-central1-a
   VM_NAME: delivereats-k3s-1
   ARTIFACT_REPOSITORY: delivereats
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   WORKLOAD_IDENTITY_PROVIDER: projects/1014199069115/locations/global/workloadIdentityPools/github-pool/providers/github-provider
   SERVICE_ACCOUNT: github-deployer@saproject201807411.iam.gserviceaccount.com
 
@@ -34,13 +35,14 @@ jobs:
           - proyecto8/frontend
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
 
       - name: Install dependencies
         working-directory: ${{ matrix.service }}
@@ -74,7 +76,7 @@ jobs:
             context: proyecto8/frontend
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -97,7 +99,7 @@ jobs:
     needs: build-images
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
