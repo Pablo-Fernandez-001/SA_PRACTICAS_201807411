@@ -124,7 +124,9 @@ jobs:
           gcloud compute ssh "$VM_NAME" --project "$PROJECT_ID" --zone "$ZONE" --quiet \
             --ssh-flag="-o StrictHostKeyChecking=no" \
             --ssh-flag="-o UserKnownHostsFile=/dev/null" \
-            --command "sudo cat /etc/rancher/k3s/k3s.yaml" > k3s.yaml
+            --ssh-flag="-o LogLevel=ERROR" \
+            --command "sudo base64 -w0 /etc/rancher/k3s/k3s.yaml" > k3s.yaml.b64
+          base64 -d k3s.yaml.b64 > k3s.yaml
           python3 - <<'PY'
           from pathlib import Path
           import os
@@ -133,6 +135,7 @@ jobs:
           path.write_text(data.replace('127.0.0.1', os.environ['VM_IP']))
           PY
           export KUBECONFIG="$PWD/k3s.yaml"
+          kubectl config view >/dev/null
           kubectl apply -f practica9/k8s/00-namespace.yaml
           kubectl apply -f practica9/k8s/10-rabbitmq.yaml
           kubectl apply -f practica9/k8s/11-db-init-configmaps.yaml
