@@ -92,8 +92,9 @@ jobs:
           gcloud --version
           gcloud builds submit "${{ matrix.context }}" \
             --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --default-buckets-behavior=regional-user-owned-bucket \
             --service-account="projects/$PROJECT_ID/serviceAccounts/$SERVICE_ACCOUNT" \
-            --logging=CLOUD_LOGGING_ONLY \
             --tag "us-central1-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/${{ matrix.name }}:latest"
 
   deploy-k3s:
