@@ -125,7 +125,8 @@ jobs:
             --ssh-flag="-o StrictHostKeyChecking=no" \
             --ssh-flag="-o UserKnownHostsFile=/dev/null" \
             --ssh-flag="-o LogLevel=ERROR" \
-            --command "sudo base64 -w0 /etc/rancher/k3s/k3s.yaml" > k3s.yaml.b64
+            --command "echo __K3S_BEGIN__; sudo cat /etc/rancher/k3s/k3s.yaml | base64 | tr -d '\n'; echo; echo __K3S_END__" > k3s.raw
+          awk '/__K3S_BEGIN__/{flag=1;next}/__K3S_END__/{flag=0}flag' k3s.raw | tr -d '\r\n' > k3s.yaml.b64
           base64 -d k3s.yaml.b64 > k3s.yaml
           python3 - <<'PY'
           from pathlib import Path
