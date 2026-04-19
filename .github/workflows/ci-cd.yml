@@ -147,6 +147,7 @@ jobs:
           kubectl apply -f practica10/k8s/10-prometheus.yaml
           kubectl apply -f practica10/k8s/11-grafana.yaml
           kubectl apply -f practica10/k8s/12-logging.yaml
+          kubectl apply -f practica10/k8s/15-kafka.yaml
           kubectl apply -f practica10/k8s/30-monitoring-ingress.yaml
           kubectl -n practica9 rollout status deploy/rabbitmq --timeout=240s
           kubectl -n practica9 rollout status deploy/users-db --timeout=240s
@@ -161,3 +162,4 @@ jobs:
           kubectl -n monitoring rollout status deploy/grafana --timeout=240s
           kubectl -n monitoring rollout status deploy/elasticsearch --timeout=240s
           kubectl -n monitoring rollout status deploy/kibana --timeout=240s
+          kubectl -n monitoring rollout status deploy/kafka-ui --timeout=240s
