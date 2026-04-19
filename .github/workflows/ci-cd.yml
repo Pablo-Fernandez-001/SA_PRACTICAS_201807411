@@ -89,9 +89,9 @@ jobs:
 
       - name: Build and push image with Cloud Build
         run: |
-          gcloud --quiet config set project "$PROJECT_ID"
           gcloud --version
           gcloud builds submit "${{ matrix.context }}" \
+            --project="$PROJECT_ID" \
             --service-account="projects/$PROJECT_ID/serviceAccounts/$SERVICE_ACCOUNT" \
             --tag "us-central1-docker.pkg.dev/$PROJECT_ID/$ARTIFACT_REPOSITORY/${{ matrix.name }}:latest"
 
@@ -118,9 +118,8 @@ jobs:
       - name: Deploy to K3s
         run: |
           set -euo pipefail
-          gcloud config set project "$PROJECT_ID"
-          export VM_IP=$(gcloud compute instances describe "$VM_NAME" --zone "$ZONE" --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-          gcloud compute ssh "$VM_NAME" --zone "$ZONE" --quiet \
+          export VM_IP=$(gcloud compute instances describe "$VM_NAME" --project "$PROJECT_ID" --zone "$ZONE" --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+          gcloud compute ssh "$VM_NAME" --project "$PROJECT_ID" --zone "$ZONE" --quiet \
             --ssh-flag="-o StrictHostKeyChecking=no" \
             --ssh-flag="-o UserKnownHostsFile=/dev/null" \
             --command "sudo cat /etc/rancher/k3s/k3s.yaml" > k3s.yaml
