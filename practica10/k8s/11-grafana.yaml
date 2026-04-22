@@ -49,7 +49,20 @@ data:
       "version": 1,
       "refresh": "10s",
       "annotations": {
-        "list": []
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "datasource",
+              "uid": "grafana"
+            },
+            "enable": false,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
       },
       "panels": [
         {
@@ -61,7 +74,10 @@ data:
             "uid": "prometheus-main"
           },
           "targets": [
-            { "expr": "increase(helpdesk_tickets_created_total[5m])", "legendFormat": "tickets-created" }
+            {
+              "expr": "sum(increase(helpdesk_tickets_created_total[5m])) or vector(0)",
+              "legendFormat": "tickets-created"
+            }
           ]
         },
         {
@@ -74,7 +90,7 @@ data:
           },
           "targets": [
             {
-              "expr": "increase(helpdesk_assignments_created_total[5m])",
+              "expr": "sum(increase(helpdesk_assignments_created_total[5m])) or vector(0)",
               "legendFormat": "assignments-created"
             }
           ]
