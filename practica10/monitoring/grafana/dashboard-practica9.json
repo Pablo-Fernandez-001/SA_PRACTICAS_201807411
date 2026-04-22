@@ -1,31 +1,42 @@
 {
   "id": null,
-  "uid": "practica9-overview",
+  "uid": "practica9eda01",
   "title": "Practica9 - EDA Overview",
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
   "refresh": "10s",
+  "annotations": {
+    "list": []
+  },
   "panels": [
     {
       "type": "timeseries",
-      "title": "Tickets Service UP",
+      "title": "Tickets Creados (incremento 5m)",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
       "targets": [
         {
-          "expr": "up{job=\"tickets-service\"}",
-          "legendFormat": "tickets-service"
+          "expr": "increase(helpdesk_tickets_created_total[5m])",
+          "legendFormat": "tickets-created"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Assignments Service UP",
+      "title": "Asignaciones Creadas (incremento 5m)",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
       "targets": [
         {
-          "expr": "up{job=\"assignments-service\"}",
-          "legendFormat": "assignments-service"
+          "expr": "increase(helpdesk_assignments_created_total[5m])",
+          "legendFormat": "assignments-created"
         }
       ]
     }

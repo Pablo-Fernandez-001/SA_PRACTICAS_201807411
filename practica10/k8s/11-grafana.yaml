@@ -9,10 +9,29 @@ data:
 
     datasources:
       - name: Prometheus
+        uid: prometheus-main
         type: prometheus
         access: proxy
-        url: http://prometheus.monitoring.svc.cluster.local:9090
+        url: http://prometheus.monitoring.svc.cluster.local:9090/api/prometheus
         isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: monitoring
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: practica9-dashboards
+        orgId: 1
+        folder: ""
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -23,24 +42,42 @@ data:
   dashboard-practica9.json: |
     {
       "id": null,
-      "uid": "practica9-overview",
+      "uid": "practica9eda01",
       "title": "Practica9 - EDA Overview",
       "timezone": "browser",
       "schemaVersion": 39,
       "version": 1,
       "refresh": "10s",
+      "annotations": {
+        "list": []
+      },
       "panels": [
         {
           "type": "timeseries",
-          "title": "Tickets Service UP",
+          "title": "Tickets Creados (incremento 5m)",
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-          "targets": [{ "expr": "up{job=\"tickets-service\"}", "legendFormat": "tickets-service" }]
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-main"
+          },
+          "targets": [
+            { "expr": "increase(helpdesk_tickets_created_total[5m])", "legendFormat": "tickets-created" }
+          ]
         },
         {
           "type": "timeseries",
-          "title": "Assignments Service UP",
+          "title": "Asignaciones Creadas (incremento 5m)",
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-          "targets": [{ "expr": "up{job=\"assignments-service\"}", "legendFormat": "assignments-service" }]
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-main"
+          },
+          "targets": [
+            {
+              "expr": "increase(helpdesk_assignments_created_total[5m])",
+              "legendFormat": "assignments-created"
+            }
+          ]
         }
       ]
     }
@@ -68,6 +105,8 @@ spec:
           volumeMounts:
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards
             - name: dashboards
               mountPath: /var/lib/grafana/dashboards
           env:
@@ -85,6 +124,9 @@ spec:
         - name: datasources
           configMap:
             name: grafana-datasource
+        - name: dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
         - name: dashboards
           configMap:
             name: grafana-dashboard

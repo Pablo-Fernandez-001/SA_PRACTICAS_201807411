@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const pino = require("pino");
+const client = require("prom-client");
 
 const db = require("./config/db");
 const EventBus = require("./events/eventBus");
@@ -18,6 +19,16 @@ const logger = pino({ name: "assignments-service" });
 async function start() {
   const app = express();
   const port = Number(process.env.PORT || 3103);
+
+  const register = new client.Registry();
+  client.collectDefaultMetrics({ register, prefix: "helpdesk_assignments_service_" });
+  const metrics = {
+    assignmentsCreated: new client.Counter({
+      name: "helpdesk_assignments_created_total",
+      help: "Total assignments created",
+      registers: [register],
+    }),
+  };
 
   app.use(helmet());
   app.use(cors());
@@ -38,13 +49,24 @@ async function start() {
     }
   });
 
+  app.get("/metrics", async (_req, res) => {
+    res.set("Content-Type", register.contentType);
+    res.end(await register.metrics());
+  });
+
   const eventBus = new EventBus(logger);
   await eventBus.connect();
 
   const assignmentRepository = new AssignmentRepository(db);
   const usersClient = new UsersClient(process.env.USERS_SERVICE_URL || "http://localhost:3101");
   const ticketsClient = new TicketsClient(process.env.TICKETS_SERVICE_URL || "http://localhost:3102");
-  const assignmentService = new AssignmentService(assignmentRepository, usersClient, ticketsClient, eventBus);
+  const assignmentService = new AssignmentService(
+    assignmentRepository,
+    usersClient,
+    ticketsClient,
+    eventBus,
+    metrics
+  );
   const assignmentController = new AssignmentController(assignmentService);
 
   app.use("/api", assignmentRoutes(assignmentController));

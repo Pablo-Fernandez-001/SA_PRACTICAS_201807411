@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const pino = require("pino");
+const client = require("prom-client");
 
 const db = require("./config/db");
 const EventBus = require("./events/eventBus");
@@ -17,6 +18,9 @@ const logger = pino({ name: "users-service" });
 async function start() {
   const app = express();
   const port = Number(process.env.PORT || 3101);
+
+  const register = new client.Registry();
+  client.collectDefaultMetrics({ register, prefix: "helpdesk_users_service_" });
 
   app.use(helmet());
   app.use(cors());
@@ -35,6 +39,11 @@ async function start() {
     } catch (error) {
       res.status(503).json({ service: "users-service", status: "degraded", db: "down" });
     }
+  });
+
+  app.get("/metrics", async (_req, res) => {
+    res.set("Content-Type", register.contentType);
+    res.end(await register.metrics());
   });
 
   const eventBus = new EventBus(logger);

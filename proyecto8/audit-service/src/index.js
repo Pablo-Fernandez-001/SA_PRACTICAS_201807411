@@ -3,6 +3,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const amqp = require("amqplib");
 const pino = require("pino");
+const client = require("prom-client");
 
 const logger = pino({ name: "audit-service" });
 const app = express();
@@ -10,6 +11,14 @@ const port = Number(process.env.PORT || 3104);
 const eventBusUrl = process.env.EVENT_BUS_URL || "amqp://helpdesk:helpdesk123@rabbitmq:5672";
 const exchange = "helpdesk.events";
 const queue = "helpdesk.audit.queue";
+
+const register = new client.Registry();
+client.collectDefaultMetrics({ register, prefix: "helpdesk_audit_service_" });
+const consumedEventsCounter = new client.Counter({
+  name: "helpdesk_audit_events_consumed_total",
+  help: "Total consumed events in audit-service",
+  registers: [register],
+});
 
 const eventsBuffer = [];
 const maxBuffer = 1000;
@@ -34,6 +43,11 @@ app.get("/api/events", (req, res) => {
   const limit = Math.min(Number(req.query.limit || 50), 200);
   const items = eventsBuffer.slice(-limit).reverse();
   res.status(200).json({ total: eventsBuffer.length, items });
+});
+
+app.get("/metrics", async (_req, res) => {
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
 });
 
 async function startConsumer() {
@@ -69,6 +83,7 @@ async function startConsumer() {
         if (eventsBuffer.length > maxBuffer) {
           eventsBuffer.shift();
         }
+        consumedEventsCounter.inc();
 
         logger.info({ routing_key: eventRecord.routing_key }, "Event consumed");
         channel.ack(msg);

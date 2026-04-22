@@ -2,10 +2,11 @@ const { validateTicketPayload, STATUS_VALUES } = require("../models/ticketModel"
 const AppError = require("../shared/appError");
 
 class TicketService {
-  constructor(ticketRepository, userClient, eventBus) {
+  constructor(ticketRepository, userClient, eventBus, metrics = {}) {
     this.ticketRepository = ticketRepository;
     this.userClient = userClient;
     this.eventBus = eventBus;
+    this.metrics = metrics;
   }
 
   generateCode() {
@@ -38,6 +39,7 @@ class TicketService {
       occurred_at: new Date().toISOString(),
       data: created,
     });
+    this.metrics.ticketsCreated?.inc();
 
     return { status: 201, body: created };
   }

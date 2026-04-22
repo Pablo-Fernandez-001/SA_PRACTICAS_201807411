@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const pino = require("pino");
+const client = require("prom-client");
 
 const db = require("./config/db");
 const EventBus = require("./events/eventBus");
@@ -18,6 +19,16 @@ const logger = pino({ name: "tickets-service" });
 async function start() {
   const app = express();
   const port = Number(process.env.PORT || 3102);
+
+  const register = new client.Registry();
+  client.collectDefaultMetrics({ register, prefix: "helpdesk_tickets_service_" });
+  const metrics = {
+    ticketsCreated: new client.Counter({
+      name: "helpdesk_tickets_created_total",
+      help: "Total tickets created",
+      registers: [register],
+    }),
+  };
 
   app.use(helmet());
   app.use(cors());
@@ -38,12 +49,17 @@ async function start() {
     }
   });
 
+  app.get("/metrics", async (_req, res) => {
+    res.set("Content-Type", register.contentType);
+    res.end(await register.metrics());
+  });
+
   const eventBus = new EventBus(logger);
   await eventBus.connect();
 
   const ticketRepository = new TicketRepository(db);
   const userClient = new UserClient(process.env.USERS_SERVICE_URL || "http://localhost:3101");
-  const ticketService = new TicketService(ticketRepository, userClient, eventBus);
+  const ticketService = new TicketService(ticketRepository, userClient, eventBus, metrics);
   const ticketController = new TicketController(ticketService);
 
   app.use("/api", ticketRoutes(ticketController));

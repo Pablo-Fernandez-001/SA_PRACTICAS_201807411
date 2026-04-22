@@ -2,11 +2,12 @@ const { validateAssignmentPayload } = require("../models/assignmentModel");
 const AppError = require("../shared/appError");
 
 class AssignmentService {
-  constructor(assignmentRepository, usersClient, ticketsClient, eventBus) {
+  constructor(assignmentRepository, usersClient, ticketsClient, eventBus, metrics = {}) {
     this.assignmentRepository = assignmentRepository;
     this.usersClient = usersClient;
     this.ticketsClient = ticketsClient;
     this.eventBus = eventBus;
+    this.metrics = metrics;
   }
 
   async createAssignment(payload) {
@@ -44,6 +45,7 @@ class AssignmentService {
       occurred_at: new Date().toISOString(),
       data: created,
     });
+    this.metrics.assignmentsCreated?.inc();
 
     return { status: 201, body: created };
   }
