@@ -47,7 +47,7 @@ Accesos:
 
 El manifiesto `15-kafka.yaml` ahora despliega:
 
-1. Broker Kafka en KRaft (servicio `kafka.monitoring.svc.cluster.local:9092`).
+1. Broker compatible con Kafka API (Redpanda) en `kafka.monitoring.svc.cluster.local:9092`.
 2. Kafka UI preconfigurada al broker (sin llenar formulario).
 3. Productor de demo (`kafka-demo-producer`) que envia eventos cada 5 segundos al topic `practica10-events`.
 
