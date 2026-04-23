@@ -25,6 +25,10 @@ kubectl apply -f practica10/k8s/30-monitoring-ingress.yaml
 ```bash
 kubectl -n monitoring get pods
 kubectl -n monitoring get svc
+kubectl -n monitoring rollout status deploy/prometheus
+kubectl -n monitoring rollout status deploy/grafana
+kubectl -n monitoring rollout status ds/fluent-bit
+kubectl -n monitoring rollout status deploy/kibana
 ```
 
 Agregar hosts:
@@ -62,13 +66,42 @@ En Kafka UI abre `Topics -> practica10-events -> Messages` y deben aparecer mens
 ## Flujo de logs
 
 1. Microservicios de `practica9` escriben logs stdout.
-2. Fluent Bit (DaemonSet) lee `/var/log/containers/*.log`.
-3. Fluent Bit envia logs a Elasticsearch.
-4. Kibana consulta indice `microservices-logs-*`.
+2. Fluent Bit (DaemonSet) lee `/var/log/containers/*.log` con parser CRI.
+3. Fluent Bit envia logs a Elasticsearch 8 sin `_type`.
+4. Elasticsearch crea indices diarios `microservices-logs-*`.
+5. El Job `kibana-data-view` crea automaticamente el data view `microservices-logs-*`.
+6. Kibana muestra los logs desde Discover usando `@timestamp`.
 
 ## Dashboard esperado
 
 Dashboard en Grafana: `Practica9 - EDA Overview`
 
-- `tickets_total`
-- `processed_events_total`
+- Totales actuales: `helpdesk_tickets_created_total` y `helpdesk_assignments_created_total`
+- Actividad reciente: `increase(...[5m])`
+- Salud de targets: `up{job=~"users-service|tickets-service|assignments-service|audit-service"}`
+
+## Validacion rapida de observabilidad
+
+Prometheus:
+
+```bash
+kubectl -n monitoring exec deploy/prometheus -- wget -qO- "http://localhost:9090/api/prometheus/api/v1/query?query=up"
+kubectl -n monitoring exec deploy/prometheus -- wget -qO- "http://localhost:9090/api/prometheus/api/v1/query?query=helpdesk_tickets_created_total"
+kubectl -n monitoring exec deploy/prometheus -- wget -qO- "http://localhost:9090/api/prometheus/api/v1/query?query=helpdesk_assignments_created_total"
+```
+
+Grafana:
+
+1. Crear un ticket y una asignacion desde la app.
+2. Abrir `Practica9 - EDA Overview`.
+3. Confirmar que suben los totales y que los paneles de ultimos 5 minutos muestran actividad.
+
+Kibana y Elasticsearch:
+
+```bash
+kubectl -n monitoring logs ds/fluent-bit --tail=80
+kubectl -n monitoring exec deploy/elasticsearch -- curl -s "http://localhost:9200/_cat/indices?v"
+kubectl -n monitoring logs job/kibana-data-view
+```
+
+En Kibana abre Discover con el data view `microservices-logs-*` y rango `Last 15 minutes`.

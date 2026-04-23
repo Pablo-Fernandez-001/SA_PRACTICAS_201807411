@@ -92,6 +92,44 @@ spec:
       targetPort: 5601
       nodePort: 32601
 ---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kibana-data-view
+  namespace: monitoring
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-data-view
+          image: curlimages/curl:8.10.1
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              KIBANA_URL="http://kibana.monitoring.svc.cluster.local:5601/api/kibana"
+              until curl -fsS "$KIBANA_URL/api/status" >/dev/null; do
+                echo "waiting for Kibana..."
+                sleep 5
+              done
+
+              if curl -fsS \
+                -H "kbn-xsrf: true" \
+                "$KIBANA_URL/api/data_views/data_view/microservices-logs" >/dev/null; then
+                echo "Kibana data view microservices-logs already exists"
+                exit 0
+              fi
+
+              curl -fsS -X POST \
+                -H "kbn-xsrf: true" \
+                -H "Content-Type: application/json" \
+                "$KIBANA_URL/api/data_views/data_view" \
+                -d '{"data_view":{"id":"microservices-logs","title":"microservices-logs-*","timeFieldName":"@timestamp"}}'
+              echo "Kibana data view microservices-logs created"
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -131,13 +169,16 @@ data:
         Flush        1
         Daemon       Off
         Log_Level    info
+        Parsers_File parsers.conf
 
     [INPUT]
         Name              tail
         Path              /var/log/containers/*.log
-        Parser            docker
+        Parser            cri
         Tag               kube.*
         Refresh_Interval  5
+        Mem_Buf_Limit     10MB
+        Skip_Long_Lines   On
 
     [FILTER]
         Name                kubernetes
@@ -148,12 +189,21 @@ data:
         Keep_Log            Off
 
     [OUTPUT]
-        Name  es
-        Match kube.*
-        Host  elasticsearch.monitoring.svc.cluster.local
-        Port  9200
-        Index microservices-logs
-        Logstash_Format On
+        Name                es
+        Match               kube.*
+        Host                elasticsearch.monitoring.svc.cluster.local
+        Port                9200
+        Logstash_Format     On
+        Logstash_Prefix     microservices-logs
+        Suppress_Type_Name  On
+        Replace_Dots        On
+  parsers.conf: |
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -179,6 +229,9 @@ spec:
             - name: config
               mountPath: /fluent-bit/etc/fluent-bit.conf
               subPath: fluent-bit.conf
+            - name: config
+              mountPath: /fluent-bit/etc/parsers.conf
+              subPath: parsers.conf
       volumes:
         - name: varlog
           hostPath:

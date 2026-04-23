@@ -4,8 +4,8 @@
   "title": "Practica9 - EDA Overview",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
-  "refresh": "10s",
+  "version": 2,
+  "refresh": "5s",
   "annotations": {
     "list": [
       {
@@ -24,34 +24,170 @@
   },
   "panels": [
     {
-      "type": "timeseries",
-      "title": "Tickets Creados (total)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "type": "stat",
+      "title": "Tickets Creados",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
       },
       "targets": [
         {
-          "expr": "sum(helpdesk_tickets_created_total) or vector(0)",
-          "legendFormat": "tickets-created"
+          "expr": "sum(helpdesk_tickets_created_total)",
+          "legendFormat": "tickets"
         }
-      ]
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Asignaciones Creadas",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
+      "targets": [
+        {
+          "expr": "sum(helpdesk_assignments_created_total)",
+          "legendFormat": "assignments"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Servicios Monitoreados UP",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"users-service|tickets-service|assignments-service|audit-service\"})",
+          "legendFormat": "up"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "green", "value": 4 }
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "type": "timeseries",
-      "title": "Asignaciones Creadas (total)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "title": "Tickets Creados en los Ultimos 5m",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
       },
       "targets": [
         {
-          "expr": "sum(helpdesk_assignments_created_total) or vector(0)",
-          "legendFormat": "assignments-created"
+          "expr": "sum(increase(helpdesk_tickets_created_total[5m]))",
+          "legendFormat": "tickets / 5m"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Asignaciones Creadas en los Ultimos 5m",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(helpdesk_assignments_created_total[5m]))",
+          "legendFormat": "assignments / 5m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Estado de Targets",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
+      "targets": [
+        {
+          "expr": "up{job=~\"users-service|tickets-service|assignments-service|audit-service\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
     }
   ]
 }
