@@ -4,7 +4,7 @@
   "title": "Practica9 - EDA Overview",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "5s",
   "annotations": {
     "list": [
@@ -23,10 +23,42 @@
     ]
   },
   "panels": [
+
+    {
+      "type": "stat",
+      "title": "CPU (Prometheus)",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_seconds_total[1m])",
+          "legendFormat": "cpu"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "RAM (Prometheus)",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-main"
+      },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes",
+          "legendFormat": "ram"
+        }
+      ]
+    },
+
     {
       "type": "stat",
       "title": "Tickets Creados",
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
@@ -53,7 +85,7 @@
     {
       "type": "stat",
       "title": "Asignaciones Creadas",
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
@@ -77,10 +109,11 @@
         "textMode": "auto"
       }
     },
+
     {
       "type": "stat",
       "title": "Servicios Monitoreados UP",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 6 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
@@ -102,25 +135,13 @@
           "values": false
         },
         "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 1 },
-              { "color": "green", "value": 4 }
-            ]
-          }
-        },
-        "overrides": []
       }
     },
+
     {
       "type": "timeseries",
       "title": "Tickets Creados en los Ultimos 5m",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
@@ -130,18 +151,12 @@
           "expr": "sum(increase(helpdesk_tickets_created_total[5m]))",
           "legendFormat": "tickets / 5m"
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      }
+      ]
     },
     {
       "type": "timeseries",
       "title": "Asignaciones Creadas en los Ultimos 5m",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
@@ -151,18 +166,13 @@
           "expr": "sum(increase(helpdesk_assignments_created_total[5m]))",
           "legendFormat": "assignments / 5m"
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      }
+      ]
     },
+
     {
       "type": "timeseries",
       "title": "Estado de Targets",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus-main"
@@ -172,22 +182,8 @@
           "expr": "up{job=~\"users-service|tickets-service|assignments-service|audit-service\"}",
           "legendFormat": "{{job}}"
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "min": 0,
-          "max": 1,
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 1 }
-            ]
-          }
-        },
-        "overrides": []
-      }
+      ]
     }
+
   ]
 }
