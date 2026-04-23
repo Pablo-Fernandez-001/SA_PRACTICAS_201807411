@@ -95,7 +95,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kibana-observability-dashboard
+  name: kibana-realtime-dashboard
   namespace: monitoring
 spec:
   backoffLimit: 6
@@ -113,6 +113,10 @@ spec:
               const dataViewId = "microservices-logs";
               const dashboardId = "practica10-logs-overview";
               const indexRefName = "kibanaSavedObjectMeta.searchSourceJSON.index";
+              const realtimeQuery = {
+                query: "kubernetes.namespace_name: monitoring and kubernetes.container_name: (prometheus or grafana)",
+                language: "kuery"
+              };
               const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
               async function request(path, options = {}) {
@@ -167,7 +171,7 @@ spec:
                 }
               }
 
-              function searchSource(query = { query: "", language: "kuery" }) {
+              function searchSource(query = realtimeQuery) {
                 return JSON.stringify({
                   query,
                   filter: [],
@@ -236,7 +240,7 @@ spec:
               const visualizations = [
                 {
                   id: "practica10-logs-over-time",
-                  attrs: visualizationAttrs("Logs por minuto", "histogram", {
+                  attrs: visualizationAttrs("Prometheus/Grafana logs por minuto", "histogram", {
                     params: histogramParams,
                     aggs: [
                       { id: "1", enabled: true, type: "count", schema: "metric", params: {} },
@@ -247,7 +251,7 @@ spec:
                         schema: "segment",
                         params: {
                           field: "@timestamp",
-                          timeRange: { from: "now-15m", to: "now" },
+                          timeRange: { from: "now-5m", to: "now" },
                           useNormalizedEsInterval: true,
                           scaleMetricValues: false,
                           interval: "auto",
@@ -261,7 +265,7 @@ spec:
                 },
                 {
                   id: "practica10-logs-by-service",
-                  attrs: visualizationAttrs("Logs por servicio", "histogram", {
+                  attrs: visualizationAttrs("Logs por componente", "histogram", {
                     params: histogramParams,
                     aggs: [
                       { id: "1", enabled: true, type: "count", schema: "metric", params: {} },
@@ -301,7 +305,7 @@ spec:
                         type: "terms",
                         schema: "segment",
                         params: {
-                          field: "kubernetes.namespace_name.keyword",
+                          field: "kubernetes.container_name.keyword",
                           orderBy: "1",
                           order: "desc",
                           size: 8,
@@ -314,7 +318,7 @@ spec:
                 },
                 {
                   id: "practica10-error-warning-logs",
-                  attrs: visualizationAttrs("Errores y warnings", "metric", {
+                  attrs: visualizationAttrs("Errores y warnings Prometheus/Grafana", "metric", {
                     params: {
                       addTooltip: true,
                       addLegend: false,
@@ -340,7 +344,7 @@ spec:
                       { id: "1", enabled: true, type: "count", schema: "metric", params: {} }
                     ]
                   }, {
-                    query: "stream:stderr or log_level:error or log_level:warn or message:*error* or message:*warn*",
+                    query: "kubernetes.namespace_name: monitoring and kubernetes.container_name: (prometheus or grafana) and (stream:stderr or log_level:error or log_level:warn or message:*error* or message:*warn*)",
                     language: "kuery"
                   })
                 }
@@ -378,18 +382,18 @@ spec:
                   body: JSON.stringify({
                     attributes: {
                       title: "Practica10 - Logs Overview",
-                      description: "Graficos automaticos de logs recolectados por Fluent Bit hacia Elasticsearch.",
+                      description: "Graficos real-time de logs reales de Prometheus y Grafana recolectados por Fluent Bit hacia Elasticsearch.",
                       hits: 0,
                       panelsJSON: JSON.stringify(panels),
                       optionsJSON: JSON.stringify({ useMargins: true, syncColors: false, hidePanelTitles: false }),
                       version: 1,
                       timeRestore: true,
-                      timeFrom: "now-15m",
+                      timeFrom: "now-5m",
                       timeTo: "now",
-                      refreshInterval: { pause: false, value: 10000 },
+                      refreshInterval: { pause: false, value: 5000 },
                       kibanaSavedObjectMeta: {
                         searchSourceJSON: JSON.stringify({
-                          query: { query: "", language: "kuery" },
+                          query: realtimeQuery,
                           filter: []
                         })
                       }
