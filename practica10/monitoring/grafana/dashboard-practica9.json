@@ -25,7 +25,7 @@
   "panels": [
     {
       "type": "timeseries",
-      "title": "Tickets Creados (incremento 5m)",
+      "title": "Tickets Creados (total)",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "datasource": {
         "type": "prometheus",
@@ -33,14 +33,14 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(helpdesk_tickets_created_total[5m])) or vector(0)",
+          "expr": "sum(helpdesk_tickets_created_total) or vector(0)",
           "legendFormat": "tickets-created"
         }
       ]
     },
     {
       "type": "timeseries",
-      "title": "Asignaciones Creadas (incremento 5m)",
+      "title": "Asignaciones Creadas (total)",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "datasource": {
         "type": "prometheus",
@@ -48,7 +48,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(helpdesk_assignments_created_total[5m])) or vector(0)",
+          "expr": "sum(helpdesk_assignments_created_total) or vector(0)",
           "legendFormat": "assignments-created"
         }
       ]
